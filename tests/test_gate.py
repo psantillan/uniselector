@@ -62,7 +62,7 @@ def test_the_orchestrator_cannot_run_an_action_that_it_does_not_hold(world):
         orchestrator.resolve(graph_id)   # the orchestrator holds nothing on the graph of the action
     # The gate: no approval, no run. One approval, one run.
     assert gate.run(graph_id)["status"] == "waiting"
-    assert room.invoke("room.latest")["heater"] is False
+    assert room.observe()["heater"] is False   # `room.latest` has no reading in the first interval
     gate.approve(graph_id, by_human=True)
     done = gate.run(graph_id)
     assert (done["status"], done["output"]["heater"]) == ("completed", True)
