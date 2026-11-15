@@ -103,3 +103,34 @@ Workaround: the pool ranks a value by the place that it comes from (`docs/DECISI
 
 Proposal for DataHandles: a `description` for each field, and a way to say "one of the column
 names of the target".
+
+## G11. A look at a resource waits while a job runs on it
+
+The runtime lets one caller at a time use a resource (`Locked` in `packages/runtime/adapter.py`).
+A job holds that lock while it runs. Only `discover` does not wait. `observe` and each read
+operation on the same resource wait until the job ends. Measured: `observe` took 3.73 s while a
+job of 4 s ran on a script handle.
+
+Effect: while a job runs on a resource, a regulator cannot look at that resource. The fast loop
+makes no decision, and the stall signal does not grow. A look that is not bounded can hold a run
+past its wall time. See `docs/FAILURES.md`, F31.
+
+Workaround: the wall time bounds each look (`Run._observe`). The run still waits for the job.
+
+Proposal for DataHandles: `observe` does not take the lock of the resource, or it returns the
+last observation with a mark that the resource is busy.
+
+## G12. A result does not state its cost
+
+An operation can spend model tokens or money at the resource. A result has no standard field for
+that. The helper of the task runs puts `tokens` in its output, and no caller can know that this
+field is a cost.
+
+Effect: the hard budget of a run counts the decision model and the sub-agents only. See
+`docs/FAILURES.md`, F36.
+
+Workaround: none in the protocol. The budget is a limit on the spend of the regulator, not on the
+spend of the resources.
+
+Proposal for DataHandles: a `cost` object in the result of an operation, with a unit, and the
+same object in `job.status`.

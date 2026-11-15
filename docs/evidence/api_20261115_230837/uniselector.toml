@@ -1,0 +1,14 @@
+[limits]
+budget_tokens = 400000
+wall_seconds = 1800
+
+[runtime]
+target = "http://127.0.0.1:40489"
+runs_dir = "/tmp/scratch/worlds/api_20261115_230837/runs"
+
+[model]
+model_url = "http://local-model:11400"
+model = "ornith-1.5:9b"
+
+[actions]
+human_only = []

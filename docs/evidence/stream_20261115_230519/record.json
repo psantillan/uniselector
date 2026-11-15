@@ -1,0 +1,56 @@
+{
+ "task": "stream",
+ "what": "A stream with a condition to watch for. The heater is an action: each switch needs a confirmation.",
+ "at": "20261115_230519",
+ "commit": "32ace2a+",
+ "prompt": "A room is registered in DataHandles as `room`. Heat it: switch the heater on, wait until the temperature is 26 or more, then switch the heater off. Give the temperature of the last reading that you saw.",
+ "truth": "the heater goes on, then off after a reading of 26 or more",
+ "decision_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 197.6,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7003,
+ "context_peak": 12795,
+ "context_added": 5792,
+ "tool_calls": {
+  "handle_find": 1,
+  "plan_submit": 1,
+  "plan_status": 4,
+  "plan_confirm": 2
+ },
+ "turns": 9,
+ "agent_seconds": 192.9,
+ "answer": "26.28",
+ "agent_error": false,
+ "right": true,
+ "facts": {
+  "heater_on_seq": 4,
+  "heater_off_after_seq": 62,
+  "temperature_then": 26.253
+ },
+ "runs": [
+  {
+   "t": 1794784114.159,
+   "event": "end",
+   "run": "run_20261115_230527_fbc5",
+   "outcome": "done",
+   "why": "each intent is met",
+   "intents_done": 4,
+   "intents": 4,
+   "tokens": 57301,
+   "seconds": 181.7,
+   "decisions": 57,
+   "operations": 3,
+   "waits": 48,
+   "probes": 54,
+   "questions": 0,
+   "planner_questions": 0,
+   "confirmations": 2,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

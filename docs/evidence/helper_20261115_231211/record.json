@@ -1,0 +1,55 @@
+{
+ "task": "helper",
+ "what": "A sub-agent: a helper model that reads a long document, part by part.",
+ "at": "20261115_231211",
+ "commit": "32ace2a+",
+ "prompt": "A helper agent is registered in DataHandles as `reader`. It reads one long architecture document, and one question takes minutes. Ask it this question: 'Which database does the document name for the initial registry, and which database does it name for later?' Give the two database names.",
+ "truth": [
+  "SQLite",
+  "PostgreSQL"
+ ],
+ "decision_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 117.2,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7016,
+ "context_peak": 8568,
+ "context_added": 1552,
+ "tool_calls": {
+  "handle_find": 1,
+  "plan_submit": 1,
+  "plan_status": 1,
+  "handle_invoke": 1
+ },
+ "turns": 5,
+ "agent_seconds": 112.4,
+ "answer": "Initial registry: SQLite. Later: PostgreSQL, or another transactional backend.",
+ "agent_error": false,
+ "right": true,
+ "facts": {},
+ "runs": [
+  {
+   "t": 1794784444.394,
+   "event": "end",
+   "run": "run_20261115_231219_e4ae",
+   "outcome": "done",
+   "why": "each intent is met",
+   "intents_done": 1,
+   "intents": 1,
+   "tokens": 9797,
+   "seconds": 105.2,
+   "decisions": 3,
+   "operations": 1,
+   "waits": 0,
+   "probes": 0,
+   "questions": 1,
+   "planner_questions": 0,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

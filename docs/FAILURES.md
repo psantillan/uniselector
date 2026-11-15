@@ -299,3 +299,241 @@ directory is `runs/run_20261115_223634_8145`.
   calls returned `running`, and each one added 1,800 to 2,600 tokens to its context.
 - Evidence: `agent-stream.jsonl`; `record.json` (`tool_calls`).
 - Open.
+
+### Slow API, first run: `api_20261115_224841`
+
+The task: get a report from a service that answers after 150 s, and give the region with the
+highest revenue. The run ended `done` in 640 s with 61,275 tokens, 2 operations, 40 waits and 3
+questions. The answer of the main agent was right. Its context went from 7,001 to 11,264 tokens.
+The run did not get the report: its two operations failed. The run directory is
+`runs/run_20261115_224850_2271`.
+
+### F26. The pool did not have the path that the intent states
+
+- Part: candidate pool.
+- What happened: the intent was "Get the report at the path /reports/quarterly from the reports
+  service". The options for `path` were the base address of the service and `none fits`. The
+  model chose the base address (p 0.97), and `api.get` failed.
+- Evidence: D 33; E 32.
+- Fixed (DECISIONS D27).
+
+### F27. The sub-agent did the work, and the run got no result
+
+- Part: question.
+- What happened: three decisions abstained, and each question went to the sub-agent. Each time
+  the sub-agent made the slow request itself with the right path, read the report, and tried to
+  answer with `{"region": "west", "revenue": 91377}`. The schema refused that. It then answered
+  `step_done` two times, and one time it answered the text "west, revenue 91377" for the field
+  `path`. The slow request ran three times (about 450 s of the 640 s). No operation of the run
+  has the report as its result. The main agent found the answer in the input of a failed
+  operation, and said so: "I could not read the final result directly".
+- Evidence: Q 1, Q 2, Q 3; E 35, E 41, E 44; `record.json` (`answer`).
+- Open. A sub-agent with read grants can do a read operation of the plan. The work then leaves
+  no handle and no result in the run. This is also "`step_done` when the intent was not met".
+
+### F28. The regulator waited when nothing ran
+
+- Part: decision model. Also: plan.
+- What happened: the first 31 decisions chose `wait` (p 0.76 to 1.00). No job ran, no stream was
+  open, and no request was sent. The intent of the main agent said "The service is slow, so wait
+  for it". The stall signal grew for 62 s before the model chose an operation.
+- Evidence: D 1 to D 31; E 1 to E 31.
+- Open.
+
+### Slow code: `code_20261115_225936`
+
+The task: run a script that takes 152 s, and give the checksum that it prints. The run ended
+`done` in 181 s with 12,905 tokens, 5 decisions, 2 operations and 1 question. The answer was
+right. The context of the main agent went from 6,986 to 9,443 tokens. The run directory is
+`runs/run_20261115_225946_0704`.
+
+### F29. The wait for the job ran inside a question
+
+- Part: abstain, question.
+- What happened: after `script.run` gave a job, the next decision abstained: `step_done` 0.51,
+  `job.status` 0.32, `wait` 0.07. The abstain was right, because `step_done` was wrong. The
+  sub-agent then looked at the job until it was complete (6 calls, 8,943 tokens) and answered
+  `h2 job.result`. The run has 0 waits: the fast loop did not wait for the job.
+- Evidence: D 3; Q 1; E 1, E 2.
+- Open. The result was right, and the cost was one question. The fast loop had no part in the
+  wait, so the stall signal had no look at the job during that time.
+
+### Stream: `stream_20261115_230519`
+
+The task: switch the heater on, read the room until 26 degrees or more, switch the heater off,
+and report the last temperature. The run ended `done` in 181.7 s with 57,301 tokens, 57
+decisions, 3 operations, 48 waits and 0 questions. The main agent approved 2 actions. The room
+shows the heater on at reading 4 and off after reading 62 (26.253 degrees). The answer (26.28)
+was right. The context of the main agent went from 7,003 to 12,795 tokens. The run directory is
+`runs/run_20261115_230527_fbc5`.
+
+An earlier try of this task has no record. The check of the driver asked the room for readings
+that the room had not made, and stopped with `INVALID_INPUT: readings 50 to 99 are not all made
+yet`. The check now reads up to the newest reading.
+
+### F30. The waits were 87% of the spend
+
+- Part: decision tree.
+- What happened: 48 of the 57 decisions chose `wait` (p 0.78 or more). Each wait is one model
+  call with the full state. The 48 calls used 49,731 of the 57,301 tokens. The brief makes a wait
+  a choice of the decision model at each look, so this is the cost of the design, not a wrong
+  choice.
+- Evidence: `decisions.jsonl`, each line with `"choice": "wait"`; the outcome line.
+- Open. The wait time is 2 s (D10). A longer wait time spends less and sees a change later.
+
+### Slow API, second run: `api_20261115_230837`
+
+The same task, after the fix of F26. `path` got `/reports/quarterly` (p 1.00). `api.get` gave a
+job, and `job.result` gave the report. The answer of the main agent was right. The context of the
+main agent went from 7,001 to 9,535 tokens. The run has no end line: see F32. The run directory
+is `runs/run_20261115_230845_ca79`.
+
+### F31. The run could not look while the request ran
+
+- Part: DataHandles. Also: the hard limits.
+- What happened: D 9 came 17.3 s after the start, and D 10 came at 168.5 s. No decision and no
+  event is between them. The request took 150 s. The look at `h1` before D 10 waited for the
+  request: DataHandles lets one caller at a time use a resource, and a job on the resource holds
+  that lock (`docs/GAPS.md`, G11). A measurement outside the run: `observe` on a script handle
+  took 3.73 s while a job of 4 s ran on it. The look was not bounded, so a longer job could hold
+  a run past its wall time.
+- Evidence: `decisions.jsonl` lines 9 and 10 (`t`); `events.jsonl` lines 7 and 8 (`job.result`
+  took 7 ms).
+- Fixed in part: the wall time bounds each look (D28;
+  `test_the_wall_time_stops_a_run_whose_look_at_a_handle_waits_for_a_job`). Open: during a job on
+  a resource, the fast loop cannot look at that resource, so it makes no decision and the stall
+  signal does not grow.
+
+### F32. The main agent left a run that worked, and the run had no end
+
+- Part: summary. Also: the harness.
+- What happened: the second `plan_status` returned `running`, with the report in the last
+  results. The main agent took the answer from that summary and ended its session. The run was at
+  intent 1 of 3: D 11 abstained (`step_done` 0.53, `h2 job.result` 0.41), and a question was with
+  the sub-agent. The MCP server ended with the session. The run directory has no `summary.json`
+  and no end line, and the record has `"runs": []`. D25 says that such a run ends with the state
+  `left`. It did not: the server closed its runs only at the end of its input. A signal with
+  its default action ends the process without that step.
+- Evidence: `hook-input.jsonl` line 2 (`"state": "running"`); the last line of `events.jsonl`
+  (a result, not an end); `record.json` (`runs`).
+- Fixed: the server ends its runs on SIGTERM and SIGHUP, and the end line is the last line of the
+  log (`test_a_run_ends_in_the_logs_when_the_client_ends_the_server`). Open: a summary of a run
+  that works can hold the answer, and the main agent then leaves the run.
+
+### Stream with a human-only action: `stream-human_20261115_231150`
+
+The same stream task, with `room.heater` in `human_only`. The main agent passed the first request
+to the human, told the user the command, and ended its session after 15.6 s. The task has no
+result. The context of the main agent went from 7,007 to 9,941 tokens. The run directory is
+`runs/run_20261115_231159_8c49`.
+
+The hook worked: after the second `plan_status`, `uniselector-hook` gave the system message
+"Uniselector: an action needs YOUR decision. room.heater on room with input {"on": true}. To
+decide, run: uniselector-confirm ..." (`agent-stream.jsonl`, the second `hook_response` event).
+
+### F33. The log did not show a request that went to the human
+
+- Part: action gate.
+- What happened: `plan_confirm` with `human` moved the request to the human. `events.jsonl` got
+  no line for that. Its last line said `waiting_confirm`, with the main agent. The stand-in for
+  the human in the driver reads that log, so it did nothing (`"human_stand_in": []`).
+- Evidence: the last line of `events.jsonl`; `hook-input.jsonl` line 2 (`"state":
+  "waiting_human"`).
+- Fixed: the move writes a `waiting_human` line (`test_a_human_only_action_needs_the_human`).
+
+### F34. A session with one turn ends when the main agent asks the user
+
+- Part: the driver of the tasks.
+- What happened: the main agent did the right thing for a session with a user. It gave the
+  command and ended its turn. A `claude -p` session has one turn, so the session, the MCP server
+  and the run ended there.
+- Evidence: `record.json` (`answer`, `turns`: 6).
+- Fixed in the driver: the prompt of this task says that the user cannot reply, and that the
+  main agent must follow the run until the human decides.
+
+### Sub-agent: `helper_20261115_231211`
+
+The task: ask a helper agent a question about a long document. The helper reads the document in
+7 parts with a model. The run ended `done` in 105.2 s with 9,797 tokens, 3 decisions, 1 operation
+and 1 question. The answer was right. The context of the main agent went from 7,016 to 8,568
+tokens. The run directory is `runs/run_20261115_231219_e4ae`.
+
+### F35. The sub-agent asked the helper again
+
+- Part: abstain, question. The same pattern as F27 and F29.
+- What happened: `helper.ask` gave a job. The next decision abstained (top option 0.27). The
+  sub-agent did not look at the job. It invoked `helper.ask` with the same question, got the
+  answer, and answered `step_done`. The helper did the work two times. The result of the run's
+  own job was not in the state of the run, so the main agent read it with one `job.result` call.
+- Evidence: D 3; `questions.jsonl` line 1, calls 2 and 5; the `handle_invoke` call in
+  `agent-stream.jsonl`.
+- Open.
+
+### F36. The spend of the helper is not in the budget
+
+- Part: the hard limits. Also: DataHandles.
+- What happened: the helper used 9,887 model tokens for one answer, and it answered two times.
+  The run counted 9,797 tokens: its 3 decisions and its question. The hard budget did not see
+  the spend of the resource (`docs/GAPS.md`, G12).
+- Evidence: `"tokens": 9887` in the output of `helper.ask` (`questions.jsonl` line 1, call 2);
+  the outcome line (`"tokens": 9797`).
+- Open.
+
+### Stream with a human-only action, second run: `stream-human_20261115_232558`
+
+The same task, after the fixes of F33 and F34. The run ended `done` with 53,838 tokens, 56
+decisions, 6 operations, 40 waits and 0 questions. Its clock shows 163.4 s: the clock stops while
+a request waits. The main agent passed 6 requests to the human. The stand-in for the human
+approved each one with `uniselector-confirm --url` and the token of the human principal, and the
+gate ran each action (`human.log`). The heater went off after reading 62 (26.253 degrees). The
+answer (26.28) was right. The context of the main agent went from 7,063 to 25,067 tokens. The run
+directory is `runs/run_20261115_232603_f317`.
+
+The hook ran after each of the 12 `plan_status` calls, and 5 of its outputs have the message.
+The stand-in approved the first request before the next `plan_status` call, so that request has
+no message.
+
+### F37. The human got the same action five times
+
+- Part: decision model, action gate. The same pattern as F16 and F24.
+- What happened: the first `room.heater` with `on: true` gave `{"heater": true}`. The next four
+  root decisions chose `room.heater` again (p 0.96, 0.94, 0.93, 0.85), with `step_done` at 0.03
+  to 0.15. Each one is an action, so each one went to the human. The sixth root decision chose
+  `step_done` (0.91). In the stream run without the human (`stream_20261115_230519`), the same
+  model chose `step_done` after one `room.heater`.
+- Evidence: D 1, D 3, D 5, D 7, D 9, D 11; `events.jsonl` lines 4, 10, 16, 22 and 28
+  (`waiting_human`); `human.log`.
+- Open. The gate did its work: no action ran without the human. The cost is four requests that
+  the human did not need.
+
+### F38. Each request added about 3,000 tokens to the context of the main agent
+
+- Part: summary.
+- What happened: the context of the main agent grew by 18,004 tokens, the most of all task
+  runs. One request needs a `plan_confirm` call and one or two `plan_status` calls, and each
+  summary is 3,100 to 4,500 characters. The 6 requests took 18 calls. Without F37 the run has 2
+  requests.
+- Evidence: `record.json` (`tool_calls`, `context_added`); the size of each line of
+  `hook-input.jsonl`.
+- Open.
+
+### Slow API, third run: `api_20261115_232915`
+
+The same task again, after the fixes of F31 and F32. The run ended `done` in 277.7 s with 32,351
+tokens, 44 decisions, 2 operations, 38 waits and 0 questions. The answer was right. The context
+of the main agent went from 7,001 to 9,392 tokens. The run directory is
+`runs/run_20261115_232920_d132`.
+
+Two open failures show again:
+
+- F28: the first 38 decisions chose `wait` (p 0.81 or more) for 119.3 s, before any request. The
+  intent said "The service is slow, so wait for the result". These waits used 27,383 of the
+  32,351 tokens. Evidence: D 1 to D 38.
+- F31: D 41 came at 120.8 s and D 42 at 272.4 s. The run made no decision while the request ran.
+  Evidence: `decisions.jsonl` lines 41 and 42 (`t`).
+
+### Check: a run ends `left` when the main agent leaves (`leave_20261115_233422`)
+
+A real session submitted a plan and ended at once. The last line of `events.jsonl` is the end
+line with the outcome `left`, and the run directory has `summary.json`. This is the fix of F32
+with a real client.

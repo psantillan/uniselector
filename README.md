@@ -68,6 +68,40 @@ request to the user of Claude Code or Codex.
 The decision model is a model on an Ollama server that gives log probabilities. A trained decision
 model can replace it: it is one callable, `decide(state, options)`.
 
+## Measurements
+
+Each row is one run of one task with a real main agent, on 2026-11-15. The main agent was Claude
+Code in headless mode (`claude-sonnet-5-5`) with only the DataHandles tools and the four tools
+above. The decision model and the sub-agent were `ornith-1.5:9b` on an Ollama server. The hard
+limits were 400,000 tokens and 1,800 s. `tasks/drive.py` runs a task and checks the answer against
+a truth that it computes without a model. The rows are single runs, not a benchmark.
+
+| Task | Answer | Run time | Run tokens | Decisions | Operations | Questions to the sub-agent | Confirmations | Main agent context, first turn to peak |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Data pipeline: filter, join, aggregate, top row | right | 436.0 s | 324,769 | 124 | 12 | 6 | 0 | 7,016 to 17,339 |
+| Stream: heater on, wait for 26 degrees, heater off | right | 181.7 s | 57,301 | 57 | 3 | 0 | 2 | 7,003 to 12,795 |
+| The same stream task, with the action marked human-only | right | 163.4 s | 53,838 | 56 | 6 | 0 | 6, each one by the human | 7,063 to 25,067 |
+| Slow API: a request that takes 150 s | right | 277.7 s | 32,351 | 44 | 2 | 0 | 0 | 7,001 to 9,392 |
+| Slow code: a script that takes 150 s | right | 181.3 s | 12,905 | 5 | 2 | 1 | 0 | 6,986 to 9,443 |
+| Sub-agent: a helper agent answers a question | right | 105.2 s | 9,797 | 3 | 1 | 1 | 0 | 7,016 to 8,568 |
+
+The run time and the run tokens are the spend against the two hard limits. The clock of a run
+stops while a request waits for a confirmation. No run chose `wake_agent`, and no question went
+to the main agent. The evidence of each row is a directory in `docs/evidence`, in the order of the
+table: `pipeline_20261115_223625`, `stream_20261115_230519`, `stream-human_20261115_232558`,
+`api_20261115_232915`, `code_20261115_225936`, `helper_20261115_231211`.
+
+What the rows do not show:
+
+- Three earlier runs did not end this way: `pipeline_20261115_222110` (no answer),
+  `api_20261115_230837` (the main agent left the run) and `stream-human_20261115_231150` (the
+  session ended at the first human request). The fixes are in `docs/FAILURES.md`.
+- The pipeline run used 81% of the token budget. The 6 questions to the sub-agent used 150,359
+  of its 324,769 tokens.
+- In the stream run, 87% of the tokens went to `wait` decisions (F30).
+- In the human-only run, the human got the same "heater on" request five times (F37).
+- `docs/FAILURES.md` has 38 failures. Each one has its evidence and says if it is open.
+
 ## Documents
 
 - `docs/DECISIONS.md`: each design decision and its reason.

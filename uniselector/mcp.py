@@ -8,6 +8,8 @@ run can need from it.
 """
 import argparse
 import json
+import os
+import signal
 
 import anyio
 from datahandles import HandleError
@@ -89,6 +91,15 @@ def main() -> None:
         async with stdio_server() as (read, write):
             await mcp_server.run(read, write, mcp_server.create_initialization_options())
 
+    def leave(number, _frame):
+        # The event loop cannot stop while a thread reads the input, so the handler ends the runs, then lets the signal end the process.
+        harness.close()
+        signal.signal(number, signal.SIG_DFL)
+        os.kill(os.getpid(), number)
+
+    # A client can end its servers with a signal. The runs must then end in the logs too (docs/DECISIONS.md, D25).
+    for number in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(number, leave)
     try:
         anyio.run(run)
     finally:

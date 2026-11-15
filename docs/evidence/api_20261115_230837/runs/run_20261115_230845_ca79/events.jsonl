@@ -1,0 +1,8 @@
+{"t": 1794784128.653, "event": "result", "run": "run_20261115_230845_ca79", "step": 1, "intent": 0, "control": "wait", "note": "waited 2.0 s"}
+{"t": 1794784131.689, "event": "result", "run": "run_20261115_230845_ca79", "step": 2, "intent": 0, "control": "wait", "note": "waited 2.0 s"}
+{"t": 1794784134.56, "event": "result", "run": "run_20261115_230845_ca79", "step": 3, "intent": 0, "control": "wait", "note": "waited 2.0 s"}
+{"t": 1794784137.473, "event": "result", "run": "run_20261115_230845_ca79", "step": 4, "intent": 0, "control": "wait", "note": "waited 2.0 s"}
+{"t": 1794784140.394, "event": "result", "run": "run_20261115_230845_ca79", "step": 5, "intent": 0, "control": "wait", "note": "waited 2.0 s"}
+{"t": 1794784143.283, "event": "result", "run": "run_20261115_230845_ca79", "step": 6, "intent": 0, "control": "wait", "note": "waited 2.0 s"}
+{"t": 1794784148.095, "event": "result", "run": "run_20261115_230845_ca79", "step": 7, "intent": 0, "capability": "api.get", "target": "h1", "input": {"path": "/reports/quarterly"}, "handle": "h2 (a job: it runs now. Use wait, then job.status and job.result)", "ms": 2079}
+{"t": 1794784297.177, "event": "result", "run": "run_20261115_230845_ca79", "step": 8, "intent": 0, "capability": "job.result", "target": "h2", "input": {}, "output": "{\"status\": 200, \"content_type\": \"application/json\", \"bytes\": 260, \"json\": {\"quarter\": \"2026-Q3\", \"currency\": \"USD\", \"regions\": [{\"name\": \"north\", \"revenue\": 48210, \"orders\": 311}, {\"name\": \"west\", \"revenue\": 91377, \"orders\": 640}, {\"name\": \"south\", \"revenue\": 27654, \"orders\": 198}, {\"name\": \"east\", \"revenue\": 60102, \"orders\": 402}]}}", "ms": 7}

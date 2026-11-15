@@ -1,0 +1,54 @@
+{
+ "task": "api",
+ "what": "A slow API: one response takes minutes.",
+ "at": "20261115_232915",
+ "commit": "32ace2a+",
+ "prompt": "A reports service is registered in DataHandles as `reports`. It is slow: one request can take minutes. Get the report at the path /reports/quarterly. Give the region with the highest revenue, and that revenue.",
+ "truth": [
+  "west",
+  91377
+ ],
+ "decision_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 284.7,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7001,
+ "context_peak": 9392,
+ "context_added": 2391,
+ "tool_calls": {
+  "handle_find": 1,
+  "plan_submit": 1,
+  "plan_status": 2
+ },
+ "turns": 5,
+ "agent_seconds": 282.8,
+ "answer": "West has the highest revenue: 91,377 USD (2026-Q3).",
+ "agent_error": false,
+ "right": true,
+ "facts": {},
+ "runs": [
+  {
+   "t": 1794785638.269,
+   "event": "end",
+   "run": "run_20261115_232920_d132",
+   "outcome": "done",
+   "why": "each intent is met",
+   "intents_done": 2,
+   "intents": 2,
+   "tokens": 32351,
+   "seconds": 277.7,
+   "decisions": 44,
+   "operations": 2,
+   "waits": 38,
+   "probes": 0,
+   "questions": 0,
+   "planner_questions": 0,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

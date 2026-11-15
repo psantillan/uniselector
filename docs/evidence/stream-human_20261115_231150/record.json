@@ -1,0 +1,32 @@
+{
+ "task": "stream-human",
+ "what": "A stream with a condition to watch for. The heater is an action: each switch needs a confirmation.",
+ "at": "20261115_231150",
+ "commit": "32ace2a+",
+ "prompt": "A room is registered in DataHandles as `room`. Heat it: switch the heater on, wait until the temperature is 26 or more, then switch the heater off. Give the temperature of the last reading that you saw.",
+ "truth": "the heater goes on, then off after a reading of 26 or more",
+ "decision_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 20.3,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7007,
+ "context_peak": 9941,
+ "context_added": 2934,
+ "tool_calls": {
+  "handle_find": 1,
+  "plan_submit": 1,
+  "plan_status": 2,
+  "plan_confirm": 1
+ },
+ "turns": 6,
+ "agent_seconds": 15.6,
+ "answer": "The run is waiting for you. The heater is still off, and the last reading I saw was 17.903.\n\nThe switch-on step needs your approval, and only you can give it. Run this command to approve:\n\n`uniselector-confirm /tmp/scratch/worlds/stream-human_20261115_231150/runs/run_20261115_231159_8c49 req_1 approve --url http://127.0.0.1:43683`\n\nTo refuse, use `deny` in place of `approve`. Tell me when you have done it. I will then follow the run to the end and give you the last temperature.",
+ "agent_error": false,
+ "right": false,
+ "facts": {},
+ "runs": [],
+ "human_stand_in": []
+}

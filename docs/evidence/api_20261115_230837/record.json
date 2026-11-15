@@ -1,0 +1,34 @@
+{
+ "task": "api",
+ "what": "A slow API: one response takes minutes.",
+ "at": "20261115_230837",
+ "commit": "32ace2a+",
+ "prompt": "A reports service is registered in DataHandles as `reports`. It is slow: one request can take minutes. Get the report at the path /reports/quarterly. Give the region with the highest revenue, and that revenue.",
+ "truth": [
+  "west",
+  91377
+ ],
+ "decision_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 192.4,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7001,
+ "context_peak": 9535,
+ "context_added": 2534,
+ "tool_calls": {
+  "handle_find": 1,
+  "plan_submit": 1,
+  "plan_status": 2
+ },
+ "turns": 5,
+ "agent_seconds": 187.6,
+ "answer": "The west region has the highest revenue: 91,377 USD (2026-Q3).",
+ "agent_error": false,
+ "right": true,
+ "facts": {},
+ "runs": [],
+ "human_stand_in": []
+}

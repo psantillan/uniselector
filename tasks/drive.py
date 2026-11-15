@@ -27,6 +27,9 @@ HERE = Path(__file__).resolve().parent
 HOW = ("Do this work through Uniselector. Find the handle ids with handle_find. Then hand off a plan with plan_submit and follow the run "
        "with plan_status. Do not invoke operations on the handles yourself: you can only read a result that you need for the answer. "
        "Reply with the answer only.")
+# The session of a task has one turn. The human decides at a terminal, and the main agent must stay in its turn while it waits.
+ALONE = ("I cannot reply to you in this session. When a request is with me, I see the notice and I decide at my terminal. "
+         "Follow the run with plan_status and wait_seconds until I decide.")
 # ASSUMED: the hard limits of the task runs. The user decides the hard limits; these are the values of uniselector.example.toml.
 BUDGET_TOKENS, WALL_SECONDS = 400_000, 1800
 # ASSUMED: 40 minutes. The longest time that the driver gives the main agent for one task.
@@ -183,13 +186,13 @@ def main() -> None:
         task = TASKS[a.task](world, a)
         if a.task == "stream-human":
             threading.Thread(target=stand_in_for_the_human, args=(world, stop, confirmed), daemon=True).start()
-        command = ["claude", "-p", f"{task['prompt']}\n\n{HOW}", "--model", a.agent_model, "--tools", "", "--mcp-config", str(world.dir / "mcp.json"),
+        command = ["claude", "-p", f"{task['prompt']}\n\n{HOW}" + (f" {ALONE}" if a.task == "stream-human" else ""), "--model", a.agent_model, "--tools", "", "--mcp-config", str(world.dir / "mcp.json"),
                    "--strict-mcp-config", "--settings", str(world.dir / "settings.json"), "--allowedTools", "mcp__datahandles__*,mcp__uniselector__*",
                    "--output-format", "stream-json", "--verbose", "--include-hook-events", "--no-session-persistence"]
         t0 = time.time()
         with open(world.dir / "agent-stream.jsonl", "w") as out:
             try:
-                subprocess.run(command, cwd=world.dir / "agent", stdout=out, stderr=subprocess.STDOUT, timeout=AGENT_SECONDS)
+                subprocess.run(command, cwd=world.dir / "agent", stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, timeout=AGENT_SECONDS)
             except subprocess.TimeoutExpired:
                 pass
         record = {"task": a.task, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],

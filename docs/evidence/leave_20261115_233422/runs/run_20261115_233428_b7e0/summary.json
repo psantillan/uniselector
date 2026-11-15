@@ -1,0 +1,52 @@
+{
+ "run": "run_20261115_233428_b7e0",
+ "state": "left",
+ "why": "the MCP server of the main agent ended before the run did",
+ "plan": {
+  "intents": [
+   {
+    "n": 1,
+    "intent": "Run the script and get its output.",
+    "state": "current"
+   }
+  ]
+ },
+ "pending": null,
+ "handles": [
+  {
+   "alias": "h1",
+   "id": "hdl_01M7GRZNGE69JDN4KR4YKVFNTK",
+   "type": "script",
+   "origin": "start",
+   "name": "job",
+   "description": "A Python script. A slow computation: a chain of SHA-256 hashes with a pause after each round. It prints the checksum at the end.",
+   "schema": {
+    "file": "slow_job.py",
+    "lines": 18
+   }
+  }
+ ],
+ "results": [],
+ "limits": {
+  "elapsed_s": 3.5,
+  "wall_seconds": 1800,
+  "tokens": 968,
+  "budget_tokens": 400000,
+  "intents_done": 0,
+  "intents": 1,
+  "spent_share": 0.002
+ },
+ "counts": {
+  "decisions": 2,
+  "operations": 1,
+  "waits": 0,
+  "probes": 0,
+  "questions": 0,
+  "planner_questions": 0,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "lineage": "/tmp/scratch/worlds/leave_20261115_233422/runs/run_20261115_233428_b7e0/lineage.json",
+ "logs": "/tmp/scratch/worlds/leave_20261115_233422/runs/run_20261115_233428_b7e0",
+ "next": "The process of the run ended before the run did. Make a new plan from the handles and the results here, and call plan_submit."
+}

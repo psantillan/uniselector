@@ -1,0 +1,11 @@
+{
+ "handles": [
+  "hdl_01M7GQAFQGC3B832TZWSQRT1PP"
+ ],
+ "intents": [
+  "Switch the heater on.",
+  "Wait until a temperature reading is 26 or more.",
+  "Switch the heater off.",
+  "Report the temperature of the last reading seen."
+ ]
+}

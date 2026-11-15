@@ -1,0 +1,24 @@
+$ uniselector-confirm /tmp/scratch/worlds/stream-human_20261115_232558/runs/run_20261115_232603_f317 req_1 approve --url http://127.0.0.1:49495
+room.heater on room with input {"on": true}
+approve: recorded
+
+$ uniselector-confirm /tmp/scratch/worlds/stream-human_20261115_232558/runs/run_20261115_232603_f317 req_2 approve --url http://127.0.0.1:49495
+room.heater on room with input {"on": true}
+approve: recorded
+
+$ uniselector-confirm /tmp/scratch/worlds/stream-human_20261115_232558/runs/run_20261115_232603_f317 req_3 approve --url http://127.0.0.1:49495
+room.heater on room with input {"on": true}
+approve: recorded
+
+$ uniselector-confirm /tmp/scratch/worlds/stream-human_20261115_232558/runs/run_20261115_232603_f317 req_4 approve --url http://127.0.0.1:49495
+room.heater on room with input {"on": true}
+approve: recorded
+
+$ uniselector-confirm /tmp/scratch/worlds/stream-human_20261115_232558/runs/run_20261115_232603_f317 req_5 approve --url http://127.0.0.1:49495
+room.heater on room with input {"on": true}
+approve: recorded
+
+$ uniselector-confirm /tmp/scratch/worlds/stream-human_20261115_232558/runs/run_20261115_232603_f317 req_6 approve --url http://127.0.0.1:49495
+room.heater on room with input {"on": false}
+approve: recorded
+

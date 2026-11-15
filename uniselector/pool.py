@@ -73,8 +73,9 @@ def can_probe(capability: dict, hidden: list) -> bool:
 
 
 class Pool:
-    def __init__(self, probe, hidden: list):
+    def __init__(self, probe, observe, hidden: list):
         self.probe = probe          # probe(entry, capability name) -> the output value, or None
+        self.observe = observe      # observe(entry) -> the observation of the handle now
         self.hidden = hidden
         self._observed = {}         # (handle id, version) -> [(value, path, label)]
         self._outputs = {}          # (handle id, version) -> {capability name: the output of its probe}
@@ -82,7 +83,7 @@ class Pool:
 
     def _probed(self, entry) -> tuple:
         """Probe a handle at its version now, one time for each version. Return the key of the version."""
-        key = (entry.id, entry.handle.observe().get("version"))
+        key = (entry.id, self.observe(entry).get("version"))
         if key not in self._observed:
             found = [(v, p, f"{entry.alias} descriptor") for v, p in leaves(entry.handle.info["descriptor"].get("schema"))]
             outputs = {}
@@ -104,7 +105,7 @@ class Pool:
         return {name: output for name, output in self._outputs[self._probed(entry)].items() if output is not None}
 
     def answer_key(self, entry, capability: str, field: str) -> tuple:
-        return (entry.id, entry.handle.observe().get("version"), capability, re.sub(r"\[\d+\]", "[]", field))
+        return (entry.id, self.observe(entry).get("version"), capability, re.sub(r"\[\d+\]", "[]", field))
 
     def candidates(self, schema: dict, name: str, field: str, capability: str, siblings: dict, peers: list, target, others: list, state) -> tuple:
         """Return ([(value, label)], strong): at most MAX_CANDIDATES values that `schema` allows, best first.

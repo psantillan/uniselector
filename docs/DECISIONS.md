@@ -343,6 +343,11 @@ A run is a thread in the process of the MCP server. That process ends when the m
 its session. Each run that works at that time ends with the state `left`, and its logs and its
 summary say so. `plan_status` of a later process reads that summary from the run directory.
 
+A client can end the server in two ways: it closes the input of the server, or it sends a signal.
+The server ends its runs in each case (SIGTERM and SIGHUP). The end line is the last line of a
+run's log: the thread of a run can still work for a moment, and the log takes no line after the
+end (`docs/FAILURES.md`, F32).
+
 The agent surface has four tools, and none stops a run. A main agent that wants to stop a run can
 only leave. A fifth tool is a change of the surface in the brief, so it is not added
 (`docs/FAILURES.md`, F17).
@@ -365,3 +370,11 @@ the token. A digit inside such a token is not a number of the sentence.
 
 Reason: the brief names "literals in the plan's intents and notes" as a source. A main agent
 writes a path as it is. A plain word stays a weak candidate ("a word of the current intent").
+
+## D28. The wall time bounds each look at a handle
+
+A look at a handle (`observe`) can wait as long as a job on the same resource runs
+(`docs/GAPS.md`, G11). The wall time is a hard limit, so the run makes each look in a second
+thread and stops at the limit, the same way as for an approved action (G5). The run does not skip
+the look at a busy resource: the protocol does not say which handles share a lock, so the run
+cannot know which looks will wait.

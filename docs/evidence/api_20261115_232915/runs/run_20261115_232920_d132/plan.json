@@ -1,0 +1,9 @@
+{
+ "handles": [
+  "hdl_01M7GRP9Q9BR6890MP1ZRY1GBT"
+ ],
+ "intents": [
+  "Get the report at the path /reports/quarterly. The service is slow, so wait for the result.",
+  "Find the region with the highest revenue in the report. Return the region name and its revenue."
+ ]
+}

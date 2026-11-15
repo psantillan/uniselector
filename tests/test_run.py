@@ -1,5 +1,8 @@
 """The loop, with a decider that follows a script and a real DataHandles runtime."""
 import json
+import signal
+import socket
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -67,6 +70,17 @@ def test_the_wall_time_stops_a_run_that_waits(cfg, events):
     assert summary["state"] == "limit" and "wall time" in summary["why"]
 
 
+def test_the_wall_time_stops_a_run_whose_look_at_a_handle_waits_for_a_job(cfg, tmp_path):
+    script = tmp_path / "slow.py"
+    script.write_text("import time\ntime.sleep(4)\n")
+    cfg.wall_seconds = 0.5
+    h = harness(cfg, ["h1 script.run", "leave it out", *["wait:"] * 50])
+    handle = h.clients["planner"].register("slow", adapter="script", source={"path": str(script)})
+    t0 = time.time()
+    summary = finish(h, h.submit({"intents": ["run the script"], "handles": [handle.id]})["run"])
+    assert summary["state"] == "limit" and time.time() - t0 < 2   # the job takes 4 s
+
+
 def room(h):
     return h.clients["planner"].register("room", adapter="room", source={"interval_ms": 20})
 
@@ -112,6 +126,8 @@ def test_a_human_only_action_needs_the_human(cfg, monkeypatch, capsys):
     assert out["state"] == "waiting_human" and "human" in out["note"]
     summary = h.status(run)
     assert summary["state"] == "waiting_human" and summary["pending"]["command"] == f"uniselector-confirm {summary['logs']} req_1 approve"
+    last = lines(summary, "events")[-1]   # the log shows where the request is
+    assert last["event"] == "waiting_human" and last["pending"]["command"] == summary["pending"]["command"]
     time.sleep(0.7)
     assert target.observe()["heater"] is False
     monkeypatch.setattr(sys, "argv", ["uniselector-confirm", summary["logs"], request["id"], "approve"])
@@ -199,3 +215,43 @@ def test_a_run_ends_when_its_process_ends(cfg, events):
     summary = h.status(run)
     assert summary["state"] == "left" and (Path(summary["logs"]) / "summary.json").exists()
     assert lines(summary, "events")[-1]["outcome"] == "left"
+
+
+@pytest.mark.parametrize("how", ["the client closes the input", "the client sends SIGTERM"])
+def test_a_run_ends_in_the_logs_when_the_client_ends_the_server(tmp_path, events, how):
+    """The real server process, with a run that works: the model server of the test takes the request and gives no reply."""
+    model = socket.socket()
+    model.bind(("127.0.0.1", 0))
+    model.listen()
+    state, runs = tmp_path / "state", tmp_path / "runs"
+    # Another process registers the table: the DuckDB adapter holds a lock on the state while its process lives.
+    register = "import sys; from datahandles.sdk import connect; print(connect(sys.argv[1], 'planner').register('events', adapter='duckdb', source={'path': sys.argv[2]}).id)"
+    handle = subprocess.run([sys.executable, "-c", register, str(state), str(events)], capture_output=True, text=True, check=True).stdout.strip()
+    (tmp_path / "uniselector.toml").write_text(
+        f'[limits]\nbudget_tokens = 1000\nwall_seconds = 60\n[runtime]\ntarget = "{state}"\nruns_dir = "{runs}"\n'
+        f'[model]\nmodel_url = "http://127.0.0.1:{model.getsockname()[1]}"\nmodel = "none"\n')
+    server = subprocess.Popen([sys.executable, "-m", "uniselector.mcp", "--config", str(tmp_path / "uniselector.toml")],
+                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+    try:
+        def send(message):
+            server.stdin.write(json.dumps({"jsonrpc": "2.0", **message}) + "\n")
+            server.stdin.flush()
+
+        send({"id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "test", "version": "0"}}})
+        server.stdout.readline()
+        send({"method": "notifications/initialized"})
+        send({"id": 2, "method": "tools/call", "params": {"name": "plan_submit", "arguments": {"plan": {"intents": PLAN, "handles": [handle]}}}})
+        run = json.loads(json.loads(server.stdout.readline())["result"]["content"][0]["text"])["run"]
+        request, _ = model.accept()   # the run works: its first decision is at the model server now, and it gets no reply
+        if how == "the client closes the input":
+            server.stdin.close()
+        else:
+            server.send_signal(signal.SIGTERM)
+        server.wait(20)
+    finally:
+        server.kill()
+        request.close()
+        model.close()
+    last = json.loads((runs / run / "events.jsonl").read_text().splitlines()[-1])
+    assert last["event"] == "end" and last["outcome"] == "left"
+    assert json.loads((runs / run / "summary.json").read_text())["state"] == "left"

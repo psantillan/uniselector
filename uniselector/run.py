@@ -59,7 +59,7 @@ class Run:
         budget, wall = limits(cfg, plan)
         self.log = RunLog(Path(cfg.runs_dir) / run_id)
         self.state = State(plan, budget, wall, cfg.results_kept, cfg.handles_kept, cfg.value_chars)
-        self.pool = Pool(self._probe, cfg.hidden_capabilities)
+        self.pool = Pool(self._probe, self._observe, cfg.hidden_capabilities)
         self.walk = Walk(self.state, decide, self.pool, cfg, self._ask, self._decision, self._check)
         self.status, self.why, self.pending, self.lineage = "running", "", None, None
         self.counts = {"decisions": 0, "operations": 0, "waits": 0, "probes": 0, "questions": 0, "planner_questions": 0,
@@ -148,12 +148,16 @@ class Run:
             raise box["error"]
         return box["value"]
 
+    def _observe(self, entry: Entry) -> dict:
+        """Observe a handle. The call waits while a job runs on the resource (GAPS.md, G11), so the wall time bounds it."""
+        return self._bounded(entry.handle.observe)
+
     def _look(self) -> None:
         """Observe the current handles. A new version is a change. No new version makes the stall signal grow."""
         changed = False
         for entry in self.state.shown():
             try:
-                seen = entry.handle.observe()
+                seen = self._observe(entry)
                 version = seen.get("version")
                 continuous = entry.handle.info["consistency"] == "continuous"   # a resource that changes: a stream
                 if continuous:   # a look at a stream shows its newest values (docs/DECISIONS.md, D20)
@@ -333,6 +337,7 @@ class Run:
                 # With a runtime behind a URL, the human approves in DataHandles with a token of their own.
                 url = f" --url {self.cfg.target}" if self.cfg.target.startswith(("http://", "https://")) else ""
                 self.pending["command"] = f"uniselector-confirm {self.log.dir} {request} approve{url}"
+                self.log.write("events", {"event": "waiting_human", "run": self.id, "pending": self.pending})
             return "waiting_human"
 
     # ---- the logs and the summary -------------------------------------------------------------
@@ -367,6 +372,7 @@ class Run:
         self.log.write("decisions", outcome)
         self.log.write("events", {"event": "end", **outcome})
         self.log.save("summary.json", self.summary())
+        self.log.close()
 
     def summary(self) -> dict:
         """A bounded summary. It is enough for an agent that starts from a fresh context."""

@@ -1,0 +1,1 @@
+{"t": 1794785672.521, "event": "end", "run": "run_20261115_233428_b7e0", "outcome": "left", "why": "the MCP server of the main agent ended before the run did", "intents_done": 0, "intents": 1, "tokens": 968, "seconds": 3.5, "decisions": 2, "operations": 1, "waits": 0, "probes": 0, "questions": 0, "planner_questions": 0, "confirmations": 0, "human_requests": 0}
