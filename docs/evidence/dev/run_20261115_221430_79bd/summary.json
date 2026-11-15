@@ -1,0 +1,99 @@
+{
+ "run": "run_20261115_221430_79bd",
+ "state": "failed",
+ "why": "RuntimeError: the model server answered 500: {\"error\":\"llama-server returned invalid tool call arguments for \\\"answer\\\": unexpected end of JSON input\"}",
+ "plan": {
+  "intents": [
+   {
+    "n": 1,
+    "intent": "switch the heater on",
+    "state": "done"
+   },
+   {
+    "n": 2,
+    "intent": "wait until the temperature is 18.5 or more",
+    "state": "current"
+   },
+   {
+    "n": 3,
+    "intent": "switch the heater off",
+    "state": "later"
+   }
+  ]
+ },
+ "pending": null,
+ "handles": [
+  {
+   "alias": "h1",
+   "id": "hdl_01M7GMDDGY9GVA517KSHM301H5",
+   "type": "room",
+   "origin": "start",
+   "name": "room",
+   "description": "A simulated room with a temperature sensor and a heater.",
+   "schema": {
+    "interval_ms": 200,
+    "reading": [
+     "seq",
+     "t_ms",
+     "temperature",
+     "heater"
+    ]
+   },
+   "status": "{\"version\": \"80\", \"heater\": true, \"room.latest\": {\"seq\": 80, \"t_ms\": 16000, \"heater\": true, \"temperature\": 26.852}}"
+  }
+ ],
+ "results": [
+  {
+   "step": 2,
+   "intent": 0,
+   "control": "step_done",
+   "note": "the intent is met"
+  },
+  {
+   "step": 3,
+   "intent": 1,
+   "control": "wait",
+   "note": "waited 2.0 s"
+  },
+  {
+   "step": 4,
+   "intent": 1,
+   "control": "wait",
+   "note": "waited 2.0 s"
+  },
+  {
+   "step": 5,
+   "intent": 1,
+   "control": "wait",
+   "note": "waited 2.0 s"
+  },
+  {
+   "step": 6,
+   "intent": 1,
+   "control": "wait",
+   "note": "waited 2.0 s"
+  }
+ ],
+ "limits": {
+  "elapsed_s": 131.2,
+  "wall_seconds": 900,
+  "tokens": 5390,
+  "budget_tokens": 400000,
+  "intents_done": 1,
+  "intents": 3,
+  "spent_share": 0.013
+ },
+ "counts": {
+  "decisions": 8,
+  "operations": 1,
+  "waits": 4,
+  "probes": 8,
+  "questions": 1,
+  "planner_questions": 0,
+  "confirmations": 1,
+  "human_requests": 0
+ },
+ "lineage": "/tmp/scratch/worlds/tmp7py7j9p_/w/runs/run_20261115_221430_79bd/lineage.json",
+ "logs": "/tmp/scratch/worlds/tmp7py7j9p_/w/runs/run_20261115_221430_79bd",
+ "next": "The harness failed. The reason is in `why`."
+}

@@ -19,6 +19,7 @@ SYSTEM = (
     "intent with operations on handles. A handle is a reference to a resource. The data stays at the resource: an "
     "operation gives a new handle or a small value. You get the state of the run, one decision, and the options. "
     "Choose the option that carries out the current intent. Do not repeat an operation that has a result already. An error in the results means that the input was wrong: do not choose the same input again. "
+    "A wait result shows each job and stream after the wait: compare its values with the intent. "
     "When the results show that the current intent is met, choose step_done. Reply with the letter of one option and nothing else.")
 
 
@@ -75,7 +76,13 @@ def render(state: dict, options: list) -> str:
     if plan.get("notes"):
         lines.append(f"Notes: {plan['notes']}")
     lines += ["", "HANDLES", *map(_handle_line, state["handles"])]
-    lines += ["", "RESULTS (oldest first)", *(map(_result_line, state["results"]) if state["results"] else ["- none yet"])]
+    # The results of the current intent are apart: they are the evidence for `step_done`.
+    earlier = [r for r in state["results"] if r["intent"] != at]
+    current = [r for r in state["results"] if r["intent"] == at]
+    if earlier:
+        lines += ["", "RESULTS OF EARLIER INTENTS (oldest first)", *map(_result_line, earlier)]
+    lines += ["", f"RESULTS OF THE CURRENT INTENT ({at + 1}. {plan['intents'][at]})",
+              *(map(_result_line, current) if current else ["- none yet: no operation ran for this intent"])]
     lim, stall = state["limits"], state["stall"]
     lines += ["", "LIMITS", f"time: {lim['elapsed_s']} s of {lim['wall_seconds']} s. tokens: {lim['tokens']} of {lim['budget_tokens']}. "
               f"intents done: {lim['intents_done']} of {lim['intents']}. share of the budget spent: {lim['spent_share']}."]

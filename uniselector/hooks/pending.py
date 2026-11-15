@@ -29,8 +29,7 @@ def message(summary: dict) -> str:
     pending = summary["pending"]
     target = pending["target"]
     return (f"Uniselector: an action needs YOUR decision. {pending['capability']} on {target.get('name', target['id'])} "
-            f"with input {json.dumps(pending['input'])}. To decide, run: "
-            f"uniselector-confirm {summary['logs']} {pending['id']} approve   (or deny)")
+            f"with input {json.dumps(pending['input'])}. To decide, run: {pending['command']}   (or the same with deny)")
 
 
 def main() -> None:

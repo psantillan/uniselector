@@ -251,3 +251,13 @@ The lineage of a run is the union of `Handle.graph()` of each handle that the ru
 job handles. It is a DataHandles graph: `Client.submit` runs it again. An approved action is in
 the operation log of DataHandles and in `events.jsonl`, and it is not in the lineage graph: a
 replay must not repeat an action.
+
+## D19. `plan_status` can wait
+
+`plan_status(run, wait_seconds)` returns when the run is not `running` any more, or when the time
+is over. The default is 0: the call returns at once.
+
+Reason: attenuation. The main agent must see nothing until the run needs it. Without the wait, the
+main agent polls, and each poll puts one more summary in its context. The server sets no maximum:
+the limit is the tool-call timeout of the client, and a timeout loses nothing because the run
+continues.

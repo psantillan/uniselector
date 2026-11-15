@@ -1,0 +1,10 @@
+{
+ "intents": [
+  "switch the heater on",
+  "wait until the temperature is 18.5 or more",
+  "switch the heater off"
+ ],
+ "handles": [
+  "hdl_01M7GM75E4B6JFYQ9JP4A48KWV"
+ ]
+}

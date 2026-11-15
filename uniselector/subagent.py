@@ -8,6 +8,7 @@ capabilities that do not write. A headless coding agent with the DataHandles MCP
 it: it must be a callable with the same arguments and the same result.
 """
 import json
+import urllib.error
 import urllib.request
 
 from datahandles.protocols.tools import FIND_TOOL, TOOLS, dispatch
@@ -67,8 +68,11 @@ class ModelAsker:
                 "options": {"temperature": 0, "seed": 0, "num_ctx": self.num_ctx}}
         request = urllib.request.Request(self.url + "/api/chat", json.dumps(body).encode(),
                                          {"Content-Type": "application/json", "User-Agent": "uniselector"})
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            return json.load(response)
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as e:   # the body says what the model server refused
+            raise RuntimeError(f"the model server answered {e.code}: {e.read(2000).decode(errors='replace')}") from e
 
     def __call__(self, question: dict, max_tokens: int, seconds: float) -> dict:
         """Return {"value", "reason"} or {"needs_planner": reason}, each with "calls" and "tokens"."""
@@ -79,7 +83,10 @@ class ModelAsker:
             return {**result, "calls": calls, "tokens": tokens}
 
         while tokens < max_tokens:
-            reply = self.chat(messages, seconds)
+            try:
+                reply = self.chat(messages, seconds)
+            except (RuntimeError, OSError) as e:   # what the sub-agent cannot settle goes to the main agent
+                return out(needs_planner=f"the sub-agent failed: {e}", failed=True)
             tokens += reply.get("prompt_eval_count", 0) + reply.get("eval_count", 0)
             message = reply["message"]
             messages.append(message)

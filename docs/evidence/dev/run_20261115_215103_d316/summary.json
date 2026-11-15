@@ -1,0 +1,137 @@
+{
+ "run": "run_20261115_215103_d316",
+ "state": "done",
+ "why": "each intent is met",
+ "plan": {
+  "intents": [
+   {
+    "n": 1,
+    "intent": "keep only the purchase events",
+    "state": "done"
+   },
+   {
+    "n": 2,
+    "intent": "count the rows",
+    "state": "done"
+   }
+  ]
+ },
+ "pending": null,
+ "handles": [
+  {
+   "alias": "h1",
+   "id": "hdl_01M7GK2FPVQPESJ2M1WW4ZP8JR",
+   "type": "dataset",
+   "origin": "start",
+   "name": "events",
+   "description": "A table of rows and columns.",
+   "schema": {
+    "columns": [
+     {
+      "name": "id",
+      "type": "BIGINT"
+     },
+     {
+      "name": "customer_id",
+      "type": "BIGINT"
+     },
+     {
+      "name": "event_type",
+      "type": "VARCHAR"
+     },
+     {
+      "name": "amount",
+      "type": "DOUBLE"
+     }
+    ]
+   }
+  },
+  {
+   "alias": "h2",
+   "id": "hdl_01M7GK2P7C3T5FV99NVC0TDXPE",
+   "type": "dataset",
+   "origin": "from h1 by dataset.filter {\"where\": [{\"column\": \"event_type\", \"op\": \"eq\", \"value\": \"purchase\"}]}",
+   "description": "A table of rows and columns.",
+   "schema": {
+    "columns": [
+     {
+      "name": "id",
+      "type": "BIGINT"
+     },
+     {
+      "name": "customer_id",
+      "type": "BIGINT"
+     },
+     {
+      "name": "event_type",
+      "type": "VARCHAR"
+     },
+     {
+      "name": "amount",
+      "type": "DOUBLE"
+     }
+    ]
+   }
+  }
+ ],
+ "results": [
+  {
+   "step": 1,
+   "intent": 0,
+   "capability": "dataset.filter",
+   "target": "h1",
+   "input": {
+    "where": [
+     {
+      "column": "event_type",
+      "op": "eq",
+      "value": "purchase"
+     }
+    ]
+   },
+   "handle": "h2"
+  },
+  {
+   "step": 2,
+   "intent": 0,
+   "capability": "dataset.count",
+   "target": "h2",
+   "input": {},
+   "output": "{\"rows\": 73}"
+  },
+  {
+   "step": 3,
+   "intent": 0,
+   "control": "step_done",
+   "note": "the intent is met"
+  },
+  {
+   "step": 4,
+   "intent": 1,
+   "control": "step_done",
+   "note": "the intent is met"
+  }
+ ],
+ "limits": {
+  "elapsed_s": 10.9,
+  "wall_seconds": 600,
+  "tokens": 5771,
+  "budget_tokens": 400000,
+  "intents_done": 2,
+  "intents": 2,
+  "spent_share": 0.014
+ },
+ "counts": {
+  "decisions": 10,
+  "operations": 2,
+  "waits": 0,
+  "probes": 3,
+  "questions": 0,
+  "planner_questions": 0,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "lineage": "/tmp/tmpwhdkknwk/runs/run_20261115_215103_d316/lineage.json",
+ "logs": "/tmp/tmpwhdkknwk/runs/run_20261115_215103_d316",
+ "next": "Each intent is met. Read the handles with the DataHandles tools."
+}

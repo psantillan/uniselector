@@ -72,18 +72,31 @@ class Pool:
         self.probe = probe          # probe(entry, capability name) -> the output value, or None
         self.hidden = hidden
         self._observed = {}         # (handle id, version) -> [(value, path, label)]
+        self._outputs = {}          # (handle id, version) -> {capability name: the output of its probe}
         self.answers = {}           # (handle id, version, capability, field path) -> value
 
-    def observed(self, entry) -> list:
+    def _probed(self, entry) -> tuple:
+        """Probe a handle at its version now, one time for each version. Return the key of the version."""
         key = (entry.id, entry.handle.observe().get("version"))
         if key not in self._observed:
             found = [(v, p, f"{entry.alias} descriptor") for v, p in leaves(entry.handle.info["descriptor"].get("schema"))]
+            outputs = {}
             for capability in entry.capabilities:
                 if can_probe(capability, self.hidden):
-                    output = self.probe(entry, capability["name"])
-                    found += [(v, p, f"{entry.alias} {capability['name']}") for v, p in leaves(output)]
-            self._observed[key] = found
-        return self._observed[key]
+                    outputs[capability["name"]] = self.probe(entry, capability["name"])
+                    found += [(v, p, f"{entry.alias} {capability['name']}") for v, p in leaves(outputs[capability["name"]])]
+            for cache, value in ((self._observed, found), (self._outputs, outputs)):
+                for old in [k for k in cache if k[0] == entry.id]:   # an earlier version of a stream is of no use
+                    del cache[old]
+                cache[key] = value
+        return key
+
+    def observed(self, entry) -> list:
+        return self._observed[self._probed(entry)]
+
+    def newest(self, entry) -> dict:
+        """The outputs of the probes of a handle at its version now: what a look at the handle shows."""
+        return {name: output for name, output in self._outputs[self._probed(entry)].items() if output is not None}
 
     def answer_key(self, entry, capability: str, field: str) -> tuple:
         return (entry.id, entry.handle.observe().get("version"), capability, re.sub(r"\[\d+\]", "[]", field))

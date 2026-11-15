@@ -1,0 +1,45 @@
+{
+ "id": "gr_run_20261115_215103_d316",
+ "nodes": [
+  {
+   "id": "hdl_01M7GK2FPVQPESJ2M1WW4ZP8JR",
+   "kind": "resource",
+   "reference": "hdl_01M7GK2FPVQPESJ2M1WW4ZP8JR"
+  },
+  {
+   "id": "op_01M7GK2P61HK0TFWY87Q9NHST4",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "event_type",
+       "op": "eq",
+       "value": "purchase"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7GK2P7C3T5FV99NVC0TDXPE",
+   "kind": "derived",
+   "reference": "hdl_01M7GK2P7C3T5FV99NVC0TDXPE"
+  }
+ ],
+ "edges": [
+  {
+   "from": "hdl_01M7GK2FPVQPESJ2M1WW4ZP8JR",
+   "to": "op_01M7GK2P61HK0TFWY87Q9NHST4"
+  },
+  {
+   "from": "op_01M7GK2P61HK0TFWY87Q9NHST4",
+   "to": "hdl_01M7GK2P7C3T5FV99NVC0TDXPE"
+  }
+ ],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}

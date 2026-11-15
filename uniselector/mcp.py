@@ -21,8 +21,8 @@ from .run import Harness
 
 INSTRUCTIONS = (
     "Uniselector carries out a long task on DataHandles handles while your context stays small. State your intent as a short "
-    "plan: a list of intents (sentences), and the handle ids to start from. Call plan_submit, then plan_status. A decision "
-    "model chooses the operations. plan_status gives a bounded summary. You must act only when a run has a pending question "
+    "plan: a list of intents (sentences), and the handle ids to start from. Call plan_submit, then plan_status with wait_seconds. "
+    "A decision model chooses the operations. plan_status gives a bounded summary. You must act only when a run has a pending question "
     "(plan_answer) or a pending confirmation of an action (plan_confirm), or when it returned the work to you.")
 
 _RUN = {"type": "string", "description": "The run id from plan_submit."}
@@ -30,8 +30,11 @@ TOOLS = [
     {"name": "plan_submit", "description": "Start a run of a plan. Return the run id. The plan is a list of intents, not a list of operations.",
      "parameters": {"type": "object", "required": ["plan"], "properties": {"plan": PLAN_SCHEMA}}},
     {"name": "plan_status", "description": "Return a bounded summary of a run: its state, the plan and the current intent, a pending question or "
-                                           "confirmation, the handles, the last results, and what you can do next.",
-     "parameters": {"type": "object", "required": ["run"], "properties": {"run": _RUN}}},
+                                           "confirmation, the handles, the last results, and what you can do next. With wait_seconds, the call "
+                                           "waits until the run needs you, ends, or the time is over. Use it: each call adds to your context.",
+     "parameters": {"type": "object", "required": ["run"], "properties": {
+         "run": _RUN, "wait_seconds": {"type": "number", "minimum": 0, "default": 0,
+                                       "description": "Wait this long for the run. Stay below the tool-call timeout of your client."}}}},
     {"name": "plan_answer", "description": "Answer a pending question of a run: a value that a sub-agent could not find. The value must match the schema in the question.",
      "parameters": {"type": "object", "required": ["run", "question", "value"], "properties": {
          "run": _RUN, "question": {"type": "string", "description": "The id of the pending question."},
@@ -50,7 +53,7 @@ def dispatch(harness: Harness, name: str, arguments: dict) -> dict:
         if name == "plan_submit":
             return harness.submit(arguments["plan"])
         if name == "plan_status":
-            return harness.status(arguments["run"])
+            return harness.status(arguments["run"], arguments.get("wait_seconds", 0))
         if name == "plan_answer":
             return harness.answer(arguments["run"], arguments["question"], arguments.get("value"))
         if name == "plan_confirm":

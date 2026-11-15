@@ -1,0 +1,103 @@
+{
+ "run": "run_20261115_221818_9f95",
+ "state": "done",
+ "why": "each intent is met",
+ "plan": {
+  "intents": [
+   {
+    "n": 1,
+    "intent": "switch the heater on",
+    "state": "done"
+   },
+   {
+    "n": 2,
+    "intent": "wait until the temperature is 18.5 or more",
+    "state": "done"
+   },
+   {
+    "n": 3,
+    "intent": "switch the heater off",
+    "state": "done"
+   }
+  ]
+ },
+ "pending": null,
+ "handles": [
+  {
+   "alias": "h1",
+   "id": "hdl_01M7GMMCMVAJVTB997HDJF5E3V",
+   "type": "room",
+   "origin": "start",
+   "name": "room",
+   "description": "A simulated room with a temperature sensor and a heater.",
+   "schema": {
+    "interval_ms": 200,
+    "reading": [
+     "seq",
+     "t_ms",
+     "temperature",
+     "heater"
+    ]
+   },
+   "status": "{\"version\": \"58\", \"heater\": false, \"room.latest\": {\"seq\": 58, \"t_ms\": 11600, \"heater\": true, \"temperature\": 25.134}}"
+  }
+ ],
+ "results": [
+  {
+   "step": 3,
+   "intent": 0,
+   "control": "step_done",
+   "note": "the intent is met"
+  },
+  {
+   "step": 4,
+   "intent": 1,
+   "control": "wait",
+   "note": "waited 2.0 s. h1 after the wait: {\"version\": \"41\", \"heater\": true, \"room.latest\": {\"seq\": 41, \"t_ms\": 8200, \"heater\": true, \"temperature\": 23.116}}"
+  },
+  {
+   "step": 5,
+   "intent": 1,
+   "control": "step_done",
+   "note": "the intent is met"
+  },
+  {
+   "step": 6,
+   "intent": 2,
+   "capability": "room.heater",
+   "target": "h1",
+   "input": {
+    "on": false
+   },
+   "output": "{\"heater\": false, \"from_seq\": 59}"
+  },
+  {
+   "step": 7,
+   "intent": 2,
+   "control": "step_done",
+   "note": "the intent is met"
+  }
+ ],
+ "limits": {
+  "elapsed_s": 13.3,
+  "wall_seconds": 900,
+  "tokens": 6944,
+  "budget_tokens": 400000,
+  "intents_done": 3,
+  "intents": 3,
+  "spent_share": 0.017
+ },
+ "counts": {
+  "decisions": 10,
+  "operations": 3,
+  "waits": 1,
+  "probes": 9,
+  "questions": 0,
+  "planner_questions": 0,
+  "confirmations": 3,
+  "human_requests": 0
+ },
+ "lineage": "/tmp/scratch/worlds/tmp7oy7ot52/w/runs/run_20261115_221818_9f95/lineage.json",
+ "logs": "/tmp/scratch/worlds/tmp7oy7ot52/w/runs/run_20261115_221818_9f95",
+ "next": "Each intent is met. Read the handles with the DataHandles tools."
+}

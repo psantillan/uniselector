@@ -1,0 +1,8 @@
+{"t": 1794779465.879, "event": "probe", "run": "run_20261115_215103_d316", "target": "h1", "capability": "dataset.schema", "ok": true, "bytes": 171, "ms": 12}
+{"t": 1794779465.894, "event": "probe", "run": "run_20261115_215103_d316", "target": "h1", "capability": "dataset.count", "ok": true, "bytes": 13, "ms": 15}
+{"t": 1794779465.905, "event": "probe", "run": "run_20261115_215103_d316", "target": "h1", "capability": "dataset.head", "ok": true, "bytes": 347, "ms": 11}
+{"t": 1794779470.226, "event": "result", "run": "run_20261115_215103_d316", "step": 1, "intent": 0, "capability": "dataset.filter", "target": "h1", "input": {"where": [{"column": "event_type", "op": "eq", "value": "purchase"}]}, "handle": "h2", "ms": 103}
+{"t": 1794779472.195, "event": "result", "run": "run_20261115_215103_d316", "step": 2, "intent": 0, "capability": "dataset.count", "target": "h2", "input": {}, "output": "{\"rows\": 73}", "ms": 56}
+{"t": 1794779473.112, "event": "result", "run": "run_20261115_215103_d316", "step": 3, "intent": 0, "control": "step_done", "note": "the intent is met"}
+{"t": 1794779474.354, "event": "result", "run": "run_20261115_215103_d316", "step": 4, "intent": 1, "control": "step_done", "note": "the intent is met"}
+{"t": 1794779474.355, "event": "end", "run": "run_20261115_215103_d316", "outcome": "done", "why": "each intent is met", "intents_done": 2, "intents": 2, "tokens": 5771, "seconds": 10.9, "decisions": 10, "operations": 2, "waits": 0, "probes": 3, "questions": 0, "planner_questions": 0, "confirmations": 0, "human_requests": 0}

@@ -55,14 +55,17 @@ def test_the_text_of_a_decision_has_one_letter_for_each_option(cfg, events):
     source = h.clients["planner"].register("events", adapter="duckdb", source={"path": str(events)})
     run = h.submit({"intents": ["count the rows", "stop"], "handles": [source.id]})["run"]
     finish(h, run)
-    text = render(h.runs[run].state.view("Choose."), ["first", "second"])
+    text = render({**h.runs[run].state.view("Choose."), "intent": 1}, ["first", "second"])   # the state at the second intent
     assert text.index("PLAN") < text.index("HANDLES") < text.index("DECISION") < text.index("A. first") < text.index("B. second")
     assert len(LABELS) == 20 and "h1: dataset events" in text
+    # The results of the current intent are apart from the results of the earlier intents.
+    earlier, current = text.index("RESULTS OF EARLIER INTENTS"), text.index("RESULTS OF THE CURRENT INTENT (2. stop)")
+    assert earlier < text.index("- step 1: step_done") < current < text.index("- step 2: step_done") < text.index("LIMITS")
 
 
 def test_the_hook_shows_a_request_only_when_it_is_with_the_human(monkeypatch, capsys):
     summary = {"state": "waiting_human", "logs": "/runs/run_1",
-               "pending": {"id": "req_1", "capability": "room.heater", "input": {"on": True}, "target": {"id": "hdl_1", "name": "room"}}}
+               "pending": {"id": "req_1", "command": "uniselector-confirm /runs/run_1 req_1 approve", "capability": "room.heater", "input": {"on": True}, "target": {"id": "hdl_1", "name": "room"}}}
     for response in (summary, json.dumps(summary), [{"type": "text", "text": json.dumps(summary)}], {"structuredContent": summary}):
         assert pending.find(response) == summary
     assert pending.find({**summary, "state": "waiting_confirm"}) is None

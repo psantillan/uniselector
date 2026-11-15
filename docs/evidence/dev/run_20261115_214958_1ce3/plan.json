@@ -1,0 +1,9 @@
+{
+ "intents": [
+  "keep only the purchase events",
+  "count the rows"
+ ],
+ "handles": [
+  "hdl_01M7GK0GK9MECY7YFB21ZVBQ85"
+ ]
+}

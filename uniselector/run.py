@@ -34,10 +34,10 @@ from .walk import Walk
 
 ENDED = ("done", "woke", "aborted", "limit", "failed")
 NEXT = {
-    "running": "The run works. Call plan_status again later.",
+    "running": "The run works. Call plan_status with wait_seconds: the call returns when the run needs you or the time is over.",
     "waiting_answer": "A sub-agent could not find a value. Call plan_answer with the run, the id of the question, and a value that its schema allows.",
     "waiting_confirm": "An action needs your decision. Call plan_confirm with the run, the id of the request, and approve, deny, or human.",
-    "waiting_human": "The human must decide. Tell the user to run: uniselector-confirm {dir} {request} approve   (or deny)",
+    "waiting_human": "The human must decide. Tell the user to run the command in `pending.command`, or the same command with deny.",
     "done": "Each intent is met. Read the handles with the DataHandles tools.",
     "woke": "The decision model returned the work to you. Make a new plan from the handles and the results here, and call plan_submit.",
     "aborted": "The decision model stopped the run. Read the results here before you make a new plan.",
@@ -87,9 +87,12 @@ class Run:
             self._end("failed", f"{type(e).__name__}: {e}")
 
     def _intent(self) -> None:
+        looked = False
         while True:
             self._check()
-            self._look()
+            if not looked:
+                self._look()
+            looked = False
             choice = self.walk.root()
             self.state.step += 1
             if choice[0] == "operation":
@@ -111,7 +114,11 @@ class Run:
                 self.counts["waits"] += 1
                 seconds = max(min(self.cfg.wait_seconds, self.state.wall_seconds - self.state.clock.elapsed()), 0)
                 time.sleep(seconds)
-                self._event(self.state.record({"control": "wait", "note": f"waited {round(seconds, 1)} s"}))
+                # The result of a wait is what the look after it shows: the state of each job and stream (D20).
+                self._look()
+                looked = True
+                after = "".join(f". {e.alias} after the wait: {e.status}" for e in self.state.shown() if e.status)
+                self._event(self.state.record({"control": "wait", "note": f"waited {round(seconds, 1)} s{after}"}))
                 continue
             raise _Stop("woke" if control == "wake_agent" else "aborted", self.walk.reason(control))
 
@@ -147,8 +154,10 @@ class Run:
             try:
                 seen = entry.handle.observe()
                 version = seen.get("version")
-                live = "state" in seen or entry.handle.info["consistency"] == "continuous"   # a job, or a resource that changes
-                status = cut(seen, 160) if live else None
+                continuous = entry.handle.info["consistency"] == "continuous"   # a resource that changes: a stream
+                if continuous:   # a look at a stream shows its newest values (docs/DECISIONS.md, D20)
+                    seen = {**seen, **self.pool.newest(entry)}
+                status = cut(seen, self.cfg.value_chars) if continuous or "state" in seen else None   # "state": a job
             except HandleError as e:
                 version, status = f"error {e.code}", f"error {e.code}"
             changed |= entry.version is not None and version != entry.version
@@ -242,7 +251,7 @@ class Run:
         left = self.state.budget_tokens - self.state.tokens
         result = self.asker(question, min(self.cfg.question_tokens, left), max(self.state.wall_seconds - self.state.clock.elapsed(), 1))
         self.state.tokens += result["tokens"]
-        answer = {k: result[k] for k in ("value", "reason", "needs_planner", "capped") if k in result}
+        answer = {k: result[k] for k in ("value", "reason", "needs_planner", "capped", "failed") if k in result}
         if "value" in result and violations(question["schema"], result["value"]):
             answer = {"needs_planner": "the sub-agent gave a value that the schema does not allow"}
         self.log.write("questions", {"run": self.id, "step": self.state.step, "question": question, "answer": answer,
@@ -301,6 +310,7 @@ class Run:
             if bad:
                 raise ValueError(f"the value does not match the schema of the field: {bad[0]}")
             self._reply = {"value": value}
+            self.status, self.pending = "running", None   # a status call right after this one must not show the old question
             self._lock.notify_all()
 
     def confirm(self, request: str, decision: str) -> str:
@@ -311,11 +321,15 @@ class Run:
             with_human = self.status == "waiting_human"
             if decision == "deny" or (decision == "approve" and not with_human and not self.pending["human_only"]):
                 self._reply = {"decision": decision, "by": "main agent"}
+                self.status, self.pending = "running", None
                 self._lock.notify_all()
                 return "running"
             if not with_human:   # `human`, or an approval of a capability that only the human can confirm
                 self.counts["human_requests"] += 1
                 self.status, self.pending["with"] = "waiting_human", "human"
+                # With a runtime behind a URL, the human approves in DataHandles with a token of their own.
+                url = f" --url {self.cfg.target}" if self.cfg.target.startswith(("http://", "https://")) else ""
+                self.pending["command"] = f"uniselector-confirm {self.log.dir} {request} approve{url}"
             return "waiting_human"
 
     # ---- the logs and the summary -------------------------------------------------------------
@@ -362,7 +376,7 @@ class Run:
             "handles": [e.summary(self.cfg.value_chars) for e in self.state.shown()],
             "results": self.state.results[-self.cfg.results_kept:],
             "limits": self.state.limits(), "counts": self.counts, "lineage": self.lineage, "logs": str(self.log.dir),
-            "next": NEXT[status].format(dir=self.log.dir, request=pending["id"] if pending else ""),
+            "next": NEXT[status],
         }
 
 
@@ -397,8 +411,12 @@ class Harness:
         run.thread.start()
         return {"run": run_id, "state": "running", "next": NEXT["running"]}
 
-    def status(self, run: str) -> dict:
+    def status(self, run: str, wait_seconds: float = 0) -> dict:
+        """The summary of a run. With `wait_seconds`, wait first until the run needs the main agent or the time is over."""
         if run in self.runs:
+            end = time.time() + wait_seconds
+            while self.runs[run].status == "running" and time.time() < end:
+                time.sleep(0.1)
             return self.runs[run].summary()
         saved = Path(self.cfg.runs_dir) / run / "summary.json"   # a run of a process that ended
         if not saved.exists():
@@ -414,7 +432,7 @@ class Harness:
             raise ValueError("the decision is approve, deny, or human")
         now = self._run(run).confirm(request, decision)
         out = {"run": run, "request": request, "decision": decision, "state": now,
-               "next": NEXT[now].format(dir=self.runs[run].log.dir, request=request)}
+               "next": NEXT[now]}
         if decision == "approve" and now == "waiting_human":
             out["note"] = "Only the human can approve this request. It is with the human now."
         return out

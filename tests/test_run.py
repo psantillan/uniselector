@@ -85,7 +85,7 @@ def test_an_action_waits_for_a_confirmation_and_runs_one_time(cfg):
     time.sleep(0.2)
     assert target.observe()["heater"] is False   # nothing ran before the decision
     assert h.confirm(run, request["id"], "approve")["state"] == "running"
-    summary = finish(h, run)
+    summary = h.status(run, wait_seconds=20)   # one call waits for the end of the run
     assert summary["state"] == "done" and target.observe()["heater"] is True
     assert summary["counts"]["confirmations"] == 1 and json.loads(summary["results"][0]["output"])["heater"] is True
 
@@ -111,7 +111,7 @@ def test_a_human_only_action_needs_the_human(cfg, monkeypatch, capsys):
     out = h.confirm(run, request["id"], "approve")   # the main agent cannot approve it
     assert out["state"] == "waiting_human" and "human" in out["note"]
     summary = h.status(run)
-    assert summary["state"] == "waiting_human" and "uniselector-confirm" in summary["next"]
+    assert summary["state"] == "waiting_human" and summary["pending"]["command"] == f"uniselector-confirm {summary['logs']} req_1 approve"
     time.sleep(0.7)
     assert target.observe()["heater"] is False
     monkeypatch.setattr(sys, "argv", ["uniselector-confirm", summary["logs"], request["id"], "approve"])
