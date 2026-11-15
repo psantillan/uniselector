@@ -26,6 +26,7 @@ MAX_SAMPLE = 4
 _QUOTED = re.compile(r"'([^']+)'|\"([^\"]+)\"")
 _NUMBER = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?(?![\w.]*\w)")
 _WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+_EDGE = ".,;:!?()[]{}'\"`"   # the punctuation of a sentence at the edge of a token
 
 
 def leaves(value, path=()):
@@ -47,9 +48,13 @@ def leaves(value, path=()):
 
 
 def literals(text: str) -> list:
-    """The values that a sentence states: its quoted strings and its numbers."""
+    """The values that a sentence states: its quoted strings, its numbers, and each token that is not a plain word
+    (a path, a dotted name, a date). A sentence writes such a token as a value (docs/DECISIONS.md, D27)."""
     quoted = [a or b for a, b in _QUOTED.findall(text)]
-    return [*quoted, *(float(n) if "." in n else int(n) for n in _NUMBER.findall(text))]
+    parts = [t.strip(_EDGE) for t in text.split()]
+    tokens = [t for t in parts if t and t not in quoted and not _WORD.fullmatch(t) and not _NUMBER.fullmatch(t.lstrip("$"))]
+    rest = " ".join(t for t in parts if t not in tokens)   # a digit inside a token is not a number of the sentence
+    return [*quoted, *tokens, *(float(n) if "." in n else int(n) for n in _NUMBER.findall(rest))]
 
 
 def words(text: str) -> list:

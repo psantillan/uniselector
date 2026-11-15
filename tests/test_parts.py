@@ -34,6 +34,8 @@ def test_a_table_output_gives_each_cell_with_its_column_as_the_place():
     table = {"columns": ["country", "n"], "rows": [["US", 3], ["DE", 1]], "truncated": False}
     assert ("US", ("rows", "country")) in leaves(table) and (1, ("rows", "n")) in leaves(table)
     assert literals('keep "gold" customers over $100 in 2 regions') == ["gold", 100, 2]
+    # A token that is not a plain word is a value: a path, a dotted name, a date.
+    assert literals("Get the report at the path /reports/quarterly (not v1.2), from 2026-01-31.") == ["/reports/quarterly", "v1.2", "2026-01-31"]
 
 
 def test_the_first_page_of_an_open_value_has_the_values_with_evidence(cfg, events):

@@ -1,0 +1,51 @@
+{
+ "task": "code",
+ "what": "Code that takes time to run.",
+ "at": "20261115_225936",
+ "commit": "7fe1f08",
+ "prompt": "A script is registered in DataHandles as `job`. It takes minutes to run. Run it one time, with no arguments, and give the checksum that it prints at the end.",
+ "truth": "81504f413660545c",
+ "decision_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 190.6,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 6986,
+ "context_peak": 9443,
+ "context_added": 2457,
+ "tool_calls": {
+  "handle_find": 1,
+  "plan_submit": 1,
+  "plan_status": 2
+ },
+ "turns": 5,
+ "agent_seconds": 185.8,
+ "answer": "Checksum: 81504f413660545c",
+ "agent_error": false,
+ "right": true,
+ "facts": {},
+ "runs": [
+  {
+   "t": 1794783767.575,
+   "event": "end",
+   "run": "run_20261115_225946_0704",
+   "outcome": "done",
+   "why": "each intent is met",
+   "intents_done": 2,
+   "intents": 2,
+   "tokens": 12905,
+   "seconds": 181.3,
+   "decisions": 5,
+   "operations": 2,
+   "waits": 0,
+   "probes": 0,
+   "questions": 1,
+   "planner_questions": 0,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

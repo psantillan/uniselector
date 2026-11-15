@@ -352,3 +352,16 @@ only leave. A fifth tool is a change of the surface in the brief, so it is not a
 The summary of a waiting run had the question two times: as fields (the plan, the candidates, the
 handles) and as text. It has the id, the field, the schema, the reason and the text now. In the
 first task run, the `pending` part was 3,254 of 9,876 characters of one summary.
+
+## D27. A token that is not a plain word is a stated value
+
+The pool took two kinds of literal from an intent: a quoted string and a number. The intent "Get
+the report at the path /reports/quarterly" has no quote characters, so the pool did not have the
+path, and `api.get` got the base address (`docs/FAILURES.md`, F26).
+
+The rule now: a token of the intent that is not a plain word and not a number is a stated value
+too. Examples: a path, a dotted name, a date. The edge punctuation of the sentence is not part of
+the token. A digit inside such a token is not a number of the sentence.
+
+Reason: the brief names "literals in the plan's intents and notes" as a source. A main agent
+writes a path as it is. A plain word stays a weak candidate ("a word of the current intent").

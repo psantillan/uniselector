@@ -63,13 +63,9 @@ def stream(world: World, a) -> dict:
     room = world.planner.register("room", adapter="room", source={"interval_ms": a.interval_ms})
 
     def check(text: str) -> bool:
-        readings, seq = [], 0
-        while True:
-            part = room.invoke("room.read", {"from_seq": seq, "count": 50})["readings"]
-            readings += part
-            seq += len(part)
-            if len(part) < 50:
-                break
+        readings, made = [], room.invoke("room.latest")["seq"] + 1
+        while len(readings) < made:   # `room.read` refuses a range that is not all made, and its output has a size limit
+            readings += room.invoke("room.read", {"from_seq": len(readings), "count": made - len(readings)})["readings"]
         on = [r["seq"] for r in readings if r["heater"]]
         if not on or readings[-1]["heater"]:
             return False
