@@ -1,0 +1,65 @@
+{
+ "task": "pipeline",
+ "what": "A data pipeline: filter, join, aggregate, sort, limit.",
+ "at": "20261115_223625",
+ "prompt": "Two datasets are registered in DataHandles: `events` and `customers`. Find the three countries with the highest total purchase revenue: the sum of `amount` over the events whose `event_type` is `purchase`. Give each country and its total.",
+ "truth": [
+  [
+   "US",
+   114333.51
+  ],
+  [
+   "KE",
+   114130.67
+  ],
+  [
+   "BR",
+   109455.52
+  ]
+ ],
+ "decision_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 451.6,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7016,
+ "context_peak": 17339,
+ "context_added": 10323,
+ "tool_calls": {
+  "handle_find": 1,
+  "plan_submit": 1,
+  "plan_status": 4,
+  "handle_describe": 1,
+  "handle_invoke": 1
+ },
+ "turns": 9,
+ "agent_seconds": 446.9,
+ "answer": "The order is ascending, and the output has all 8 countries. The three highest are at the end.\n\nThe three countries with the highest total purchase revenue:\n\n1. US: 114,333.51\n2. KE: 114,130.67\n3. BR: 109,455.52",
+ "agent_error": false,
+ "right": true,
+ "facts": {},
+ "runs": [
+  {
+   "t": 1794782630.562,
+   "event": "end",
+   "run": "run_20261115_223634_8145",
+   "outcome": "done",
+   "why": "each intent is met",
+   "intents_done": 4,
+   "intents": 4,
+   "tokens": 324769,
+   "seconds": 436.0,
+   "decisions": 124,
+   "operations": 12,
+   "waits": 0,
+   "probes": 15,
+   "questions": 6,
+   "planner_questions": 0,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

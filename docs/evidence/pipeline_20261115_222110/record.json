@@ -1,0 +1,44 @@
+{
+ "task": "pipeline",
+ "what": "A data pipeline: filter, join, aggregate, sort, limit.",
+ "at": "20261115_222110",
+ "prompt": "Two datasets are registered in DataHandles: `events` and `customers`. Find the three countries with the highest total purchase revenue: the sum of `amount` over the events whose `event_type` is `purchase`. Give each country and its total.",
+ "truth": [
+  [
+   "US",
+   114333.51
+  ],
+  [
+   "KE",
+   114130.67
+  ],
+  [
+   "BR",
+   109455.52
+  ]
+ ],
+ "decision_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 615.5,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7016,
+ "context_peak": 25533,
+ "context_added": 18517,
+ "tool_calls": {
+  "handle_find": 1,
+  "plan_submit": 1,
+  "plan_status": 6,
+  "plan_answer": 3
+ },
+ "turns": 12,
+ "agent_seconds": 610.6,
+ "answer": "I have no answer. The Uniselector run did not finish, and I stopped it.\n\n- **What worked:** the run filtered `events` to `purchase` rows.\n- **What failed:** the join to `customers` on `customer_id` failed three times. The run's sub-agent kept putting customer ids such as `c0000`, `c0001` and `c0270` in the join key where a column name belongs. I can only answer yes or no to its questions, so I could not fix those values.\n- **Budget:** the run had used 89% of its token budget with 1 of 5 steps done. The remaining budget cannot cover the join, the sum, the sort and the read.\n- **Handles:** you told me not to invoke operations on the handles myself, so I did not run the join directly.\n\n`customers` holds the country, so the answer needs that join. Tell me if you want me to submit a new plan, or to run the operations directly on the handles.",
+ "agent_error": false,
+ "right": false,
+ "facts": {},
+ "runs": [],
+ "human_stand_in": []
+}

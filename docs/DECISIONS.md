@@ -261,3 +261,94 @@ Reason: attenuation. The main agent must see nothing until the run needs it. Wit
 main agent polls, and each poll puts one more summary in its context. The server sets no maximum:
 the limit is the tool-call timeout of the client, and a timeout loses nothing because the run
 continues.
+
+## D20. What the regulator sees: results by intent, and the look at a stream
+
+Three changes to the state came from the first runs on a stream (`docs/FAILURES.md`, F7 to F9).
+Each one is information for the decision model. None is a check in code.
+
+1. The decision text gives the results of the current intent apart from the results of earlier
+   intents. With no result, it says "none yet: no operation ran for this intent". Before, one list
+   held each result, and the model chose `step_done` for an intent that had no operation.
+2. A look at a continuous handle (a stream) adds the outputs of its bounded probes to the status
+   of the handle. The probes are the same ones that the candidate pool uses: each capability that
+   reads, gives a value, and needs no input. The pool caches them by handle version. For the room,
+   the probe is `room.latest`. Before, the status had only what `observe` gives, and the regulator
+   could not see the variable that the intent names.
+3. The result of a `wait` is what the look after the wait shows: the status of each job and each
+   stream. The last few waits then show how the values move.
+
+Reason: Ashby's regulator acts on what it observes. The brief says "Waiting is a choice that the
+decision model makes again each time it looks", so a look must show the thing that the run waits
+for. Replay of the logged decisions shows the effect: with change 3, the model chose `step_done`
+with p 0.92 to 1.00 on each of four decisions where it chose `wait` with p 0.90 to 1.00 before, and
+it chose `wait` with p 0.98 on the one decision where the temperature was below the limit.
+
+A handle that is not continuous gets no probe output in its status: its values do not change, and
+the candidate pool reads them when a field needs them.
+
+## D21. A sub-agent that fails returns the question to the main agent
+
+A model call of the sub-agent can fail. The first case was an HTTP 500 of the model server:
+"llama-server returned invalid tool call arguments" (`docs/FAILURES.md`, F10). The run then
+failed. Now the question goes to the main agent with the reason "the sub-agent failed: ...".
+
+Reason: this is the order of escalation. What a sub-agent cannot settle goes to the main agent.
+A failed call of the decision model still ends the run with the state `failed`: no regulator is
+left to continue.
+
+## D22. A field with the schema of a chosen sibling is the same kind of thing
+
+`dataset.join` takes `on: [{left, right}]`. The two fields have one schema, and the schema does not
+say that each one is a column. With `left` = `customer_id` chosen, the rule of D8 ("a value from a
+place that an earlier choice names comes first") filled the first page of `right` with customer
+ids. The join failed three times (`docs/FAILURES.md`, F14).
+
+The rule now: when a sibling field has the same schema as the field, the sibling is a peer. A peer
+is the same kind of thing, so each place where the pool observed the value of the peer is a place
+with evidence for the field. A peer does not name a place of values. For `right`, the first page
+is then the column names of the two datasets.
+
+Reason: the pool knows no resource type, and the schema is the one statement of what a field is.
+Two fields with one schema are interchangeable for the schema, so the evidence for one is evidence
+for the other.
+
+## D23. A decision on the structure of the input is never a question
+
+Two kinds of decision choose structure and not a value: "does the input have this optional
+field" and "does the list get one more item". When one of these is below the abstain threshold,
+the top option stands. The decision log marks it with `below: true`.
+
+Reason: the brief says "When the pool is not enough, a sub-agent finds the value". A structure
+decision has no value to find. The sub-agent finds facts, and "include the field" is not a fact
+of the data. The first task run shows the cost: six structure decisions abstained, each one became
+a question of 23,255 to 44,421 tokens, three reached the cap, and one answer was `true` for the
+integer field `n` (`docs/FAILURES.md`, F15). In each of the six, the top option was the right one.
+A wrong structure shows in the result of the operation, and the regulator reacts to the result.
+
+The second task run shows the cost of this rule: 6 of 16 structure decisions below the threshold
+took a wrong option, and two lists grew to six items (`docs/FAILURES.md`, F21). The operations
+failed with errors, and the fourth try was right. The rule stays: a failed operation is cheaper
+than a question, and the error is information for the next try.
+
+## D24. The control options are on each level of the root
+
+With more options than labels, the root is two decisions: the handle, then its operation (D4).
+The control options are now in the two of them. Before, a decision model that chose a handle
+could not choose `step_done` any more (`docs/FAILURES.md`, F13).
+
+## D25. A run ends when its process ends
+
+A run is a thread in the process of the MCP server. That process ends when the main agent ends
+its session. Each run that works at that time ends with the state `left`, and its logs and its
+summary say so. `plan_status` of a later process reads that summary from the run directory.
+
+The agent surface has four tools, and none stops a run. A main agent that wants to stop a run can
+only leave. A fifth tool is a change of the surface in the brief, so it is not added
+(`docs/FAILURES.md`, F17).
+
+## D26. A pending question in the summary is its text and its schema
+
+The summary of a waiting run had the question two times: as fields (the plan, the candidates, the
+handles) and as text. It has the id, the field, the schema, the reason and the text now. In the
+first task run, the `pending` part was 3,254 of 9,876 characters of one summary.

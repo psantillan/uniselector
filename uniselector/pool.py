@@ -101,13 +101,18 @@ class Pool:
     def answer_key(self, entry, capability: str, field: str) -> tuple:
         return (entry.id, entry.handle.observe().get("version"), capability, re.sub(r"\[\d+\]", "[]", field))
 
-    def candidates(self, schema: dict, name: str, field: str, capability: str, siblings: dict, target, others: list, state) -> tuple:
+    def candidates(self, schema: dict, name: str, field: str, capability: str, siblings: dict, peers: list, target, others: list, state) -> tuple:
         """Return ([(value, label)], strong): at most MAX_CANDIDATES values that `schema` allows, best first.
 
         The first `strong` values have evidence for this field: an answer, the default, a value that the current intent
         states, or a value from a place that the field or an earlier choice names. The other values are weak: they only
-        have the right type."""
-        chosen = {v for v in siblings.values() if isinstance(v, str)}
+        have the right type.
+
+        `peers` are the values of the sibling fields that have the same schema as this field (`left` and `right` of a
+        join key). A peer is the same kind of thing as this field, so the places of a peer are places for this field.
+        A peer does not name a place of values for this field (docs/DECISIONS.md, D22)."""
+        chosen = {v for v in siblings.values() if isinstance(v, str)} - set(peers)
+        alike = {path for entry in [target, *others] for value, path, _ in self.observed(entry) if path and value in peers}
         found = []
 
         def add(value, path, label, tier):
@@ -115,7 +120,7 @@ class Pool:
                 return
             # A value from a place that an earlier choice names (the chosen column) comes first.
             # A value from a place with the name of the field (a column name for `column`) comes next.
-            score = (2 if chosen & set(path) else 0) + (1 if any(_stem(name) in _stem(k) or _stem(k) in _stem(name) for k in path) else 0)
+            score = (2 if chosen & set(path) or path in alike else 0) + (1 if any(_stem(name) in _stem(k) or _stem(k) in _stem(name) for k in path) else 0)
             found.append((not (score or tier <= 2), -score, tier, len(found), value, label, path))
 
         this = self.answer_key(target, capability, field)

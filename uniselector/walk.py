@@ -7,7 +7,7 @@ from the candidate pool. A decision that abstains, or that chooses `none fits`, 
 """
 import json
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .decide import LABELS, judge
 from .pool import NONE_FITS
@@ -42,6 +42,7 @@ class Context:
     entry: object
     capability: dict
     holder: dict   # {"input": the input chosen so far}
+    properties: dict = field(default_factory=dict)   # id of an object in the input -> the schemas of its properties
 
 
 def path_text(path: list) -> str:
@@ -102,8 +103,9 @@ class Walk:
             # More options than one decision has labels: choose the handle first, then its operation.
             targets = [Option(f"{e.alias}: an operation on this handle", e, e.alias) for e in entries if operations[e.alias]]
             choice = self.node("target", "Choose the handle of the next operation for the current intent, or a control option.", targets + controls)
-            if not isinstance(choice, tuple):
-                choice = self.node("operation", f"Choose the operation on {choice.alias} for the current intent.", operations[choice.alias])
+            if not isinstance(choice, tuple):   # the control options stay: a look at the operations can show that none is needed
+                choice = self.node("operation", f"Choose the operation on {choice.alias} for the current intent, or a control option.",
+                                   operations[choice.alias] + controls)
         if choice[0] == "control":
             return choice
         _, entry, capability = choice
@@ -118,7 +120,8 @@ class Walk:
         return Option(text, ("operation", entry, capability), f"{entry.alias} {capability['name']}")
 
     def reason(self, control: str) -> str:
-        """Why the decision model chose `wake_agent` or `abort`. It is a report, so it never becomes a question."""
+        """Why the decision model chose `wake_agent` or `abort`. It is a report, so it never becomes a question:
+        the top option stands. The same holds for a decision on the structure of the input (docs/DECISIONS.md, D23)."""
         return self.node("reason", f"You chose {control}. Choose the reason.", [Option(r, r, r) for r in REASONS], abstain=False)
 
     # ---- one decision -------------------------------------------------------------------------
@@ -147,13 +150,14 @@ class Walk:
         d = self.decide(view, [o.text for o in options])
         self.state.tokens += d.tokens
         index = judge(d, self.cfg.abstain_top, self.cfg.abstain_ratio, self.cfg.abstain_mass)
-        if index is None and not abstain:
+        below = index is None   # the decision is below the abstain threshold
+        if below and not abstain:
             index = max(range(len(options)), key=lambda i: d.probs[i])
         self.log({"node": kind, "field": field, "capability": context.capability["name"] if context else None,
                   "target": context.entry.alias if context else None, "partial": context.holder["input"] if context else None,
                   "options": [o.key for o in options], "texts": [o.text for o in options],
                   "probs": [round(p, 4) for p in d.probs], "mass": round(d.mass, 4),
-                  "choice": None if index is None else options[index].key, "abstained": index is None,
+                  "choice": None if index is None else options[index].key, "abstained": index is None, "below": below,
                   "tokens": d.tokens, "ms": round((time.perf_counter() - t0) * 1000), "state": view})
         self.check()
         return index
@@ -177,7 +181,8 @@ class Walk:
 
     # ---- the input schema ---------------------------------------------------------------------
 
-    def _field(self, context: Context, path: list, what: str, options: list, schema: dict | None = None, note: str = "", first: int | None = None):
+    def _field(self, context: Context, path: list, what: str, options: list, schema: dict | None = None, note: str = "", first: int | None = None,
+               abstain: bool = True):
         capability = context.capability
         text = (f"Operation: {capability['name']} on {context.entry.alias}. {capability['description']} "
                 f"Input so far: {json.dumps(context.holder['input'])}. Choose {what} `{path_text(path)}`.{note}")
@@ -185,7 +190,7 @@ class Walk:
             error = self._failed(context, path, option.value)
             if error:
                 option.text += f"  (it was in an input that FAILED: {error})"
-        return self.node("field", text, options, schema=schema, context=context, field=path_text(path), first=first)
+        return self.node("field", text, options, schema=schema, context=context, field=path_text(path), first=first, abstain=abstain)
 
     def _failed(self, context: Context, path: list, value) -> str | None:
         """The error of an earlier input of this operation that had `value` at `path`. A configuration that failed is not a good next choice."""
@@ -220,12 +225,13 @@ class Walk:
                                                schema={"type": "string"}, note=note)}
         elif schema.get("type") == "object" and "properties" in schema:
             value = box[key] = {}
+            context.properties[id(value)] = schema["properties"]
             for name, sub in schema["properties"].items():
                 if name not in schema.get("required", []):
                     hint = f" (when it is left out: {json.dumps(sub['default'])})" if "default" in sub else ""
                     include = self._field(context, [*path, name], "whether the input has the optional field", [
                         Option(f"include it{hint}", True, True), Option("leave it out", False, False)],
-                        note=f" {sub['description']}" if sub.get("description") else "")
+                        note=f" {sub['description']}" if sub.get("description") else "", abstain=False)
                     if not include:
                         continue
                 self.fill(sub, [*path, name], value, name, context)
@@ -234,7 +240,7 @@ class Walk:
             while "maxItems" not in schema or len(items) < schema["maxItems"]:
                 if len(items) >= schema.get("minItems", 0):
                     more = self._field(context, path, f"whether one more item goes in the list (it has {len(items)} now)", [
-                        Option("add one more item", True, True), Option("stop: the list is complete", False, False)], note=note)
+                        Option("add one more item", True, True), Option("stop: the list is complete", False, False)], note=note, abstain=False)
                     if not more:
                         break
                 items.append(None)
@@ -248,8 +254,10 @@ class Walk:
         """An open value: choose from the candidate pool, or `none fits`."""
         name = next((p for p in reversed(path) if isinstance(p, str)), context.capability["name"])
         others = [e for e in map(self.state.entry, handles_in(context.holder["input"])) if e is not None]
+        siblings = box if isinstance(box, dict) else {}
+        peers = [v for k, v in siblings.items() if context.properties.get(id(box), {}).get(k) == schema and not isinstance(v, (dict, list))]
         found, strong = self.pool.candidates(schema, name, path_text(path), context.capability["name"],
-                                             box if isinstance(box, dict) else {}, context.entry, others, self.state)
+                                             siblings, peers, context.entry, others, self.state)
         options = [Option(f"{json.dumps(value)}  ({label})", value, value) for value, label in found]
         options.append(Option("none fits: no value here is right", None, NONE_FITS))
         return self._field(context, path, "the value of", options, schema=schema, note=note, first=strong or None)

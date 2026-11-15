@@ -135,7 +135,7 @@ def test_a_decision_that_abstains_goes_to_the_sub_agent_then_to_the_main_agent(c
     run = h.submit({"intents": PLAN, "handles": [table(h, events).id]})["run"]
     summary = finish(h, run, until=("waiting_answer",))
     pending = summary["pending"]
-    assert pending["field"] == "where[0].value" and pending["chosen"] == {"where": [{"column": "event_type", "op": "eq"}]}
+    assert pending["field"] == "where[0].value" and 'chosen:     {"where": [{"column": "event_type", "op": "eq"}]}' in pending["text"]
     assert "capability: dataset.filter" in pending["text"] and pending["why"] == "the plan does not say which events"
     bad = h.runs[run]
     with pytest.raises(ValueError):
@@ -172,3 +172,30 @@ def test_a_slow_operation_becomes_a_job_that_the_decision_model_waits_for(cfg, t
     assert len(summary["results"]) == cfg.results_kept   # the state keeps the last results only
     assert "total 42" in summary["results"][-2]["output"]
     assert summary["handles"][1]["status"] and "completed" in summary["handles"][1]["status"]
+
+
+def test_a_join_key_takes_column_names_and_a_structure_decision_is_never_a_question(cfg, tmp_path):
+    (tmp_path / "orders.csv").write_text("order_id,customer,total\n" + "\n".join(f"{i},c{i % 4},{i * 10}" for i in range(12)))
+    (tmp_path / "customers.csv").write_text("customer,country\n" + "\n".join(f"c{i},{'DE' if i % 2 else 'FR'}" for i in range(4)))
+    # The decision on one more key is below the abstain threshold: [add, stop]. The top option stands, and no question starts.
+    script = ["h1:", "h1 dataset.join", '"customer"', '"customer"', [0.45, 0.55], "leave it out", "step_done"]
+    h = harness(cfg, script)
+    orders, customers = (h.clients["planner"].register(n, adapter="duckdb", source={"path": str(tmp_path / f"{n}.csv")}) for n in ("orders", "customers"))
+    summary = finish(h, h.submit({"intents": ["join the orders to the customers"], "handles": [orders.id, customers.id]})["run"])
+    assert summary["state"] == "done" and summary["counts"]["questions"] == 0, summary["why"]
+    assert summary["results"][0]["input"]["on"] == [{"left": "customer", "right": "customer"}]
+    right = next(options for text, options in h.decide.seen if "`on[0].right`" in text)
+    # `right` has the schema of `left`, so its first page has the column names of the two datasets, and no customer id.
+    first = {o.split("  ")[0] for o in right[:-1]}
+    assert first == {'"order_id"', '"customer"', '"total"', '"country"'} and right[-1].startswith("none of these")
+    second = next(options for text, options in h.decide.seen if "Choose the operation on h1" in text)
+    assert any(o.startswith("step_done") for o in second)   # the control options stay on the second level of the root
+
+
+def test_a_run_ends_when_its_process_ends(cfg, events):
+    h = harness(cfg, ["wait"] * 400)
+    run = h.submit({"intents": PLAN, "handles": [table(h, events).id]})["run"]
+    h.close()
+    summary = h.status(run)
+    assert summary["state"] == "left" and (Path(summary["logs"]) / "summary.json").exists()
+    assert lines(summary, "events")[-1]["outcome"] == "left"

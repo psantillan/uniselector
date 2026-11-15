@@ -1,0 +1,13 @@
+{
+ "handles": [
+  "hdl_01M7GNNJ7QVNCS46ACDV6M32AB",
+  "hdl_01M7GNNJ5SV53TGCVBYJZDEPB1"
+ ],
+ "intents": [
+  "Filter the events to rows where event_type is 'purchase'.",
+  "Join the filtered events to customers on customer_id to get country.",
+  "Group by country and sum amount as total revenue.",
+  "Sort by total revenue descending and keep the top 3 rows. Return country and total."
+ ],
+ "notes": "events has id, customer_id, event_type, amount. customers has customer_id, country, segment. Read-only task."
+}

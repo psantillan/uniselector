@@ -1,0 +1,14 @@
+{
+ "handles": [
+  "hdl_01M7GMSN4JATXWCF777QNRVET8",
+  "hdl_01M7GMSN2JGXYENQYGYHC7VW11"
+ ],
+ "intents": [
+  "Filter the events to rows where event_type is purchase.",
+  "Join the filtered events to customers on customer_id to get country.",
+  "Group by country and sum amount as total revenue.",
+  "Sort by total revenue from high to low and keep the top three countries.",
+  "Return the three countries with their totals."
+ ],
+ "notes": "events has columns id, customer_id, event_type, amount. customers has columns customer_id, country, segment. Country comes from customers."
+}

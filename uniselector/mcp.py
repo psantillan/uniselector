@@ -89,7 +89,10 @@ def main() -> None:
         async with stdio_server() as (read, write):
             await mcp_server.run(read, write, mcp_server.create_initialization_options())
 
-    anyio.run(run)
+    try:
+        anyio.run(run)
+    finally:
+        harness.close()
 
 
 if __name__ == "__main__":

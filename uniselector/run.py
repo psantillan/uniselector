@@ -32,7 +32,7 @@ from .state import Entry, State, cut
 from .subagent import ModelAsker, question_text
 from .walk import Walk
 
-ENDED = ("done", "woke", "aborted", "limit", "failed")
+ENDED = ("done", "woke", "aborted", "limit", "failed", "left")
 NEXT = {
     "running": "The run works. Call plan_status with wait_seconds: the call returns when the run needs you or the time is over.",
     "waiting_answer": "A sub-agent could not find a value. Call plan_answer with the run, the id of the question, and a value that its schema allows.",
@@ -43,6 +43,7 @@ NEXT = {
     "aborted": "The decision model stopped the run. Read the results here before you make a new plan.",
     "limit": "A hard limit stopped the run. The user decides the limits. The handles here stay usable.",
     "failed": "The harness failed. The reason is in `why`.",
+    "left": "The process of the run ended before the run did. Make a new plan from the handles and the results here, and call plan_submit.",
 }
 
 
@@ -65,7 +66,7 @@ class Run:
                        "confirmations": 0, "human_requests": 0}
         self.jobs = []
         self._lock = threading.Condition()
-        self._reply = None
+        self._reply, self._ended = None, False
         self.thread = threading.Thread(target=self._main, name=f"uniselector-{run_id}", daemon=True)
 
     # ---- the loop -----------------------------------------------------------------------------
@@ -260,7 +261,9 @@ class Run:
         if "value" in answer:
             return answer["value"]
         self.counts["planner_questions"] += 1
-        pending = {**question, "kind": "question", "text": question_text(question), "why": answer["needs_planner"]}
+        # The text has the plan, the choices so far, the candidates and the handles: the summary does not repeat them.
+        pending = {"id": question["id"], "kind": "question", "field": question["field"], "schema": question["schema"],
+                   "text": question_text(question), "why": answer["needs_planner"]}
         value = self._park("waiting_answer", pending)["value"]
         self.log.write("questions", {"run": self.id, "step": self.state.step, "question": question["id"], "answer": {"planner_value": value}})
         return value
@@ -342,6 +345,10 @@ class Run:
         self.log.write("events", {"event": "result", "run": self.id, **record})
 
     def _end(self, status: str, why: str) -> None:
+        with self._lock:
+            if self._ended:   # the first end stands
+                return
+            self._ended = True
         self.state.clock.stop()
         if status != "done":
             for job in self.jobs:   # the run does not leave work that nothing waits for
@@ -354,8 +361,7 @@ class Run:
             self.lineage = str(self.log.save("lineage.json", graph))
         except Exception as e:
             self.log.write("events", {"event": "fault", "traceback": f"lineage: {type(e).__name__}: {e}"})
-        with self._lock:
-            self.status, self.why = status, why
+        self.status, self.why = status, why
         outcome = {"run": self.id, "outcome": status, "why": why, "intents_done": self.state.intent, "intents": len(self.plan["intents"]),
                    "tokens": self.state.tokens, "seconds": round(self.state.clock.elapsed(), 1), **self.counts}
         self.log.write("decisions", outcome)
@@ -436,6 +442,12 @@ class Harness:
         if decision == "approve" and now == "waiting_human":
             out["note"] = "Only the human can approve this request. It is with the human now."
         return out
+
+    def close(self) -> None:
+        """The process ends. A run is a thread of this process, so each run that works ends here, and its logs say so."""
+        for run in self.runs.values():
+            if run.status not in ENDED:
+                run._end("left", "the MCP server of the main agent ended before the run did")
 
     def _run(self, run: str) -> Run:
         if run not in self.runs:

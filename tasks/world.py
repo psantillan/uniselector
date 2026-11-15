@@ -73,10 +73,6 @@ class World:
     def human_env(self) -> dict:
         return {**os.environ, "UNISELECTOR_HUMAN_TOKEN": self.tokens["human"]}
 
-    def summaries(self) -> list:
-        """The summary of each run that ended, oldest first."""
-        return [json.loads(p.read_text()) for p in sorted(self.runs.glob("*/summary.json"))]
-
     def close(self) -> None:
         for process in self.processes:
             process.terminate()
