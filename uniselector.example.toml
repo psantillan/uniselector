@@ -1,0 +1,22 @@
+# Uniselector configuration. Copy to uniselector.toml.
+
+# The hard limits. The user decides them. They have no default.
+[limits]
+budget_tokens = 400000   # model tokens of the decision model and the sub-agents, for one run
+wall_seconds = 1800      # seconds that one run works
+
+# Where the DataHandles runtime is: a state directory, or the URL of a DataHandles HTTP server.
+# With a URL, each principal needs a bearer token in the environment:
+#   UNISELECTOR_PLANNER_TOKEN, UNISELECTOR_TOKEN, UNISELECTOR_SUBAGENT_TOKEN, UNISELECTOR_HUMAN_TOKEN
+[runtime]
+target = ".datahandles"
+runs_dir = ".uniselector/runs"
+
+# The decision model: a model on an Ollama server that gives the log probabilities of its output.
+[model]
+model_url = "http://localhost:11434"
+model = "ornith-1.5:9b"
+
+# Capabilities that only the human can confirm. The main agent cannot approve them.
+[actions]
+human_only = []
