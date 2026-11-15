@@ -134,6 +134,13 @@ def stand_in_for_the_human(world: World, stop: threading.Event, done: list) -> N
                 (world.dir / "human.log").open("a").write(f"$ {pending['command']}\n{out.stdout}{out.stderr}\n")
 
 
+def commit() -> str:
+    """The commit of the code that ran, with `+` when the working tree has changes."""
+    def git(*args):
+        return subprocess.run(["git", *args], cwd=Path(__file__).parent, capture_output=True, text=True).stdout.strip()
+    return git("rev-parse", "--short", "HEAD") + ("+" if git("status", "--porcelain", "--untracked-files=no") else "")
+
+
 def measure(stream_file: Path) -> dict:
     """Read the event stream of the main agent: its context at each turn, and its tool calls."""
     contexts, calls, result, model = [], {}, {}, None
@@ -189,7 +196,7 @@ def main() -> None:
                 subprocess.run(command, cwd=world.dir / "agent", stdout=out, stderr=subprocess.STDOUT, timeout=AGENT_SECONDS)
             except subprocess.TimeoutExpired:
                 pass
-        record = {"task": a.task, "what": TASKS[a.task].__doc__, "at": stamp, "prompt": task["prompt"], "truth": task["truth"],
+        record = {"task": a.task, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
                   "decision_model": a.model, "limits": {"budget_tokens": BUDGET_TOKENS, "wall_seconds": WALL_SECONDS},
                   "seconds": round(time.time() - t0, 1), **measure(world.dir / "agent-stream.jsonl")}
         record["right"] = bool(record["answer"]) and bool(task["check"](record["answer"]))
