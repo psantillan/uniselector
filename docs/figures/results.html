@@ -1,0 +1,486 @@
+<title>Uniselector Results</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column of 66 characters; figures break out to 920px. Blue = Uniselector, brown = the agent alone, gold = a wake. */
+:root {
+  --bg: #10141c; --panel: #161b25; --ink: #ece8dd; --muted: #9aa3b2; --rule: #2a3140;
+  --blue: #2B9FC6; --brown: #C8763E; --gold: #E8C547; --red: #F0685A; --green: #7FBF5F;
+  --serif: "STIX Two Text", "Latin Modern Roman", "Iowan Old Style", Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f6f3ec; --panel: #eee9dd; --ink: #1c222c; --muted: #5c6470; --rule: #d6cfc0;
+    --blue: #0F86B0; --brown: #A8501C; --gold: #9A7400; --red: #C23A2E; --green: #3F7F2A;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f6f3ec; --panel: #eee9dd; --ink: #1c222c; --muted: #5c6470; --rule: #d6cfc0;
+  --blue: #0F86B0; --brown: #A8501C; --gold: #9A7400; --red: #C23A2E; --green: #3F7F2A;
+  color-scheme: light;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--serif); font-size: 19px; line-height: 1.6; }
+.page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 56px 96px; display: flex; flex-direction: column; align-items: center; gap: 72px; }
+section, header, footer { width: 100%; max-width: 920px; display: flex; flex-direction: column; gap: 20px; }
+section > p, section > h2, section > ul, header > *, footer > * { max-width: 66ch; margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.08; font-weight: 400; font-style: italic; text-wrap: balance; max-width: 18ch; }
+h2 { font-size: clamp(25px, 3.6vw, 33px); line-height: 1.2; font-weight: 400; font-style: italic; text-wrap: balance; }
+h2 .n { font-family: var(--mono); font-style: normal; font-size: 13px; color: var(--muted); display: block; letter-spacing: .1em; margin-bottom: 6px; }
+.lede { font-size: 22px; color: var(--ink); }
+p.q { font-style: italic; font-size: 22px; color: var(--gold); }
+code, .num { font-family: var(--mono); font-size: .82em; }
+b.b { color: var(--blue); font-weight: 600; } b.r { color: var(--brown); font-weight: 600; } b.g { color: var(--gold); font-weight: 600; }
+ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 10px; }
+figure { margin: 0; width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.plot { overflow-x: auto; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding-block: 14px; position: relative; }
+.plot svg { display: block; width: 100%; min-width: 660px; height: auto; }
+figcaption { font-size: 15.5px; line-height: 1.5; color: var(--muted); max-width: 70ch; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+.key { display: inline-flex; align-items: center; gap: 7px; }
+.key i { width: 18px; height: 3px; border-radius: 2px; background: var(--blue); display: inline-block; }
+.key i.r { background: var(--brown); } .key i.g { background: var(--gold); } .key i.x { background: var(--red); }
+.key i.dot { width: 9px; height: 9px; border-radius: 50%; } .key i.ring { width: 9px; height: 9px; border-radius: 50%; background: transparent; box-shadow: inset 0 0 0 2px var(--brown); }
+button.play { font-family: var(--mono); font-size: 12.5px; color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 12px; cursor: pointer; margin-left: auto; }
+button.play:hover { border-color: var(--gold); } button.play:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+/* marks inside the drawings */
+svg text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
+svg text.m { fill: var(--muted); } svg text.s { font-family: var(--serif); font-style: italic; font-size: 14.5px; } svg text.h { font-weight: 600; }
+.ax { stroke: var(--rule); stroke-width: 1; fill: none; } .ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.sb { stroke: var(--blue); } .sr { stroke: var(--brown); } .sg { stroke: var(--gold); } .sm { stroke: var(--muted); } .si { stroke: var(--ink); } .sx { stroke: var(--red); }
+.fb { fill: var(--blue); } .fr { fill: var(--brown); } .fg { fill: var(--gold); } .fx { fill: var(--red); } .fbg { fill: var(--bg); } .fp { fill: var(--panel); } .fn { fill: none; } .fm { fill: var(--muted); }
+.box { fill: var(--panel); stroke: var(--rule); stroke-width: 1.5; } .dash { stroke-dasharray: 5 5; }
+svg text.halo { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+.chip.on rect { stroke: var(--gold); stroke-width: 2.5; }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 6px 10px; font-family: var(--mono); font-size: 12px; line-height: 1.5; white-space: nowrap; color: var(--ink); top: 18px; }
+.trio { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding-block: 16px; }
+.trio > div { min-width: 0; display: flex; flex-direction: column; gap: 6px; } .trio h3 { margin: 0; font-family: var(--mono); font-size: 12.5px; font-weight: 400; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.trio svg { width: 100%; height: auto; display: block; }
+.tw { overflow-x: auto; } table { border-collapse: collapse; width: 100%; min-width: 700px; font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; } th { color: var(--muted); font-weight: 400; } th:first-child, td:first-child, th.l, td.l { text-align: left; }
+td.what { font-family: var(--serif); font-size: 15px; color: var(--muted); min-width: 220px; }
+.sq { display: inline-flex; flex-wrap: wrap; gap: 2px; max-width: 150px; vertical-align: middle; } .sq i { width: 5px; height: 5px; background: var(--blue); } .sq i.w { background: var(--gold); }
+.limits li::marker { color: var(--red); }
+footer { font-family: var(--mono); font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 20px; gap: 6px; }
+@media (max-width: 520px) { body { font-size: 17.5px; } .lede, p.q { font-size: 19.5px; } .page { gap: 56px; } }
+</style>
+<div class="page">
+<header>
+  <div class="eyebrow">Uniselector · measured 2026-11-16</div>
+  <h1>What must an agent do while it waits?</h1>
+  <p class="lede">An agent often has to wait. A feed grows. A job runs. An API is slow. The usual answer is that the agent watches. This page shows what watching costs, the idea from 1960 that removes the cost, and what the measurements say. It also shows the parts that do not work yet.</p>
+</header>
+
+<section>
+  <h2><span class="n">1</span>Watching fills the context</h2>
+  <p>Give an agent one task. A feed of orders grows for 200 seconds. The agent must keep the total of each region. At some moment a column gets a new name, and the totals break. The agent must repair them and report the final totals.</p>
+  <p>First, let the agent do this <b class="r">alone</b>. It has no other tool, so it reads the feed again and again. Each read adds a result to its context. Then give the same agent <b class="b">Uniselector</b>, and measure the same quantity.</p>
+  <figure>
+    <div class="bar"><span class="key"><i class="r"></i>the agent alone</span><span class="key"><i></i>the agent with Uniselector</span><button class="play" id="play-context" type="button">▶ play</button></div>
+    <div class="plot" id="fig-context"></div>
+    <figcaption>The context of the main agent in two sessions of the same task. Each step is one model request. Alone: 93 turns. With Uniselector: 18 turns, and 25% of the cost. Both answers were right.</figcaption>
+  </figure>
+  <p>The brown line never stops. It goes from 5,852 to 26,993 tokens, and it would go on for as long as the feed does. The blue line has three short climbs and two flat parts. In the flat parts the agent is not there.</p>
+  <p class="q">So who watches the feed while the agent is away?</p>
+</section>
+
+<section>
+  <h2><span class="n">2</span>Two loops, not one</h2>
+  <p>In 1960 W. Ross Ashby described a machine that stays alive in a world that it does not know. He named it the ultrastable system. It has two loops.</p>
+  <p>The first loop is fast. A part of the machine reacts to the world all the time. The second loop is slow. It watches only the <em>essential variables</em>: the few quantities that must stay inside limits. While they stay inside, the second loop does nothing. When one leaves its limits, the second loop changes the first loop by one step. Then it is silent again. In Ashby's Homeostat a stepping switch made that change. Its name was the uniselector.</p>
+  <p>Here is the same structure for an agent.</p>
+  <figure>
+    <div class="plot">
+      <svg id="mech" viewBox="0 0 880 370" role="img" aria-label="Two loops. In the first loop the objects read the world with no model. In the second loop a decision model looks at the essential variables, and only when a probability is below 0.5 does a wake make a runner write a new version of an object.">
+        <defs>
+          <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fb"/></marker>
+          <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fg"/></marker>
+        </defs>
+        <line x1="40" y1="42" x2="76" y2="42" class="ln sb"/><text x="86" y="46">first loop: runs with no model</text>
+        <line x1="40" y1="68" x2="76" y2="68" class="ln sg"/><text x="86" y="72">second loop: acts by one step</text>
+        <text x="40" y="112" class="s m">after Ashby, Design for a Brain (1960),</text>
+        <text x="40" y="132" class="s m">chapter 7: the ultrastable system</text>
+        <rect x="40" y="250" width="220" height="90" rx="6" class="box"/><text x="150" y="290" text-anchor="middle" class="h">the world</text><text x="150" y="310" text-anchor="middle" class="m">a feed · an API · a job</text>
+        <rect x="400" y="250" width="220" height="90" rx="6" class="box"/><text x="510" y="290" text-anchor="middle" class="h">objects</text><text x="510" y="310" text-anchor="middle" class="m">a handle + one operation</text>
+        <rect x="400" y="135" width="220" height="60" rx="6" class="box"/><text x="510" y="161" text-anchor="middle" class="h">essential variables</text><text x="510" y="180" text-anchor="middle" class="m">sentences that stay true</text>
+        <rect x="400" y="25" width="220" height="60" rx="6" class="box"/><text x="510" y="51" text-anchor="middle" class="h">decision model</text><text x="510" y="70" text-anchor="middle" class="m">p for each sentence</text>
+        <rect x="700" y="25" width="150" height="60" rx="6" class="box"/><text x="775" y="51" text-anchor="middle" class="h">wake</text><text x="775" y="70" text-anchor="middle" class="m">the step</text>
+        <rect x="700" y="250" width="150" height="90" rx="6" class="box"/><text x="775" y="283" text-anchor="middle" class="h">runner</text><text x="775" y="303" text-anchor="middle" class="m">a model · a human</text><text x="775" y="320" text-anchor="middle" class="m">· the main agent</text>
+        <path id="m-in" d="M260 278H398" class="ln sb" marker-end="url(#ab)"/><text x="329" y="268" text-anchor="middle" class="m">new data</text>
+        <path id="m-out" d="M400 312H262" class="ln sb" marker-end="url(#ab)"/><text x="329" y="332" text-anchor="middle" class="m">operations</text>
+        <path id="m-look" d="M510 250V197" class="ln sg" marker-end="url(#ag)"/><text x="522" y="228" class="m">outputs</text>
+        <path id="m-look2" d="M510 135V87" class="ln sg" marker-end="url(#ag)"/><text x="522" y="115" class="m">a look</text>
+        <path id="m-w1" d="M620 55H698" class="ln sg" marker-end="url(#ag)"/><text x="659" y="44" text-anchor="middle" class="m">p &lt; 0.5</text>
+        <path id="m-w2" d="M775 85V248" class="ln sg" marker-end="url(#ag)"/><text x="763" y="165" text-anchor="end" class="m">the reason</text><text x="763" y="182" text-anchor="end" class="m">+ the objects</text>
+        <path id="m-w3" d="M700 295H622" class="ln sg" marker-end="url(#ag)"/><text x="661" y="284" text-anchor="middle" class="m">a new</text><text x="661" y="314" text-anchor="middle" class="m">version</text>
+        <circle id="d-in" cx="329" cy="278" r="5" class="fb"/><circle id="d-out" cx="329" cy="312" r="5" class="fb"/><circle id="d-look" cx="510" cy="222" r="6" class="fg"/>
+      </svg>
+    </div>
+    <figcaption>The blue loop runs all the time and uses no model. The gold loop reads the outputs. Most looks stop at the decision model, because each sentence is still true. Only a probability below 0.5 goes on to a wake.</figcaption>
+  </figure>
+  <ul>
+    <li><b class="b">An object</b> is a handle to data and one operation. It runs again when its source changes.</li>
+    <li><b class="g">An essential variable</b> is a sentence that the main agent writes, such as “The feed has fewer than 600 rows.”</li>
+    <li><b class="g">The decision model</b> is the detector. At one look it gives one probability for each sentence. It does not plan, and it does not repair.</li>
+    <li><b class="g">A wake</b> is the step. The runner of the broken object writes a new version behind the same name.</li>
+  </ul>
+  <p>The main agent does not watch. It builds the thing that watches, and then it leaves.</p>
+</section>
+
+<section>
+  <h2><span class="n">3</span>One look is one question for each sentence</h2>
+  <p class="q">What does the second loop see?</p>
+  <p>Here are all 22 looks of the 200 s session from section 1. Each row is one sentence. Each dot is the probability that the decision model gave to that sentence at one look.</p>
+  <figure>
+    <div class="bar"><span class="key"><i class="dot"></i>inside the limit</span><span class="key"><i class="dot g"></i>outside: a wake</span><button class="play" id="play-looks" type="button">▶ play</button></div>
+    <div class="plot" id="fig-looks"></div>
+    <figcaption>Run <code>run_20261116_163355_18ad</code>: 22 looks, 3 wakes. The 22 looks used 12,942 tokens. Their cost was 0.27% of the cost of the main agent in the same session.</figcaption>
+  </figure>
+  <p>Three looks have a dot below 0.5, and each one is a wake. Wake 1 is a surprise. The main agent wrote a sentence about columns that the object does not show. The detector found that the sentence was not true, and the agent wrote a better one. Wake 2 is the new column name. Wake 3 is the end of the feed.</p>
+  <p class="q">Can the detector be trusted?</p>
+  <p>A separate check gave it 32 statements about fixed states. The right answer to each statement was known.</p>
+  <figure>
+    <div class="bar"><span class="key"><i class="dot"></i>the statement is true (24)</span><span class="key"><i class="ring"></i>the statement is not true (8)</span></div>
+    <div class="plot" id="fig-detector"></div>
+    <figcaption>The probability of each statement on a log-odds scale. All 32 are on the right side of 0.5. No statement got a probability between 0.05 and 0.99. The check used 6,006 tokens.</figcaption>
+  </figure>
+</section>
+<section>
+  <h2><span class="n">4</span>A longer wait is almost free</h2>
+  <p>Now the question that matters. Make the feed 3.3 times as long, from 60 s to 200 s.</p>
+  <p class="q">What grows?</p>
+  <figure>
+    <div class="bar"><span class="key"><i class="r"></i>the agent alone</span><span class="key"><i></i>the agent with Uniselector</span></div>
+    <div class="trio" id="fig-slopes"></div>
+    <figcaption>Four sessions of the schema task: two lengths of the feed, with and without Uniselector. Cost is in percent of the cost of the agent alone on the 60 s feed. Each axis starts at zero.</figcaption>
+  </figure>
+  <p>Alone, the longer feed added 62 turns, and the cost grew by 241%. With Uniselector it added 3 turns, and the cost grew by 3%. On the short feed the two are close. The second loop does not pay for itself until the wait is long.</p>
+  <p>The same design ran eight tasks of different kinds. Each answer was right.</p>
+  <figure>
+    <div class="tw"><table id="tasks"></table></div>
+    <figcaption>One session for each task. Cost is the cost of the main agent, in percent of the cost of the agent alone on the 60 s schema task. In the last column, one square is one look, and a gold square is a wake. The squares show counts, not times.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2><span class="n">5</span>An object carries its runners</h2>
+  <p class="q">Who repairs a broken object?</p>
+  <p>Until now, the main agent did. But many repairs are small. So each object carries a short list of runners, in order. The first one can be a free local model. If its repair does not hold at the next look, the object binds the next runner for one wake. After the last runner, the wake goes to the main agent. The handle never changes.</p>
+  <figure>
+    <div class="plot">
+      <svg id="bind" viewBox="0 0 880 170" role="img" aria-label="An object holds a slot for its runner. The runners are in order: a local model, then a larger model, then the main agent. A repair that does not hold binds the next runner for one wake.">
+        <defs><marker id="ai" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fm"/></marker></defs>
+        <rect x="40" y="30" width="300" height="112" rx="6" class="box"/><text x="60" y="58" class="h">object region_totals</text><text x="60" y="78" class="m">a handle + an operation + a check</text>
+        <rect x="60" y="94" width="260" height="34" rx="4" class="fbg sg" stroke-width="1.5"/><text x="74" y="116" class="m">runner now:</text><text id="slot" x="166" y="116" class="h">local</text>
+        <path d="M340 86H426" class="ln sm" marker-end="url(#ai)"/><text x="383" y="74" text-anchor="middle" class="m">in order</text>
+        <g class="chip on" id="c0"><rect x="430" y="64" width="120" height="44" rx="6" class="box"/><text x="490" y="91" text-anchor="middle" class="h">local</text></g>
+        <g class="chip" id="c1"><rect x="580" y="64" width="120" height="44" rx="6" class="box"/><text x="640" y="91" text-anchor="middle" class="h">top</text></g>
+        <g class="chip" id="c2"><rect x="730" y="64" width="120" height="44" rx="6" class="box"/><text x="790" y="91" text-anchor="middle" class="h">main</text></g>
+        <path d="M550 86H576" class="ln sm" marker-end="url(#ai)"/><path d="M700 86H726" class="ln sm" marker-end="url(#ai)"/>
+        <text x="640" y="44" text-anchor="middle" class="m">a repair did not hold → the next runner, for one wake</text>
+        <text x="490" y="130" text-anchor="middle" class="m">a free local model</text><text x="640" y="130" text-anchor="middle" class="m">a larger model</text><text x="790" y="130" text-anchor="middle" class="m">the main agent</text>
+      </svg>
+    </div>
+    <figcaption>The runner is a part of the object that can change. The check of the object and the path of a repair stay the same for each runner.</figcaption>
+  </figure>
+  <p>This part took three versions of the rules. Each version ran the same 60 s task.</p>
+  <figure>
+    <div class="bar"><span class="key"><i></i>session time</span><span class="key"><i class="x"></i>of that: the runner <code>top</code> worked and gave no repair</span></div>
+    <div class="plot" id="fig-runners"></div>
+    <figcaption>Four sessions of the schema task with the 60 s feed. Each answer was right. In the first two versions, the larger model read for many minutes and gave no result.</figcaption>
+  </figure>
+  <p>In the second version the goal of the plan also waited 432 s for that runner, and the goal had no relation to the broken object. The third rule removed that wait: a sentence of the plan does not wait for a runner. Here is the third run, second by second.</p>
+  <figure>
+    <div class="bar"><span class="key"><i class="dot"></i>a look, all inside</span><span class="key"><i class="dot g"></i>a look, one outside</span><button class="play" id="play-time" type="button">▶ play</button></div>
+    <div class="plot" id="fig-time"></div>
+    <figcaption>Run <code>run_20261116_200008_6843</code>: 19 looks, 4 wakes, 1 runner start, 50,636 tokens. The decision model cost 0.36% of the cost of the main agent. The local model cost nothing.</figcaption>
+  </figure>
+  <p>Look 7 found the new column name, and that one look gave two wakes. The local model got the broken object. The main agent got the sentence of the plan. The local model wrote a repair in 18.3 s while three looks waited. At 61.6 s the feed had 600 rows, and 0.4 s later the goal woke the main agent.</p>
+</section>
+
+<section>
+  <h2><span class="n">6</span>The repair that held, and was wrong</h2>
+  <p>Look at that repair again. The check of the object had two sentences: “The output has one row for each region with the columns region, total, and n” and “The column total is a number and is not null.” The new object passed both.</p>
+  <figure>
+    <div class="plot">
+      <svg viewBox="0 0 880 210" role="img" aria-label="The plan filters the orders to paid orders before it sums the amount for each region. After the repair by the local model, the filter is gone and the sum uses all orders.">
+        <defs><marker id="aj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fm"/></marker></defs>
+        <text x="40" y="66" class="s">the plan</text>
+        <rect x="170" y="40" width="100" height="44" rx="6" class="box"/><text x="220" y="66" text-anchor="middle">orders</text>
+        <rect x="320" y="40" width="180" height="44" rx="6" class="box"/><text x="410" y="66" text-anchor="middle">status = paid</text>
+        <rect x="550" y="40" width="170" height="44" rx="6" class="box"/><text x="635" y="66" text-anchor="middle">sum(amount)</text>
+        <rect x="770" y="40" width="90" height="44" rx="6" class="box"/><text x="815" y="66" text-anchor="middle">totals</text>
+        <path d="M270 62H316" class="ln sm" marker-end="url(#aj)"/><path d="M500 62H546" class="ln sm" marker-end="url(#aj)"/><path d="M720 62H766" class="ln sm" marker-end="url(#aj)"/>
+        <text x="40" y="166" class="s">the repair</text>
+        <rect x="170" y="140" width="100" height="44" rx="6" class="box"/><text x="220" y="166" text-anchor="middle">orders</text>
+        <path d="M270 162H546" class="ln sm" marker-end="url(#aj)"/>
+        <rect x="320" y="140" width="180" height="44" rx="6" class="fn sx dash" stroke-width="1.5"/><text x="410" y="130" text-anchor="middle" class="fx">the filter is gone</text>
+        <rect x="550" y="140" width="170" height="44" rx="6" class="box"/><text x="635" y="166" text-anchor="middle">sum(amount_usd)</text>
+        <rect x="770" y="140" width="90" height="44" rx="6" class="box"/><text x="815" y="166" text-anchor="middle">totals</text>
+        <path d="M720 162H766" class="ln sm" marker-end="url(#aj)"/>
+      </svg>
+    </div>
+    <figcaption>Each version sums the amount for each region. The local model used the new column name and dropped the filter. The first output of the repair gave north a total of 21,515.21 from 109 orders. The full feed has 61 paid orders for north, with a total of 10,483.22.</figcaption>
+  </figure>
+  <p>A check rejects only what it states. No sentence said “only paid orders”, so the detector had nothing to find. The final answer of the run was right because the main agent read the object at the last wake and built it again with the filter. No rule made it read the object.</p>
+</section>
+
+<section>
+  <h2><span class="n">7</span>What is not yet true</h2>
+  <ul class="limits">
+    <li>Model runners are not yet a gain. On the 60 s task a session with model runners took 22% more time and cost 42% more than a session with none.</li>
+    <li>The local model made three repairs of the totals. Two were right, and one was wrong.</li>
+    <li>In two wakes the runner <code>top</code> used 1,090,476 tokens and gave no result.</li>
+    <li>A runner can replace an object that works. One run shows this.</li>
+    <li>Each number on this page is one run. Nothing here is a benchmark.</li>
+    <li>The failure log has 64 entries. Each entry points to the run that shows it.</li>
+  </ul>
+  <p>What does hold: the split between the two loops. With no model runner, the cost of the main agent stayed flat while the wait grew, and the detector cost less than 1% of the cost of the main agent in each of the eight task runs.</p>
+  <p>The next version makes a runner any callable: a model, a human, or a script that the agent wrote one minute ago. A summary or an embedding of an output becomes the same binding on an object that exists already.</p>
+</section>
+
+<footer>
+  <div>Main agent: Claude Code in headless mode, claude-sonnet-5-5 · Decision model: perplexity/pplx-decider-v1.2</div>
+  <div>Runner local: qwen3.8-27b · Runner top: deepseek-v4.1-flash-1017 · Built on DataHandles 0.4</div>
+  <div>Code state: 43 tests pass · mutation check 37 of 37 · decisions D1 to D52 · failures F1 to F64</div>
+</footer>
+</div>
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const S = (tag, a = {}, p) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+const T = (p, x, y, s, a = {}) => { const e = S("text", { x, y, ...a }, p); e.textContent = s; return e; };
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString("en-US");
+const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function run(ms, step, done) {
+  if (still) { step(1); if (done) done(); return; }
+  const t0 = performance.now();
+  (function f(t) { const k = Math.min(1, Math.max(0, (t - t0) / ms)); step(k); if (k < 1) requestAnimationFrame(f); else if (done) done(); })(t0);
+}
+function playable(button, ms, step) {
+  button.addEventListener("click", () => { button.disabled = true; run(ms, step, () => { button.disabled = false; }); });
+}
+
+// Context of the main agent at each model request: [session time in s, tokens]. Source: agent-stream.jsonl of the two sessions.
+const ALONE = [[0,5852],[1.3,6060],[4.7,6762],[9.2,7712],[11.6,8068],[14,8604],[17.5,9100],[19.9,9274],[21.8,9717],[26,12987],[28.3,13158],[31,13309],[33.7,13783],[37.5,13976],[40.4,14127],[42.2,14278],[44.2,14429],[46.6,14580],[50.3,14762],[53.1,14942],[56.1,15167],[60.6,15318],[63.9,15469],[65.9,15620],[68.7,15802],[72.7,16066],[76.3,16464],[78.6,16968],[80.8,17119],[84.5,17270],[86.3,17421],[88.1,17603],[90.5,17796],[93.5,17947],[96.2,18098],[97.8,18249],[100.2,18400],[101.8,18582],[104.2,18770],[106.4,18921],[108.3,19072],[110,19300],[112.3,19451],[114.8,19633],[117,19827],[120.3,19978],[122.8,20129],[126,20280],[128.3,20431],[130.2,20690],[133,20879],[135.9,21030],[138.2,21181],[141.4,21332],[143.6,21483],[146.5,21665],[149.6,21845],[153.3,22073],[155.8,22224],[157.9,22375],[159.7,22526],[162.8,22708],[165.1,22888],[167.4,23039],[169,23267],[172.1,23418],[174.5,23569],[177.5,23751],[180.1,23931],[182.5,24159],[184.4,24310],[186.5,24461],[190.1,24612],[193.2,24794],[195.6,24974],[197.5,25125],[199.1,25353],[201.2,25504],[204.1,25655],[206.8,25837],[210.3,26016],[212.9,26244],[220,26779],[222.1,26993]];
+const WITH = [[0,7793],[1.4,8004],[3.6,8712],[6.3,9488],[8.4,9797],[11.9,10114],[14.7,10609],[16.7,11607],[20.2,11859],[76.1,13457],[79.1,13778],[83.5,14129],[85.9,14412],[218.2,15890],[222.7,16122]];
+
+(function context() {
+  const host = $("fig-context"), W = 880, H = 396, L = 62, R = 730, Tp = 26, B = 346;
+  const x = t => L + (R - L) * t / 230, y = v => B - (B - Tp) * v / 30000;
+  const svg = S("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Context of the main agent against session time. Alone, the context climbs in 84 steps from 5,852 to 26,993 tokens. With Uniselector it climbs in three short groups of steps to 16,122 tokens and is flat between them." }, host);
+  for (const v of [0, 10000, 20000, 30000]) { S("line", { x1: L, x2: R, y1: y(v), y2: y(v), class: "ax" }, svg); T(svg, L - 8, y(v) + 4, fmt(v), { "text-anchor": "end", class: "m" }); }
+  T(svg, L, 14, "tokens in the context", { class: "m" });
+  for (const t of [0, 50, 100, 150, 200]) T(svg, x(t), B + 18, t, { "text-anchor": "middle", class: "m" });
+  T(svg, R, B + 38, "session time, s", { "text-anchor": "end", class: "m" });
+  const clip = S("rect", { x: 0, y: 0, width: W, height: H }, S("clipPath", { id: "cc" }, svg));
+  const g = S("g", { "clip-path": "url(#cc)" }, svg);
+  const step = (pts, end) => pts.map((p, i) => (i ? `H${x(p[0])}V${y(p[1])}` : `M${x(p[0])} ${y(p[1])}`)).join("") + `H${x(end)}`;
+  // what the agent does in each group of steps of the blue line
+  for (const [t, v, label, anchor, tx] of [[10, 10114, "builds the objects", "start", 2], [81, 13778, "repairs one object", "middle", 81], [220.5, 15890, "reports", "end", 226]]) {
+    S("line", { x1: x(t), x2: x(t), y1: y(v) + 10, y2: y(3000) - 14, class: "ax dash" }, g);
+    T(g, x(tx), y(3000), label, { "text-anchor": anchor, class: "s" });
+  }
+  T(g, x(48), y(11859) + 18, "asleep", { "text-anchor": "middle", class: "s m" });
+  T(g, x(152), y(14412) + 18, "asleep", { "text-anchor": "middle", class: "s m" });
+  S("path", { d: step(ALONE, 225.3), class: "ln sr" }, g);
+  S("path", { d: step(WITH, 226.7), class: "ln sb" }, g);
+  for (const p of WITH) S("circle", { cx: x(p[0]), cy: y(p[1]), r: 3.5, class: "fb" }, g);
+  T(svg, R + 10, y(26993) + 4, "alone", { class: "h" }); T(svg, R + 10, y(26993) + 21, "26,993 tokens", { class: "m" });
+  T(svg, R + 10, y(16122) + 4, "with Uniselector", { class: "h" }); T(svg, R + 10, y(16122) + 21, "16,122 tokens", { class: "m" });
+  // hover: the two values at one time
+  const cur = S("line", { y1: Tp, y2: B, class: "ax si", visibility: "hidden" }, svg);
+  const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; host.appendChild(tip);
+  const last = (pts, t) => { let v = null; for (const p of pts) if (p[0] <= t) v = p[1]; return v; };
+  const hit = S("rect", { x: L, y: Tp, width: R - L, height: B - Tp, fill: "transparent" }, svg);
+  hit.addEventListener("pointermove", e => {
+    const r = svg.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, t = Math.max(0, Math.min(226.7, (sx - L) / (R - L) * 230));
+    cur.setAttribute("x1", x(t)); cur.setAttribute("x2", x(t)); cur.setAttribute("visibility", "visible");
+    const a = last(ALONE, Math.min(t, 225.3)), w = last(WITH, t);
+    tip.innerHTML = `${t.toFixed(0)} s<br>alone ${fmt(a)}<br>with Uniselector ${fmt(w)}`;
+    tip.hidden = false;
+    const px = e.clientX - host.getBoundingClientRect().left + host.scrollLeft;
+    tip.style.left = (sx > W / 2 ? px - tip.offsetWidth - 14 : px + 14) + "px";
+  });
+  hit.addEventListener("pointerleave", () => { cur.setAttribute("visibility", "hidden"); tip.hidden = true; });
+  playable($("play-context"), 7000, k => clip.setAttribute("width", k < 1 ? x(230 * k) : W));
+})();
+
+(function looks() {
+  // The 22 looks of run_20261116_163355_18ad: run time in s, then the probability of each sentence. Source: decisions.jsonl.
+  const t = [0.6,9.3,11.5,21.5,31.4,41.5,51.8,61.4,74.5,82.6,92.5,102.6,112.5,122.6,132.5,142.5,152.6,162.6,172.5,182.6,192.9,202.6];
+  const rows = [
+    ["“No object shows an error.”", [.9979,.999,.9991,.9992,.9994,.9992,.9991,.0009,.9991,.9991,.9992,.9993,.9995,.9993,.9994,.9995,.9993,.9995,.9994,.9995,.9995,.9991]],
+    ["“The feed has fewer than 600 rows.”", [.9833,.9851,.9858,.9813,.9914,.9811,.9761,.9812,.9766,.9793,.9909,.9917,.9893,.9888,.992,.9946,.994,.9874,.9919,.9924,.9959,.001]],
+    ["The check of the totals (the main agent wrote this sentence again after wake 1)", [.1388,.9987,.9985,.9985,.999,.9985,.9984,.0008,.9989,.9987,.9989,.9989,.999,.999,.9992,.9992,.999,.9989,.999,.9992,.9992,.9991]],
+  ];
+  const wake = { 0: 1, 7: 2, 21: 3 };
+  const host = $("fig-looks"), W = 880, H = 344, L = 70, R = 820;
+  const x = s => L + (R - L) * s / 210;
+  const svg = S("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Three rows of 22 dots. Almost all dots are near probability 1. One dot is low at look 1, two at look 8, and one at look 22. Each low dot is a wake." }, host);
+  const marks = [];
+  rows.forEach(([title, p], i) => {
+    const y0 = 36 + i * 100, h = 54, y = v => y0 + h * (1 - v);
+    T(svg, L, y0 - 12, title, { class: "s m" });
+    S("line", { x1: L, x2: R, y1: y(1), y2: y(1), class: "ax" }, svg); S("line", { x1: L, x2: R, y1: y(0), y2: y(0), class: "ax" }, svg);
+    S("line", { x1: L, x2: R, y1: y(.5), y2: y(.5), class: "ax dash" }, svg);
+    for (const v of [1, .5, 0]) T(svg, L - 10, y(v) + 4, v, { "text-anchor": "end", class: "m" });
+    p.forEach((v, j) => {
+      const g = S("g", {}, svg), out = v < .5;
+      S("title", {}, g).textContent = `look ${j + 1} at ${t[j]} s: p = ${v}`;
+      S("circle", { cx: x(t[j]), cy: y(v), r: 5, class: out ? "fg" : "fb" }, g);
+      if (out) T(g, x(t[j]) + 10, y(v) + 4, "wake " + wake[j]);
+      marks.push([t[j], g]);
+    });
+  });
+  for (const s of [0, 50, 100, 150, 200]) T(svg, x(s), 310, s, { "text-anchor": "middle", class: "m" });
+  T(svg, R, 332, "run time, s", { "text-anchor": "end", class: "m" });
+  playable($("play-looks"), 6000, k => { for (const [s, g] of marks) g.setAttribute("visibility", k >= 1 || s <= 210 * k ? "visible" : "hidden"); });
+})();
+</script>
+<script>
+(function detector() {
+  // The 32 statements of the detector check (probe_20261116_v4): the probability that the decision model gave.
+  const yes = [.9956,.9959,.9964,.9975,.9976,.9985,.9988,.999,.9992,.9992,.9992,.9993,.9993,.9993,.9993,.9994,.9994,.9994,.9994,.9994,.9995,.9995,.9995,.9995];
+  const no = [.0003,.0008,.0013,.0015,.0067,.0142,.0429,.0493];
+  const host = $("fig-detector"), W = 880, H = 178, L = 50, R = 830, base = 122;
+  const lg = p => Math.log(p / (1 - p)), x = p => L + (R - L) * (lg(p) + 8.6) / 17.2;
+  const svg = S("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Eight statements that are not true have probabilities from 0.0003 to 0.0493. Twenty-four true statements have probabilities from 0.9956 to 0.9995. The range between is empty." }, host);
+  S("rect", { x: x(.0493) + 12, y: 34, width: x(.9956) - x(.0493) - 24, height: base - 34, class: "fp" }, svg);
+  T(svg, x(.5) + 14, 70, "no statement in this range", { class: "s m" });
+  S("line", { x1: L, x2: R, y1: base, y2: base, class: "ax" }, svg);
+  S("line", { x1: x(.5), x2: x(.5), y1: 24, y2: base + 6, class: "ax si dash" }, svg);
+  T(svg, x(.5), 16, "the limit: 0.5", { "text-anchor": "middle" });
+  for (const p of [.001, .01, .1, .5, .9, .99, .999]) { S("line", { x1: x(p), x2: x(p), y1: base, y2: base + 6, class: "ax" }, svg); T(svg, x(p), base + 22, p, { "text-anchor": "middle", class: "m" }); }
+  T(svg, R, base + 46, "probability that the statement is true (log-odds scale)", { "text-anchor": "end", class: "m" });
+  const stack = {};
+  const dot = (p, truth) => {
+    const bin = Math.round(x(p) / 11), n = stack[bin] = (stack[bin] || 0) + 1;
+    const c = S("circle", { cx: bin * 11, cy: base - 9 - (n - 1) * 11, r: 4.5, class: truth ? "fb" : "fbg sr", "stroke-width": truth ? 0 : 2 }, svg);
+    S("title", {}, c).textContent = `p = ${p}, the statement is ${truth ? "true" : "not true"}`;
+  };
+  no.forEach(p => dot(p, false)); yes.forEach(p => dot(p, true));
+})();
+
+(function slopes() {
+  const panels = [
+    ["Turns of the main agent", [31, 93], [15, 18], v => String(v)],
+    ["Cost, alone at 60 s = 100%", [100, 341], [82, 84], v => v + "%"],
+    ["Peak context, tokens", [13204, 26993], [14275, 16122], fmt],
+  ];
+  for (const [title, alone, uni, f] of panels) {
+    const div = document.createElement("div"); $("fig-slopes").appendChild(div);
+    const h3 = document.createElement("h3"); h3.textContent = title; div.appendChild(h3);
+    const W = 280, H = 226, X = [78, 202], top = 16, bot = 186, max = alone[1] * 1.06;
+    const y = v => bot - (bot - top) * v / max;
+    const svg = S("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${title}. Alone: ${f(alone[0])} on the 60 s feed and ${f(alone[1])} on the 200 s feed. With Uniselector: ${f(uni[0])} and ${f(uni[1])}.` }, div);
+    S("line", { x1: 40, x2: 240, y1: bot, y2: bot, class: "ax" }, svg);
+    T(svg, X[0], 208, "60 s feed", { "text-anchor": "middle", class: "m" }); T(svg, X[1], 208, "200 s feed", { "text-anchor": "middle", class: "m" });
+    for (const [d, c, f2] of [[alone, "sr", "fr"], [uni, "sb", "fb"]]) {
+      S("line", { x1: X[0], y1: y(d[0]), x2: X[1], y2: y(d[1]), class: "ln " + c }, svg);
+      d.forEach((v, i) => S("circle", { cx: X[i], cy: y(v), r: 4.5, class: f2 }, svg));
+    }
+    [0, 1].forEach(i => {   // value labels at each end; labels that are too near move apart
+      let ya = y(alone[i]) + 4, yu = y(uni[i]) + 4;
+      if (Math.abs(ya - yu) < 15) { const mid = (ya + yu) / 2, up = ya < yu ? -1 : 1; ya = mid + up * 7.5; yu = mid - up * 7.5; }
+      const a = { "text-anchor": i ? "start" : "end" }, tx = X[i] + (i ? 10 : -10);
+      T(svg, tx, ya, f(alone[i]), a); T(svg, tx, yu, f(uni[i]), a);
+    });
+  }
+})();
+
+(function tasks() {
+  const rows = [
+    ["schema, 60 s feed", "A column of a feed that grows gets a new name.", "83.1", 15, "82%", 19, 2],
+    ["schema, 200 s feed", "The same, with a longer feed.", "226.7", 18, "84%", 22, 3],
+    ["shift", "New orders get the status settled in place of paid.", "85.6", 17, "89%", 15, 2],
+    ["silent", "The sensor in use stops, and the other one goes on.", "135.1", 12, "70%", 54, 2],
+    ["goal", "Switch a heater on, wait for 26 degrees, switch it off.", "183.5", 11, "44%", 55, 1],
+    ["goal-human", "The same, and only a human can approve the heater.", "197.6", 14, "68%", 58, 1],
+    ["code", "A script runs for 90 s and prints a checksum.", "107.2", 6, "33%", 6, 1],
+    ["api", "One request takes 90 s.", "103.1", 5, "30%", 6, 1],
+  ];
+  const cell = (tr, tag, s, cls) => { const c = document.createElement(tag); c.textContent = s; if (cls) c.className = cls; tr.appendChild(c); return c; };
+  const head = $("tasks").createTHead().insertRow();
+  ["Task", "What happens", "Session, s", "Turns", "Cost", "Looks", "Wakes", "Looks and wakes"].forEach((s, i) => cell(head, "th", s, i === 1 || i === 7 ? "l" : ""));
+  const body = $("tasks").createTBody();
+  for (const r of rows) {
+    const tr = body.insertRow();
+    cell(tr, "td", r[0]); cell(tr, "td", r[1], "what l"); for (const i of [2, 3, 4, 5, 6]) cell(tr, "td", r[i]);
+    const sq = document.createElement("span"); sq.className = "sq";
+    for (let i = 0; i < r[5]; i++) { const b = document.createElement("i"); if (i >= r[5] - r[6]) b.className = "w"; sq.appendChild(b); }
+    cell(tr, "td", "", "l").appendChild(sq);
+  }
+})();
+
+(function runners() {
+  const rows = [["no model runner", 83.1, 0], ["runners in order (D50)", 768.3, 580.5], ["a repair is on trial (D51)", 533.8, 429.7], ["the plan does not wait (D52)", 101.2, 0]];
+  const host = $("fig-runners"), W = 880, H = 232, L = 262, R = 820, x = s => L + (R - L) * s / 800;
+  const svg = S("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Session time of four sessions: 83.1 s with no model runner, then 768.3 s, 533.8 s and 101.2 s for three versions of the rules for model runners." }, host);
+  for (const s of [0, 200, 400, 600, 800]) { S("line", { x1: x(s), x2: x(s), y1: 14, y2: 194, class: "ax" }, svg); T(svg, x(s), 212, s, { "text-anchor": "middle", class: "m" }); }
+  T(svg, R, 230, "session time, s", { "text-anchor": "end", class: "m" });
+  rows.forEach(([name, total, waste], i) => {
+    const y = 26 + i * 44;
+    T(svg, L - 12, y + 15, name, { "text-anchor": "end" });
+    const split = x(total - waste);
+    S("rect", { x: L, y, width: split - L - (waste ? 1 : 0), height: 22, rx: 3, class: "fb" }, svg);
+    if (waste) {
+      S("rect", { x: split + 1, y, width: x(total) - split - 1, height: 22, rx: 3, class: "fx" }, svg);
+      T(svg, (split + x(total)) / 2, y + 15, waste.toFixed(1) + " s", { "text-anchor": "middle", class: "fbg h" });
+    }
+    T(svg, x(total) + 8, y + 15, total.toFixed(1) + " s", { class: "m halo" });
+  });
+})();
+
+(function time() {
+  // Run run_20261116_200008_6843: the time of each look in s, and the looks that found a sentence outside. Source: decisions.jsonl, events.jsonl.
+  const looks = [.8,4.6,8.9,10.6,14.6,16.6,20.6,26.3,32,34.1,38,40.1,44,46.1,50,52,56.1,58.1,62];
+  const out = { 6: "wake", 7: "wake", 8: "held", 9: "held", 10: "held", 18: "wake" };
+  const host = $("fig-time"), W = 880, H = 252, L = 130, R = 850, x = s => L + (R - L) * s / 84;
+  const svg = S("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Timeline of one run. Look 7 at 20.6 s gives two wakes. The local model works from 20.6 s to 39.4 s. The main agent is awake from 20.6 to 24.3 s, from 26.3 to 30.0 s, and from 62.0 to 80.3 s." }, host);
+  const marks = [], lane = { looks: 72, main: 124, local: 172 };
+  for (const [name, y] of [["looks", lane.looks], ["main agent", lane.main], ["runner local", lane.local]]) { T(svg, L - 14, y + 4, name, { "text-anchor": "end" }); S("line", { x1: L, x2: R, y1: y, y2: y, class: "ax" }, svg); }
+  for (const s of [0, 20, 40, 60, 80]) T(svg, x(s), 226, s, { "text-anchor": "middle", class: "m" });
+  T(svg, R, 246, "run time, s", { "text-anchor": "end", class: "m" });
+  const add = (s, e) => { marks.push([s, e]); return e; };
+  looks.forEach((s, i) => {
+    const kind = out[i], c = add(s, S("circle", { cx: x(s), cy: lane.looks, r: 5, class: kind === "held" ? "fbg sg" : kind ? "fg" : "fb", "stroke-width": kind === "held" ? 2 : 0 }, svg));
+    S("title", {}, c).textContent = `look ${i + 1} at ${s} s` + (kind === "held" ? ": outside, and it waits for the runner" : kind ? ": outside" : ": all inside");
+  });
+  add(20.6, T(svg, x(21.6), 44, "look 7: two wakes", { "text-anchor": "end" }));
+  add(32, T(svg, x(31), 44, "9 to 11 wait", {}));
+  add(62, T(svg, R, 44, "look 19: the feed has 600 rows", { "text-anchor": "end" }));
+  for (const [a, b, label, anchor] of [[20.6, 24.3, "wake 2", "end"], [26.3, 30, "wake 3", "start"], [62, 80.3, "wake 4: builds the totals again", "end"]]) {
+    add(a, S("rect", { x: x(a), y: lane.main - 8, width: x(b) - x(a), height: 16, rx: 3, class: "fm" }, svg));
+    add(a, T(svg, anchor === "end" ? x(b) : x(a), lane.main - 14, label, { "text-anchor": anchor, class: "m" }));
+  }
+  add(20.6, S("rect", { x: x(20.6), y: lane.local - 8, width: x(39.4) - x(20.6), height: 16, rx: 3, class: "fm" }, svg));
+  add(20.6, T(svg, x(40.6), lane.local + 4, "wake 1: repairs region_totals in 11 calls", { class: "m halo" }));
+  const cur = S("line", { y1: 50, y2: 196, class: "ax sg", visibility: "hidden" }, svg);
+  playable($("play-time"), 7000, k => {
+    const s = 84 * k;
+    cur.setAttribute("x1", x(s)); cur.setAttribute("x2", x(s)); cur.setAttribute("visibility", k < 1 ? "visible" : "hidden");
+    for (const [t, e] of marks) e.setAttribute("visibility", k >= 1 || t <= s ? "visible" : "hidden");
+  });
+})();
+
+(function motion() {
+  if (still) return;
+  const at = (p, k) => p.getPointAtLength(k * p.getTotalLength());
+  const put = (d, pt) => { d.setAttribute("cx", pt.x); d.setAttribute("cy", pt.y); };
+  const seq = ["m-look", "m-look2", "m-w1", "m-w2", "m-w3"].map($), t0 = performance.now();
+  (function f(t) {
+    const s = (t - t0) / 1000, cycle = Math.floor(s / 3) % 3, u = (s % 3) / 3;
+    put($("d-in"), at($("m-in"), (s / 1.6) % 1)); put($("d-out"), at($("m-out"), (s / 1.6 + .5) % 1));
+    // two looks of three stop at the decision model; the third one goes on to a wake
+    const k = cycle < 2 ? Math.min(1, u / .45) * 2 : u * 5, i = Math.min(cycle < 2 ? 1 : 4, Math.floor(k));
+    put($("d-look"), at(seq[i], Math.min(1, k - i)));
+    requestAnimationFrame(f);
+  })(t0);
+  const order = [0, 0, 0, 1, 0, 0, 1, 2], names = ["local", "top", "main"]; let n = 0;
+  setInterval(() => { n = (n + 1) % order.length; names.forEach((_, j) => $("c" + j).classList.toggle("on", j === order[n])); $("slot").textContent = names[order[n]]; }, 1500);
+})();
+</script>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 370.0" width="880" role="img" aria-label="Two loops. In the first loop the objects read the world with no model. In the second loop a decision model looks at the essential variables, and only when a probability is below 0.5 does a wake make a runner write a new version of an object."><title>Two loops. In the first loop the objects read the world with no model. In the second loop a decision model looks at the essential variables, and only when a probability is below 0.5 does a wake make a runner write a new version of an object.</title><style>
+text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace; font-size: 12px; fill: #ece8dd; }
+text.m { fill: #9aa3b2; } text.s { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 14.5px; } text.h { font-weight: 600; }
+.ax { stroke: #2a3140; stroke-width: 1; fill: none; } .ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.sb { stroke: #2B9FC6; } .sr { stroke: #C8763E; } .sg { stroke: #E8C547; } .sm { stroke: #9aa3b2; } .si { stroke: #ece8dd; } .sx { stroke: #F0685A; }
+.fb { fill: #2B9FC6; } .fr { fill: #C8763E; } .fg { fill: #E8C547; } .fx, text.fx { fill: #F0685A; } .fbg, text.fbg { fill: #10141c; } .fp { fill: #161b25; } .fn { fill: none; } .fm { fill: #9aa3b2; }
+.box { fill: #161b25; stroke: #2a3140; stroke-width: 1.5; } .dash { stroke-dasharray: 5 5; }
+text.halo { paint-order: stroke; stroke: #10141c; stroke-width: 4px; stroke-linejoin: round; }
+.chip.on rect { stroke: #E8C547; stroke-width: 2.5; }
+</style><rect x="0" y="0" width="880" height="370.0" rx="8" fill="#10141c"/>
+        <defs>
+          <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fb"></path></marker>
+          <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="fg"></path></marker>
+        </defs>
+        <line x1="40" y1="42" x2="76" y2="42" class="ln sb"></line><text x="86" y="46">first loop: runs with no model</text>
+        <line x1="40" y1="68" x2="76" y2="68" class="ln sg"></line><text x="86" y="72">second loop: acts by one step</text>
+        <text x="40" y="112" class="s m">after Ashby, Design for a Brain (1960),</text>
+        <text x="40" y="132" class="s m">chapter 7: the ultrastable system</text>
+        <rect x="40" y="250" width="220" height="90" rx="6" class="box"></rect><text x="150" y="290" text-anchor="middle" class="h">the world</text><text x="150" y="310" text-anchor="middle" class="m">a feed · an API · a job</text>
+        <rect x="400" y="250" width="220" height="90" rx="6" class="box"></rect><text x="510" y="290" text-anchor="middle" class="h">objects</text><text x="510" y="310" text-anchor="middle" class="m">a handle + one operation</text>
+        <rect x="400" y="135" width="220" height="60" rx="6" class="box"></rect><text x="510" y="161" text-anchor="middle" class="h">essential variables</text><text x="510" y="180" text-anchor="middle" class="m">sentences that stay true</text>
+        <rect x="400" y="25" width="220" height="60" rx="6" class="box"></rect><text x="510" y="51" text-anchor="middle" class="h">decision model</text><text x="510" y="70" text-anchor="middle" class="m">p for each sentence</text>
+        <rect x="700" y="25" width="150" height="60" rx="6" class="box"></rect><text x="775" y="51" text-anchor="middle" class="h">wake</text><text x="775" y="70" text-anchor="middle" class="m">the step</text>
+        <rect x="700" y="250" width="150" height="90" rx="6" class="box"></rect><text x="775" y="283" text-anchor="middle" class="h">runner</text><text x="775" y="303" text-anchor="middle" class="m">a model · a human</text><text x="775" y="320" text-anchor="middle" class="m">· the main agent</text>
+        <path id="m-in" d="M260 278H398" class="ln sb" marker-end="url(#ab)"></path><text x="329" y="268" text-anchor="middle" class="m">new data</text>
+        <path id="m-out" d="M400 312H262" class="ln sb" marker-end="url(#ab)"></path><text x="329" y="332" text-anchor="middle" class="m">operations</text>
+        <path id="m-look" d="M510 250V197" class="ln sg" marker-end="url(#ag)"></path><text x="522" y="228" class="m">outputs</text>
+        <path id="m-look2" d="M510 135V87" class="ln sg" marker-end="url(#ag)"></path><text x="522" y="115" class="m">a look</text>
+        <path id="m-w1" d="M620 55H698" class="ln sg" marker-end="url(#ag)"></path><text x="659" y="44" text-anchor="middle" class="m">p &lt; 0.5</text>
+        <path id="m-w2" d="M775 85V248" class="ln sg" marker-end="url(#ag)"></path><text x="763" y="165" text-anchor="end" class="m">the reason</text><text x="763" y="182" text-anchor="end" class="m">+ the objects</text>
+        <path id="m-w3" d="M700 295H622" class="ln sg" marker-end="url(#ag)"></path><text x="661" y="284" text-anchor="middle" class="m">a new</text><text x="661" y="314" text-anchor="middle" class="m">version</text>
+        <circle id="d-in" cx="329" cy="278" r="5" class="fb"></circle><circle id="d-out" cx="329" cy="312" r="5" class="fb"></circle><circle id="d-look" cx="510" cy="222" r="6" class="fg"></circle>
+      </svg>

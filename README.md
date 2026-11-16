@@ -16,6 +16,13 @@ stepping switch that chose a new configuration when a unit's essential variable 
 
 ## How it works
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/two-loops-dark.svg">
+  <img src="docs/figures/two-loops-light.svg" alt="Two loops: the objects read the world with no model, and a decision model wakes a runner only when an essential variable is outside its limits." width="880">
+</picture>
+
+*The first loop runs all the time and uses no model. The second loop reads the outputs. Most looks stop at the decision model, because each sentence is still true. Only a probability below 0.5 goes on to a wake.*
+
 | Ashby | In this system |
 | --- | --- |
 | Environment | The resources behind the handles: a feed, a room, a service, a script |
@@ -43,6 +50,13 @@ one yes-or-no question for each variable. A variable is outside its limits when 
 "yes" is below 0.5 (`docs/DECISIONS.md`, D31 and D32).
 
 ### An object carries its runners
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/runners-in-order-dark.svg">
+  <img src="docs/figures/runners-in-order-light.svg" alt="An object holds its current runner. The runners are in order: a local model, a larger model, the main agent." width="880">
+</picture>
+
+*The runner is a part of the object that can change. The check of the object and the path of a repair stay the same for each runner.*
 
 An object can have a check of its own (`variables`) and an ordered list of `runners`:
 
@@ -128,6 +142,11 @@ OpenRouter. The hard limits were 400,000 tokens and 1,800 s. `tasks/drive.py` ru
 the world on a schedule while the main agent works, and checks the answer against a truth that it
 computes without a model. The rows are single runs, not a benchmark.
 
+Each cost is a percentage. The base is the cost of the main agent alone on the schema task with
+the 60 s feed: 100% is $0.1139, as Claude Code states it. The cost of the decision model is a
+percentage of the cost of the main agent in the same run. Each `record.json` of the evidence has
+the costs in dollars.
+
 The tasks:
 
 - **schema**: a feed of orders grows. The main agent keeps totals for each region. After 18 s
@@ -139,39 +158,61 @@ The tasks:
 - **code**: a script that runs for 90 s and prints a checksum.
 - **api**: one request that takes 90 s.
 
-| Task | Answer | Session time | Turns of the main agent | Main agent context, first turn to peak | Cost of the main agent | Looks | Wakes | Operations | Confirmations | Run tokens | Cost of the decision model |
+| Task | Answer | Session time | Turns of the main agent | Main agent context, first turn to peak | Cost of the main agent, of the base | Looks | Wakes | Operations | Confirmations | Run tokens | Cost of the decision model, of the main agent |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| schema, 60 s feed | right | 83.1 s | 15 | 7,793 to 14,275 | $0.0929 | 19 | 2 | 38 | 0 | 11,105 | $0.000222 |
-| schema, 200 s feed | right | 226.7 s | 18 | 7,793 to 16,122 | $0.0960 | 22 | 3 | 42 | 0 | 12,942 | $0.000259 |
-| shift | right | 85.6 s | 17 | 7,817 to 16,153 | $0.1012 | 15 | 2 | 38 | 0 | 11,771 | $0.000235 |
-| silent | right | 135.1 s | 12 | 7,827 to 14,465 | $0.0792 | 54 | 2 | 65 | 0 | 34,233 | $0.000685 |
-| goal | right | 183.5 s | 11 | 7,737 to 10,947 | $0.0504 | 55 | 1 | 56 | 0 | 21,273 | $0.000425 |
-| goal-human | right | 197.6 s | 14 | 7,839 to 14,494 | $0.0770 | 58 | 1 | 61 | 2, each one by the human | 25,648 | $0.000513 |
-| code | right | 107.2 s | 6 | 7,720 to 9,863 | $0.0371 | 6 | 1 | 1 | 0 | 2,345 | $0.000047 |
-| api | right | 103.1 s | 5 | 7,735 to 9,589 | $0.0339 | 6 | 1 | 1 | 0 | 2,143 | $0.000043 |
+| schema, 60 s feed | right | 83.1 s | 15 | 7,793 to 14,275 | 82% | 19 | 2 | 38 | 0 | 11,105 | 0.24% |
+| schema, 200 s feed | right | 226.7 s | 18 | 7,793 to 16,122 | 84% | 22 | 3 | 42 | 0 | 12,942 | 0.27% |
+| shift | right | 85.6 s | 17 | 7,817 to 16,153 | 89% | 15 | 2 | 38 | 0 | 11,771 | 0.23% |
+| silent | right | 135.1 s | 12 | 7,827 to 14,465 | 70% | 54 | 2 | 65 | 0 | 34,233 | 0.86% |
+| goal | right | 183.5 s | 11 | 7,737 to 10,947 | 44% | 55 | 1 | 56 | 0 | 21,273 | 0.84% |
+| goal-human | right | 197.6 s | 14 | 7,839 to 14,494 | 68% | 58 | 1 | 61 | 2, each one by the human | 25,648 | 0.67% |
+| code | right | 107.2 s | 6 | 7,720 to 9,863 | 33% | 6 | 1 | 1 | 0 | 2,345 | 0.13% |
+| api | right | 103.1 s | 5 | 7,735 to 9,589 | 30% | 6 | 1 | 1 | 0 | 2,143 | 0.13% |
 
 A look is one request to the decision model. An operation is one run of an object. The run tokens
-are the spend against the token budget: the input tokens of the decision model. The two costs are
+are the spend against the token budget: the input tokens of the decision model. The two costs come from
 the costs that Claude Code and the Decisions API state. The evidence of each row is a directory in
 `docs/evidence`, in the order of the table: `schema_20261116_162735`, `schema_20261116_163338`,
 `shift_20261116_164133`, `silent_20261116_164259`, `goal_20261116_164515`,
 `goal-human_20261116_164819`, `code_20261116_165137`, `api_20261116_165326`.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/looks-dark.svg">
+  <img src="docs/figures/looks-light.svg" alt="The probability of each sentence at each of the 22 looks of one run. Three looks have a probability below 0.5, and each one is a wake." width="880">
+</picture>
+
+*The 22 looks of the run with the 200 s feed (`run_20261116_163355_18ad`). Each row is one sentence, and each dot is the probability that the decision model gave it at one look. Wake 1 had no fault of the feed (F47). Wake 2 is the new column name. Wake 3 is the end of the feed.*
 
 ### Baseline: the main agent alone
 
 `tasks/drive.py --direct` gives the main agent the same task and only the DataHandles tools. It
 watches the feed itself. Each row is one run.
 
-| Task | Mode | Answer | Session time | Turns of the main agent | Main agent context, first turn to peak | Cost of the main agent |
-| --- | --- | --- | --- | --- | --- | --- |
-| schema, 60 s feed | Uniselector | right | 83.1 s | 15 | 7,793 to 14,275 | $0.0929 |
-| schema, 60 s feed | alone | right | 69.8 s | 31 | 5,852 to 13,204 | $0.1139 |
-| schema, 200 s feed | Uniselector | right | 226.7 s | 18 | 7,793 to 16,122 | $0.0960 |
-| schema, 200 s feed | alone | right | 225.3 s | 93 | 5,852 to 26,993 | $0.3889 |
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/context-dark.svg">
+  <img src="docs/figures/context-light.svg" alt="The context of the main agent against session time. Alone, it climbs at each request. With Uniselector, it climbs in three short groups of steps and is flat between them." width="880">
+</picture>
 
-- With Uniselector, the feed that is 3.3 times as long added 3 turns and $0.003 to the main agent.
-  Alone, it added 62 turns and $0.275: the main agent made 88 `handle_invoke` calls, and each
+*The context of the main agent in the two sessions with the 200 s feed. Each step is one model request. Alone: 93 turns. With Uniselector: 18 turns, and 25% of the cost. Each answer was right.*
+
+| Task | Mode | Answer | Session time | Turns of the main agent | Main agent context, first turn to peak | Cost of the main agent, of the base |
+| --- | --- | --- | --- | --- | --- | --- |
+| schema, 60 s feed | Uniselector | right | 83.1 s | 15 | 7,793 to 14,275 | 82% |
+| schema, 60 s feed | alone | right | 69.8 s | 31 | 5,852 to 13,204 | 100% |
+| schema, 200 s feed | Uniselector | right | 226.7 s | 18 | 7,793 to 16,122 | 84% |
+| schema, 200 s feed | alone | right | 225.3 s | 93 | 5,852 to 26,993 | 341% |
+
+- With Uniselector, the feed that is 3.3 times as long added 3 turns to the main agent, and its cost grew by 3%.
+  Alone, it added 62 turns, and the cost grew by 241%: the main agent made 88 `handle_invoke` calls, and each
   answer stayed in its context.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/longer-wait-dark.svg">
+  <img src="docs/figures/longer-wait-light.svg" alt="Turns, cost and peak context of the main agent for the 60 s feed and the 200 s feed, alone and with Uniselector." width="880">
+</picture>
+
+*The four sessions of the table. Each axis starts at zero.*
+
 - On the 60 s feed the two modes are close. Alone, the main agent was 13 s faster and its context
   stayed smaller. In that baseline the feed also started 16 s earlier in the session (F48).
 - Uniselector starts with about 1,900 more tokens of context: the text of its four tools.
@@ -179,7 +220,7 @@ watches the feed itself. Each row is one run.
   `schema-direct_20261116_162916` is void: the driver did not start the feed (F48).
 - No baseline was run for the other tasks of this design. A baseline of the first design did the
   goal task alone, with the same prompt and the same room: 183.3 s, 86 turns, context 5,796 to
-  22,010, $0.323 (`stream-direct_20261116_003123`).
+  22,010, and a cost of 284% of the base (`stream-direct_20261116_003123`).
 
 ### Model runners
 
@@ -188,13 +229,20 @@ could give an object the runners `local` and `top`. `local` was `qwen3.8-27b` be
 machine of the local network, with 245,760 tokens of context. `top` was
 `deepseek/deepseek-v4.1-flash-1017` on OpenRouter. The token budget was 5,000,000. One wake could
 spend 2,000,000 tokens (`local`) or 1,000,000 (`top`). The cost of the run is the cost of the
-decision model and of `top`.
+decision model and of `top`, as a percentage of the same base.
 
-| Code | Answer | Session time | Turns of the main agent | Main agent context, first turn to peak | Cost of the main agent | Outcome of the run | Looks | Wakes | Starts of a model runner | Run tokens | Cost of the run |
+| Code | Answer | Session time | Turns of the main agent | Main agent context, first turn to peak | Cost of the main agent, of the base | Outcome of the run | Looks | Wakes | Starts of a model runner | Run tokens | Cost of the run, of the base |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| D50 | right | 768.3 s | 16 | 8,471 to 16,014 | $0.0934 | `done` after 734.1 s | 29 | 2 | 3 | 778,229 | $0.134062 |
-| D51 | right | 533.8 s | 18 | 8,531 to 18,409 | $0.1130 | `done` after 496.2 s | 29 | 4 | 3 | 553,684 | $0.090073 |
-| D52 | right | 101.2 s | 19 | 8,611 to 20,456 | $0.1320 | `done` after 56.1 s | 19 | 4 | 1 | 50,636 | $0.000479 |
+| D50 | right | 768.3 s | 16 | 8,471 to 16,014 | 82% | `done` after 734.1 s | 29 | 2 | 3 | 778,229 | 118% |
+| D51 | right | 533.8 s | 18 | 8,531 to 18,409 | 99% | `done` after 496.2 s | 29 | 4 | 3 | 553,684 | 79% |
+| D52 | right | 101.2 s | 19 | 8,611 to 20,456 | 116% | `done` after 56.1 s | 19 | 4 | 1 | 50,636 | 0.4% |
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/runner-versions-dark.svg">
+  <img src="docs/figures/runner-versions-light.svg" alt="Session time of four sessions: 83.1 s with no model runner, then 768.3 s, 533.8 s and 101.2 s for the three versions of the rules." width="880">
+</picture>
+
+*The session time of the three runs, and of the run with no model runner. In the first two runs, the runner `top` worked for 580.5 s and 429.7 s and gave no repair.*
 
 - The first column names the newest decision of `docs/DECISIONS.md` that the code of the run had.
 - In the first two runs, the column got its new name, and `local` repaired the object `totals`
@@ -213,11 +261,25 @@ decision model and of `top`.
   out the filter on `status`. The check of the object was true for the wrong totals, so the repair
   held (F64). At the next wake, the main agent saw that a runner wrote the object, read it, and
   built it again. So the model runner saved the main agent no work in that run: the main agent
-  cost $0.1320, and $0.0929 in the run with no model runner.
+  cost 116% of the base, and 82% in the run with no model runner.
 - The evidence, in the order of the table: `schema_20261116_184734`, `schema_20261116_192536`,
   `schema_20261116_195950`.
   `schema_20261116_181501` is the first run with model runners. It used a local model with 4,096
   tokens of context and a budget of 400,000 tokens, and it ended at the budget (F53 to F56).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/timeline-dark.svg">
+  <img src="docs/figures/timeline-light.svg" alt="Timeline of the third run: look 7 gives two wakes, the local model works for 18.3 s, and the goal wakes the main agent at 62.0 s." width="880">
+</picture>
+
+*The third run, second by second (`run_20261116_200008_6843`). Look 7 found the new column name, and that one look gave two wakes: the object went to `local`, and the sentence of the plan went to the main agent.*
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/repair-that-held-dark.svg">
+  <img src="docs/figures/repair-that-held-light.svg" alt="The plan filters the orders to paid orders before it sums the amount. The repair of the local model has no filter." width="880">
+</picture>
+
+*The repair of the third run (F64). The check of the object stated the columns of the output and that `total` is a number. No sentence stated the filter, so the decision model had nothing to find.*
 
 `tasks/repair.py` wakes one runner for one broken object, with no main agent: an object counts
 the paid orders of a feed, and the column `status` gets the name `state`. Each row is one run.
@@ -231,11 +293,18 @@ The evidence: `repair_20261116_184658` and `repair_20261116_181108`.
 
 ### Detector check
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/detector-dark.svg">
+  <img src="docs/figures/detector-light.svg" alt="The probability of each of the 32 statements on a log-odds scale. Each one is on the right side of 0.5, and no probability is between 0.05 and 0.99." width="880">
+</picture>
+
+*The probability that the decision model gave to each of the 32 statements.*
+
 `tasks/probe.py` gives the decision model 16 small states and 32 statements with a known answer: a
 schema error, a row count over a limit, a new status value, a sensor that stopped, a goal that is
 met, a job that ended, a quiet object, a check of one object, and the same states with no fault. The model was
 right on 32 of 32. It gave 0.9956 to 0.9995 to each true statement and 0.0003 to 0.0493 to each
-statement that was not true. The check cost 6,006 tokens ($0.000119). The evidence:
+statement that was not true. The check used 6,006 tokens, at 0.1% of the base. The evidence:
 `docs/evidence/probe_20261116_v4`. The states are small and the author of the detector wrote
 them, so the check shows that the threshold separates the two cases. It is not a measure of
 accuracy.
@@ -274,6 +343,8 @@ accuracy.
 - `docs/GAPS.md`: what the DataHandles protocol lacks, and the workaround for each gap.
 - `docs/FAILURES.md`: each failure of a real run, the part that failed, and the evidence.
 - `docs/HOOKS.md`: the hooks, and what each tool's hooks can and cannot see.
+- `docs/figures`: the drawings of this page. `results.html` is the page that builds them. It holds the
+  numbers of the evidence. `export.py` writes each drawing as a file.
 
 ## Development
 

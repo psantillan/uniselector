@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 210.0" width="880" role="img" aria-label="The plan filters the orders to paid orders before it sums the amount for each region. After the repair by the local model, the filter is gone and the sum uses all orders."><title>The plan filters the orders to paid orders before it sums the amount for each region. After the repair by the local model, the filter is gone and the sum uses all orders.</title><style>
+text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace; font-size: 12px; fill: #ece8dd; }
+text.m { fill: #9aa3b2; } text.s { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 14.5px; } text.h { font-weight: 600; }
+.ax { stroke: #2a3140; stroke-width: 1; fill: none; } .ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.sb { stroke: #2B9FC6; } .sr { stroke: #C8763E; } .sg { stroke: #E8C547; } .sm { stroke: #9aa3b2; } .si { stroke: #ece8dd; } .sx { stroke: #F0685A; }
+.fb { fill: #2B9FC6; } .fr { fill: #C8763E; } .fg { fill: #E8C547; } .fx, text.fx { fill: #F0685A; } .fbg, text.fbg { fill: #10141c; } .fp { fill: #161b25; } .fn { fill: none; } .fm { fill: #9aa3b2; }
+.box { fill: #161b25; stroke: #2a3140; stroke-width: 1.5; } .dash { stroke-dasharray: 5 5; }
+text.halo { paint-order: stroke; stroke: #10141c; stroke-width: 4px; stroke-linejoin: round; }
+.chip.on rect { stroke: #E8C547; stroke-width: 2.5; }
+</style><rect x="0" y="0" width="880" height="210.0" rx="8" fill="#10141c"/>
+        <defs><marker id="aj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fm"></path></marker></defs>
+        <text x="40" y="66" class="s">the plan</text>
+        <rect x="170" y="40" width="100" height="44" rx="6" class="box"></rect><text x="220" y="66" text-anchor="middle">orders</text>
+        <rect x="320" y="40" width="180" height="44" rx="6" class="box"></rect><text x="410" y="66" text-anchor="middle">status = paid</text>
+        <rect x="550" y="40" width="170" height="44" rx="6" class="box"></rect><text x="635" y="66" text-anchor="middle">sum(amount)</text>
+        <rect x="770" y="40" width="90" height="44" rx="6" class="box"></rect><text x="815" y="66" text-anchor="middle">totals</text>
+        <path d="M270 62H316" class="ln sm" marker-end="url(#aj)"></path><path d="M500 62H546" class="ln sm" marker-end="url(#aj)"></path><path d="M720 62H766" class="ln sm" marker-end="url(#aj)"></path>
+        <text x="40" y="166" class="s">the repair</text>
+        <rect x="170" y="140" width="100" height="44" rx="6" class="box"></rect><text x="220" y="166" text-anchor="middle">orders</text>
+        <path d="M270 162H546" class="ln sm" marker-end="url(#aj)"></path>
+        <rect x="320" y="140" width="180" height="44" rx="6" class="fn sx dash" stroke-width="1.5"></rect><text x="410" y="130" text-anchor="middle" class="fx">the filter is gone</text>
+        <rect x="550" y="140" width="170" height="44" rx="6" class="box"></rect><text x="635" y="166" text-anchor="middle">sum(amount_usd)</text>
+        <rect x="770" y="140" width="90" height="44" rx="6" class="box"></rect><text x="815" y="166" text-anchor="middle">totals</text>
+        <path d="M720 162H766" class="ln sm" marker-end="url(#aj)"></path>
+      </svg>

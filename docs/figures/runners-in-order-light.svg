@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 170.0" width="880" role="img" aria-label="An object holds a slot for its runner. The runners are in order: a local model, then a larger model, then the main agent. A repair that does not hold binds the next runner for one wake."><title>An object holds a slot for its runner. The runners are in order: a local model, then a larger model, then the main agent. A repair that does not hold binds the next runner for one wake.</title><style>
+text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace; font-size: 12px; fill: #1c222c; }
+text.m { fill: #5c6470; } text.s { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 14.5px; } text.h { font-weight: 600; }
+.ax { stroke: #d6cfc0; stroke-width: 1; fill: none; } .ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.sb { stroke: #0F86B0; } .sr { stroke: #A8501C; } .sg { stroke: #9A7400; } .sm { stroke: #5c6470; } .si { stroke: #1c222c; } .sx { stroke: #C23A2E; }
+.fb { fill: #0F86B0; } .fr { fill: #A8501C; } .fg { fill: #9A7400; } .fx, text.fx { fill: #C23A2E; } .fbg, text.fbg { fill: #f6f3ec; } .fp { fill: #eee9dd; } .fn { fill: none; } .fm { fill: #5c6470; }
+.box { fill: #eee9dd; stroke: #d6cfc0; stroke-width: 1.5; } .dash { stroke-dasharray: 5 5; }
+text.halo { paint-order: stroke; stroke: #f6f3ec; stroke-width: 4px; stroke-linejoin: round; }
+.chip.on rect { stroke: #9A7400; stroke-width: 2.5; }
+</style><rect x="0" y="0" width="880" height="170.0" rx="8" fill="#f6f3ec"/>
+        <defs><marker id="ai" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fm"></path></marker></defs>
+        <rect x="40" y="30" width="300" height="112" rx="6" class="box"></rect><text x="60" y="58" class="h">object region_totals</text><text x="60" y="78" class="m">a handle + an operation + a check</text>
+        <rect x="60" y="94" width="260" height="34" rx="4" class="fbg sg" stroke-width="1.5"></rect><text x="74" y="116" class="m">runner now:</text><text id="slot" x="166" y="116" class="h">local</text>
+        <path d="M340 86H426" class="ln sm" marker-end="url(#ai)"></path><text x="383" y="74" text-anchor="middle" class="m">in order</text>
+        <g class="chip on" id="c0"><rect x="430" y="64" width="120" height="44" rx="6" class="box"></rect><text x="490" y="91" text-anchor="middle" class="h">local</text></g>
+        <g class="chip" id="c1"><rect x="580" y="64" width="120" height="44" rx="6" class="box"></rect><text x="640" y="91" text-anchor="middle" class="h">top</text></g>
+        <g class="chip" id="c2"><rect x="730" y="64" width="120" height="44" rx="6" class="box"></rect><text x="790" y="91" text-anchor="middle" class="h">main</text></g>
+        <path d="M550 86H576" class="ln sm" marker-end="url(#ai)"></path><path d="M700 86H726" class="ln sm" marker-end="url(#ai)"></path>
+        <text x="640" y="44" text-anchor="middle" class="m">a repair did not hold → the next runner, for one wake</text>
+        <text x="490" y="130" text-anchor="middle" class="m">a free local model</text><text x="640" y="130" text-anchor="middle" class="m">a larger model</text><text x="790" y="130" text-anchor="middle" class="m">the main agent</text>
+      </svg>
