@@ -1,0 +1,166 @@
+{
+ "id": "gr_run_20261115_235855_4262",
+ "nodes": [
+  {
+   "id": "hdl_01M7GTCF8DDCXPQ8J747V1SXKC",
+   "kind": "resource",
+   "reference": "hdl_01M7GTCF8DDCXPQ8J747V1SXKC"
+  },
+  {
+   "id": "hdl_01M7GTCF6B2ZYC3KWBAPYAMRQH",
+   "kind": "resource",
+   "reference": "hdl_01M7GTCF6B2ZYC3KWBAPYAMRQH"
+  },
+  {
+   "id": "op_01M7GTCRWG6REWTYPMGJ8BWJC4",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "event_type",
+       "op": "eq",
+       "value": "purchase"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7GTCRYDXDQ21YQM9EN8CNJA",
+   "kind": "derived",
+   "reference": "hdl_01M7GTCRYDXDQ21YQM9EN8CNJA"
+  },
+  {
+   "id": "op_01M7GTCW1C4VQ8NBR7383GV1MA",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.join",
+    "input": {
+     "on": [
+      {
+       "left": "customer_id",
+       "right": "customer_id"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7GTCW3E2JX6MQX0HCFDAN31",
+   "kind": "derived",
+   "reference": "hdl_01M7GTCW3E2JX6MQX0HCFDAN31"
+  },
+  {
+   "id": "op_01M7GTEW9ZJJ56THW18N2TR8GB",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.aggregate",
+    "input": {
+     "group_by": [
+      "country"
+     ],
+     "metrics": [
+      {
+       "fn": "sum",
+       "column": "amount",
+       "as": "Top 3 countries by total revenue (purchase events): US = 114333.51, KE = 114130.67, BR = 109455.52"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7GTEWBXRWRBMN7GHGEQ73JR",
+   "kind": "derived",
+   "reference": "hdl_01M7GTEWBXRWRBMN7GHGEQ73JR"
+  },
+  {
+   "id": "op_01M7GTEZB88C92QEM9KC6J0QS0",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.sort",
+    "input": {
+     "by": [
+      {
+       "column": "Top 3 countries by total revenue (purchase events): US = 114333.51, KE = 114130.67, BR = 109455.52",
+       "descending": true
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7GTEZD5SCQ57A4972HJK46N",
+   "kind": "derived",
+   "reference": "hdl_01M7GTEZD5SCQ57A4972HJK46N"
+  },
+  {
+   "id": "op_01M7GTF0HW8A1877FR2GG8ZDQC",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.limit",
+    "input": {
+     "n": 3
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7GTF0JZAXSJJBHAPDY08R68",
+   "kind": "derived",
+   "reference": "hdl_01M7GTF0JZAXSJJBHAPDY08R68"
+  }
+ ],
+ "edges": [
+  {
+   "from": "hdl_01M7GTCF8DDCXPQ8J747V1SXKC",
+   "to": "op_01M7GTCRWG6REWTYPMGJ8BWJC4"
+  },
+  {
+   "from": "op_01M7GTCRWG6REWTYPMGJ8BWJC4",
+   "to": "hdl_01M7GTCRYDXDQ21YQM9EN8CNJA"
+  },
+  {
+   "from": "hdl_01M7GTCRYDXDQ21YQM9EN8CNJA",
+   "to": "op_01M7GTCW1C4VQ8NBR7383GV1MA"
+  },
+  {
+   "from": "hdl_01M7GTCF6B2ZYC3KWBAPYAMRQH",
+   "to": "op_01M7GTCW1C4VQ8NBR7383GV1MA",
+   "input_name": "right"
+  },
+  {
+   "from": "op_01M7GTCW1C4VQ8NBR7383GV1MA",
+   "to": "hdl_01M7GTCW3E2JX6MQX0HCFDAN31"
+  },
+  {
+   "from": "hdl_01M7GTCW3E2JX6MQX0HCFDAN31",
+   "to": "op_01M7GTEW9ZJJ56THW18N2TR8GB"
+  },
+  {
+   "from": "op_01M7GTEW9ZJJ56THW18N2TR8GB",
+   "to": "hdl_01M7GTEWBXRWRBMN7GHGEQ73JR"
+  },
+  {
+   "from": "hdl_01M7GTEWBXRWRBMN7GHGEQ73JR",
+   "to": "op_01M7GTEZB88C92QEM9KC6J0QS0"
+  },
+  {
+   "from": "op_01M7GTEZB88C92QEM9KC6J0QS0",
+   "to": "hdl_01M7GTEZD5SCQ57A4972HJK46N"
+  },
+  {
+   "from": "hdl_01M7GTEZD5SCQ57A4972HJK46N",
+   "to": "op_01M7GTF0HW8A1877FR2GG8ZDQC"
+  },
+  {
+   "from": "op_01M7GTF0HW8A1877FR2GG8ZDQC",
+   "to": "hdl_01M7GTF0JZAXSJJBHAPDY08R68"
+  }
+ ],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}

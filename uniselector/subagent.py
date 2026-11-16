@@ -58,7 +58,7 @@ def question_text(q: dict) -> str:
 
 class ModelAsker:
     def __init__(self, cfg, client):
-        self.url, self.model, self.num_ctx = cfg.model_url.rstrip("/"), cfg.subagent_model or cfg.model, cfg.num_ctx
+        self.url, self.model, self.num_ctx = cfg.model_url.rstrip("/"), cfg.model, cfg.num_ctx
         self.client = client   # the DataHandles client of the sub-agent's principal
         # One tool result gets a quarter of the context at most. One token is about 3 characters of JSON.
         self.result_chars = self.num_ctx * 3 // 4

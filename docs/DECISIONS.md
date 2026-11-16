@@ -7,6 +7,8 @@ measurement gave.
 The words used here:
 
 - **Decision**: one call of `decide(state, options)`. It gives a distribution over the options.
+- **Decision model**: a model that reads a state and typed questions and gives probabilities. It
+  writes no text (D17).
 - **Walk**: the decisions that choose one operation and fill its input.
 - **Main agent**: the agent that submits the plan. Its DataHandles principal is `planner`.
 - **Sub-agent**: an agent with a fresh context that finds one value.
@@ -26,8 +28,9 @@ refuses the action, not the orchestrator. `tests/test_gate.py` shows it.
 
 ## D2. The budget is model tokens. The wall time is the time that the run works
 
-Decision: the hard budget counts prompt and output tokens of the decision model and of the
-sub-agents. The wall clock stops while the run waits for the main agent or for the human.
+Decision: the hard budget counts the input tokens of the decision model, and the prompt and output
+tokens of the sub-agents. A decision model has no output tokens. The wall clock stops while the
+run waits for the main agent or for the human.
 
 Reason: tokens are the one cost that each part of this system has, and the server reports them.
 The clock stops for a human because the run cannot control how long a human takes; the limit is
@@ -47,17 +50,28 @@ call can pass the wall-time limit. With one path for each operation, "waiting is
 decision model makes again each time it looks" holds for code, an API, and a sub-agent in the same
 way. A stream gives its first event and stops; the decision model reads more with a new operation.
 
-## D4. One letter for each option, and 20 options at most
+## D4. One `choice` question for each decision, and 255 options at most
 
-Decision: an option gets a letter from A to T. The model gives one token. The distribution is the
-probability of each letter in that token, made to sum to 1.
+Decision: one decision is one `choice` question to the decision model. The request has the state
+as text, the rules and the decision as the instructions of the question, and the options as the
+`criteria` of the question. The name of an option is its number ("1", "2", and so on). The
+description of the option is its text. The distribution is the probability that the model gives
+for each name.
 
-Reason: the Ollama server gives at most 20 `top_logprobs`. With 20 options or fewer, one call
-sees the probability of each option. A set with more options is cut into pages: the last option of
-a page is "none of these: show more options".
+Reason: a decision model gives one probability for each allowed option (D17). So one call sees
+the probability of each option, and the orchestrator reads no text back. The API takes the options
+as a map from a name to a description. The text of an option is long, so it is the description,
+and the number keeps each name short and different. The API can give the probabilities in a
+different order from the request, so `Decider` reads them by name. A test shows this.
 
-A root decision with more than 20 options is two decisions: the handle (or a control option),
+A `choice` question has 255 options at most. This is the limit of the Decisions API. A set with
+more options is cut into pages: the last option of a page is "none of these: show more options".
+A root decision with more than 255 options is two decisions: the handle (or a control option),
 then the operation on that handle.
+
+History: the name of this entry was "One letter for each option, and 20 options at most". The
+first build read the log probabilities of one letter from a chat model, and 20 was the limit of
+`top_logprobs` on that server. That model was not a decision model (`docs/FAILURES.md`, F39).
 
 ## D5. When a decision abstains
 
@@ -66,14 +80,20 @@ Decision: a decision abstains when one of these is true:
 - the top option has less than 0.5 of the probability (`abstain_top`)
 - the second option has more than 0.5 of the probability of the top option (`abstain_ratio`):
   this is the rule for "the top two options are too close"
-- less than 0.5 of the probability was on a letter (`abstain_mass`): the model did not answer
-  the question
+- the decision model refused the question. The answer then has the type `refusal` and no
+  probabilities, and each option gets 0.
 
-ASSUMED: the three numbers. 0.5 for the top is the point where the other options together are
-more likely than the choice. The decision logs give the data to set them from outcomes later.
+ASSUMED: the two numbers. A decision model is trained to give calibrated probabilities: of the
+answers that it gives with 0.7, about 70% are right. So below 0.5 for the top, the other options
+together are more likely than the choice. The guide of the Jev model says: "set thresholds from
+your own labeled data". The decision logs give that data later.
 
 A decision about the reason for `wake_agent` or `abort` does not abstain: the run stops in any
-case.
+case. A decision on the structure of the input does not abstain (D23). A refusal is different:
+it has no top option, so it becomes a question for each kind of decision.
+
+Removed: the rule `abstain_mass`. It measured how much probability a chat model put on a letter.
+A decision model puts its probability on the options only.
 
 ## D6. The walk
 
@@ -142,11 +162,12 @@ and `rows`) gives each cell with its column name as the place.
 Probes are cached by (handle id, observed version). An answer is cached by (handle id, version,
 capability, field path with the array index removed).
 
-The pool has at most 19 candidates: 20 labels less `none fits`. ASSUMED: a value shows at most two
-places, and a place shows at most four values.
+The pool has at most 254 candidates: 255 options less `none fits`. ASSUMED: a value shows at
+most two places, and a place shows at most four values.
 
 Rejected by experiment: a decision in two stages (first the place, then the value). The model
-gave 0.40 / 0.35 / 0.25 on the place.
+gave 0.40 / 0.35 / 0.25 on the place. That model was the chat model of the first build (F39). The
+experiment was not done again with a decision model.
 
 ## D9. The question, and its cap
 
@@ -165,31 +186,39 @@ tokens). The failure log has the cost of each question, to set this number from 
 ASSUMED: one `wait` is 2 seconds (`wait_seconds`). It is also the time that the orchestrator waits
 for a new job before it gives the job handle to the decision model (D3).
 
-Reason: one decision of the local model takes about 1 second. A shorter wait than one decision
-gives nothing.
+Reason: each look at a running job costs one decision. A shorter wait gives more looks for the
+same job. The first reason for this number was the time of one decision of the first model (about
+1 second). A decision of the decision model takes about 0.4 seconds, so that reason is void.
 
 ## D11. The bounds of the state
 
 ASSUMED: the state shows the last 5 results (`results_kept`), 600 characters of one value
 (`value_chars`), and 8 handles: the start handles and the newest ones (`handles_kept`).
 
-Reason: the state must fit in the context of a small model (8,192 tokens) with the options. The
-brief says "the last few results, bounded".
+Reason: the brief says "the last few results, bounded". The state is the regulator's model of the
+run, and each decision reads all of it, so its size is the cost of each decision. The first build
+set these numbers for a context of 8,192 tokens. The decision model has a larger context, and the
+numbers stay until a failure shows that the state is too small.
 
 The stall signal is the seconds since the last change and the number of looks with no change. A
 change is a new result, or a new observed version of a shown handle.
 
 ## D12. The sub-agent is a small agent loop on the local model
 
-Decision: `subagent.ModelAsker` runs a tool loop on the Ollama server with the DataHandles tools
-(`handle_find`, `handle_describe`, `handle_invoke`) and two final tools: `answer` and
-`needs_planner`. It runs as the principal `subagent`. The gate gives that principal only the
-capabilities that do not write.
+Decision: `subagent.ModelAsker` runs a tool loop on a chat model on an Ollama server, with the
+DataHandles tools (`handle_find`, `handle_describe`, `handle_invoke`) and two final tools:
+`answer` and `needs_planner`. It runs as the principal `subagent`. The gate gives that principal
+only the capabilities that do not write.
 
-Reason: the run then needs one model server and no second product. The interface is one callable:
+Reason: a sub-agent explores with open variety. It must write tool calls, and a decision model
+writes no text. So the sub-agent is a different model from the decision model, and it is a model
+that generates. A local model has no price for each call. The interface is one callable:
 `asker(question, max_tokens, seconds)` gives `{"value", "reason", "calls", "tokens"}` or
 `{"needs_planner", "calls", "tokens"}`. A headless coding agent with the DataHandles MCP server
 fits the same interface.
+
+The settings `model_url`, `model` and `num_ctx` are the settings of the sub-agent model. They keep
+their names (ground rule 3). The decision model has its own settings (D17).
 
 ## D13. The human channel
 
@@ -234,16 +263,54 @@ hard stop: the harness enforces only the two limits and the gate.
 A run directory has:
 
 - `decisions.jsonl`: one line for each decision node (the state, the partial input, the option
-  keys and texts, the distribution, the choice, tokens, time). The last line is the outcome.
+  keys and texts, the distribution, the choice, `refused`, the input tokens, the cost in USD
+  as the API states it, and the time). The last line is the outcome.
 - `questions.jsonl`: one line for each question with its answer and the sub-agent's calls.
 - `events.jsonl`: each change of state, each request, each wake.
 - `summary.json` and `lineage.json`, written at the end.
 
 ## D17. The decision model
 
-The first decision model is `ornith-1.5:9b` on the Ollama server that the DataHandles benchmarks
-use. One decision is one output token with `temperature` 0, `seed` 0 and `think` off, which is
-"a single pass". One decision takes 0.6 to 1.5 seconds and 400 to 1,000 tokens.
+A decision model is a class of model. It reads a state and typed questions. It gives one
+probability for each allowed answer of each question, and it writes no text. The makers call the
+class "System One" models. Examples are TypeSafe Jev, Perplexity pplx-decider and Cloudflare Clef.
+The card of Clef states the mechanism: a head reads the final hidden states and gives one logit
+for each allowed option, with no generation. TypeSafe states that it trains Jev for calibrated
+probabilities.
+
+Decision: `decide.Decider` sends one decision as one `choice` question to a Decisions API (D4).
+The settings are `decision_url`, `decision_model` and `decision_key_env`. The default URL is the
+Decisions API of OpenRouter (`https://openrouter.ai/api/alpha/decisions`). `decision_model` has no
+default: the configuration must name the model. The API key comes from the environment variable
+that `decision_key_env` names. The key is in no file of a run.
+
+Reason: this is the regulator of the brief. `decide(state, options)` is one pass that gives a
+distribution, and that is what a decision model does. A chat model that gives one letter is a
+different thing (`docs/FAILURES.md`, F39).
+
+The task runs use `perplexity/pplx-decider-v1.2`. The reasons:
+
+- Its endpoint has a price ($0.02 for each million input tokens), so it has no free-tier limit of
+  requests. A run makes up to two decisions each second. `pplx-decider-v1.3` is on OpenRouter only
+  as a free variant.
+- In the replay of 20 logged decisions, five decision models gave near the same choices
+  (`docs/evidence/replay_20261115_235716/replay.txt`). The replay gave no reason for a model with
+  a higher price.
+- The model list of OpenRouter names a Hugging Face repository for it
+  (`perplexity-ai/pplx-decider-v1.2`). A run with local weights was not tried.
+- A comparison on another project of the owner (2026-10-22) put it ahead of `typesafe/jev-1.14`,
+  `openai/gpt-6-luna-decisions` and `cloudflare/clef` on that project's decisions.
+
+Measured in the six task runs of the README (145 decisions): the median time of one decision
+was 402 ms, and one decision read 496 to 3,252 input tokens (median 1,105). The API stated
+$0.0033 for the 145 decisions. The 20 replayed decisions cost $0.000568.
+
+Another decision model replaces it with one setting. A model that does not speak this API (a
+local model with open weights, or a trained model) replaces `Decider` with a callable of the same
+shape: `decide(state, options)` gives a `Distribution`. The walk does not change.
+
+The rules of the regulator and the text of the decision are the `instructions` of the question.
+The state is the `state` of the request. The option names are numbers (D4).
 
 ## D18. Lineage
 
@@ -333,7 +400,8 @@ than a question, and the error is information for the next try.
 
 ## D24. The control options are on each level of the root
 
-With more options than labels, the root is two decisions: the handle, then its operation (D4).
+With more options than one question can hold, the root is two decisions: the handle, then its
+operation (D4).
 The control options are now in the two of them. Before, a decision model that chose a handle
 could not choose `step_done` any more (`docs/FAILURES.md`, F13).
 

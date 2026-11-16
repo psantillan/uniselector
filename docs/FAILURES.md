@@ -5,6 +5,10 @@ decision tree, candidate pool, abstain, question, action gate, summary, DataHand
 parts came up in the runs: the decision model (the model behind `decide` chose wrong with a good
 set of options), and the state (the decision model did not get the information).
 
+F1 to F38 are from runs with the first model behind `decide`. That model was a chat model, not a
+decision model (F39). Those entries stay as the record of that build. "The decision model" in
+F1 to F38 means that chat model. The runs after F39 use a decision model.
+
 The evidence is in `docs/evidence/`. `dev/` has the runs from the development of the harness: the
 orchestrator alone, with no main agent. The other directories have the task runs with a real main
 agent. In a run directory, `decisions.jsonl` has one line for each decision, `questions.jsonl` one
@@ -537,3 +541,137 @@ Two open failures show again:
 A real session submitted a plan and ended at once. The last line of `events.jsonl` is the end
 line with the outcome `left`, and the run directory has `summary.json`. This is the fix of F32
 with a real client.
+
+## The model behind `decide`
+
+### F39. The first build used a chat model as the decision model
+
+- Part: the decision model. It is the root of the build, so each run before this entry has it.
+- What happened: the brief names a decision model. A decision model is a class of model: it reads
+  a state and typed questions, it gives one probability for each allowed option, and it writes no
+  text (TypeSafe Jev, Perplexity pplx-decider, Cloudflare Clef, and others). The first build put
+  a chat model (`ornith-1.5:9b` on Ollama) behind `decide`. It asked for one output token and
+  read the log probabilities of the letters A to T. The builder did not look up the term, and the
+  README said that the brief was done.
+- Effect: the probabilities were not calibrated, so the abstain rule had no base. The limit of
+  20 options came from `top_logprobs`, so the root was two decisions and the pool had 19
+  candidates. A third abstain rule (`abstain_mass`) was there only because a chat model can put
+  its probability on a token that is not an option.
+- Evidence: `uniselector/decide.py` at commit `969418c` (`OllamaDecider`, `LABELS`); the README at
+  that commit ("The decision model is a model on an Ollama server that gives log probabilities");
+  `"decision_model": "ornith-1.5:9b"` in each `record.json` before `code_20261115_235541`.
+- A replay shows the difference (`python -m uniselector_tasks.replay`). 20 logged decisions of
+  `pipeline_20261115_223625` went to five decision models with the same state and options. Each
+  model answered each decision. At D 11 and D 14 the chat model was below the abstain threshold
+  with `step_done` on top (p 0.66 and p 0.52, the second option at 0.34 and 0.48). Each decision
+  model chose `step_done` with p 0.95 to 1.00. At D 46 the chat model chose "add one more item"
+  (p 0.75, the failure F21). Four of the five decision models chose "stop: the list is complete"
+  (p 0.77 to 0.96), and `cloudflare/clef-flash` chose "add one more item" (p 0.86). The replay
+  does not show which choice is right: the task runs below do.
+- Evidence of the replay: `replay_20261115_235716/replay.txt`.
+- Fixed (DECISIONS D4, D5, D17): `decide.Decider` sends one decision as one `choice` question to a
+  Decisions API. The walk, the pool and the loop did not change, apart from the limit of options.
+
+## Task runs with the decision model
+
+The decision model was `perplexity/pplx-decider-v1.2`. The sub-agent model was `ornith-1.5:9b`.
+Each of the six tasks ran one time, and each answer was right. The run directories are
+`code_20261115_235541`, `pipeline_20261115_235850`, `stream_20261116_000054`,
+`api_20261116_000457`, `helper_20261116_000738` and `stream-human_20261116_000825`.
+
+In these runs the tokens of a run are of two kinds. The decision model used 58,930 (pipeline),
+51,375 (stream) and 44,636 (stream with a human) input tokens. The sub-agent used the other
+57,229, 90,258 and 76,629 tokens. The other three runs had no question.
+
+### What the earlier failures did in these runs
+
+One run of each task does not show that a failure is gone. It shows only that the failure did
+not occur.
+
+- F21 (lists grew) did not occur. The pipeline run made each list with the items that the
+  intent names (`pipeline_20261115_235850` D 16 to D 19, D 25).
+- F28 (waits when nothing ran) did not occur. The first decision of the API run chose `api.get`
+  (`api_20261116_000457` D 1). The chat model had waited 38 times first.
+- F30 is open. 40 of the 49 decisions of the stream run chose `wait`, and 32 of 44 in the run
+  with a human.
+- F31 is open, with the same cause (`docs/GAPS.md`, G11). The look at the resource waited for
+  the job, so the run made no decision for 151 s (API), 153 s (code) and 38 s (helper). When
+  the look returned, the job was done, and the decision model chose `job.result` (p 0.94 to
+  0.98). These three runs made 4 to 6 decisions and no `wait`. Evidence: the `t` of D 3 and D 4
+  in `api_20261116_000457`, and of D 2 and D 3 in `code_20261115_235541` and
+  `helper_20261116_000738`.
+- F35 (the sub-agent asked the helper again) did not occur: no decision abstained in the helper
+  run.
+- F36 is open: the tokens of the helper are not in the 2,760 tokens of the helper run.
+- F37 (the human got the same action five times) did not occur: the human got 2 requests, one
+  for each heater action.
+- F38 is open. The context of the main agent grew by 9,760 tokens in the run with a human (2
+  requests and 1 question) and by 7,984 tokens in the stream run (2 requests and 2 questions).
+
+### F40. Two words of one phrase split the decision on a new column name
+
+- Part: candidate pool, question.
+- What happened: the intent was "Group by country and sum amount as total revenue." The field
+  `metrics[0].as` is the name of a new column. The pool had the words `revenue` and `total` as
+  two candidates, and not the phrase `total revenue`. The decision model gave `revenue` 0.43 and
+  `total` 0.38, and the decision abstained. The sub-agent then did the work of the plan: it ran
+  the aggregate, the sort and the limit itself (11 calls, 39,508 tokens). It answered with a
+  sentence that states the final result. That sentence became the column name. The answer of
+  the task was right, because a column can have any name.
+- Evidence: `pipeline_20261115_235850` D 23 and D 24; `questions.jsonl` line 1; the input of
+  `dataset.aggregate` at E 17.
+- Open. Each pattern of the brief is here: a question that the pool should have answered, a
+  sub-agent that did not answer the question that it got, and exploration that cost more than
+  the question was worth.
+
+### F41. A close decision on "show more options" became a question
+
+- Part: abstain, candidate pool.
+- What happened: for the field `n` of `dataset.head`, the first page had one value: 10, the
+  default. The decision model gave "none of these: show more options" 0.59 and the default 0.41.
+  The second option was close, so the decision abstained. The next page had the value 3, with
+  the places "h7 dataset.count: rows; in the plan". The sub-agent used 17,721 tokens and 7 calls
+  to answer 3.
+- Evidence: `pipeline_20261115_235850` D 36 and D 37; `questions.jsonl` line 2 (`candidates`).
+- Open. One more decision on the next page costs about 1,500 tokens.
+
+### F42. Two operations that fit the intent made the decision abstain
+
+- Part: abstain, question.
+- What happened: the intent was "Read the room temperature until a reading shows 26 or more."
+  `room.readings`, `room.latest` and `room.read` each carry it out. The decision model gave
+  0.53, 0.30 and 0.11 in the first run, and 0.43, 0.42 and 0.07 in the second. The decision
+  abstained in each run. In the first run the sub-agent made 16 calls, reached the cap of the
+  question with 44,271 tokens, and the question went to the main agent, which answered `wait`.
+  The next decision came 70 s after the one that abstained. In the second run the sub-agent
+  answered `h1 room.readings` after 30,246 tokens, and the next decision came after 88 s.
+- Evidence: `stream_20261116_000054` D 4, `questions.jsonl` lines 1 and 2, E 7;
+  `stream-human_20261116_000825` D 4, `questions.jsonl` line 1.
+- Open. The rule "the top two options are too close" cannot tell two good options from two
+  doubtful options. A calibrated model splits its probability between options that are equal.
+  The chat model of the first build did not abstain here, and its choice was not better
+  informed.
+
+### F43. An intent with no operation went to the sub-agent and then to the main agent
+
+- Part: plan, abstain, question.
+- What happened: the last intent was "Report the temperature of the last reading seen." No
+  operation carries it out: the reading is in the results. The decision model gave `room.latest`
+  0.39, `step_done` 0.33 and `wake_agent` 0.23 (second run: `step_done` 0.36, `wake_agent` 0.30,
+  `room.latest` 0.29). The decision abstained. The sub-agent reached the cap in each run (45,987
+  and 46,383 tokens), and the main agent answered `step_done`.
+- Evidence: `stream_20261116_000054` D 49, `questions.jsonl` lines 3 and 4;
+  `stream-human_20261116_000825` D 44, `questions.jsonl` lines 2 and 3.
+- Open. The escalation went in the order of the brief, and the main agent settled the question.
+  The cost was two sub-agent questions that could not have an answer in the data.
+
+### F44. A question passed its cap
+
+- Part: question.
+- What happened: the cap of one question is 40,000 tokens. Three questions ended with 44,271,
+  45,987 and 46,383 tokens. The sub-agent checks the cap after a model call, so the last call
+  passes it.
+- Evidence: `tokens` in `questions.jsonl` of `stream_20261116_000054` (lines 1 and 3) and of
+  `stream-human_20261116_000825` (line 2).
+- Open. The spend is in the hard budget of the run, so the hard limit holds.
+

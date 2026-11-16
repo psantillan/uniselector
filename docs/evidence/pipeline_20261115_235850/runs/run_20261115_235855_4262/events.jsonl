@@ -1,0 +1,33 @@
+{"t": 1794787138.272, "event": "probe", "run": "run_20261115_235855_4262", "target": "h1", "capability": "dataset.schema", "ok": true, "bytes": 172, "ms": 31}
+{"t": 1794787138.311, "event": "probe", "run": "run_20261115_235855_4262", "target": "h1", "capability": "dataset.count", "ok": true, "bytes": 15, "ms": 38}
+{"t": 1794787138.341, "event": "probe", "run": "run_20261115_235855_4262", "target": "h1", "capability": "dataset.head", "ok": true, "bytes": 392, "ms": 30}
+{"t": 1794787140.734, "event": "result", "run": "run_20261115_235855_4262", "step": 1, "intent": 0, "capability": "dataset.filter", "target": "h1", "input": {"where": [{"column": "event_type", "op": "eq", "value": "purchase"}]}, "handle": "h3", "ms": 116}
+{"t": 1794787141.115, "event": "result", "run": "run_20261115_235855_4262", "step": 2, "intent": 0, "control": "step_done", "note": "the intent is met"}
+{"t": 1794787141.916, "event": "probe", "run": "run_20261115_235855_4262", "target": "h3", "capability": "dataset.schema", "ok": true, "bytes": 172, "ms": 30}
+{"t": 1794787141.951, "event": "probe", "run": "run_20261115_235855_4262", "target": "h3", "capability": "dataset.count", "ok": true, "bytes": 14, "ms": 35}
+{"t": 1794787141.987, "event": "probe", "run": "run_20261115_235855_4262", "target": "h3", "capability": "dataset.head", "ok": true, "bytes": 433, "ms": 35}
+{"t": 1794787142.005, "event": "probe", "run": "run_20261115_235855_4262", "target": "h2", "capability": "dataset.schema", "ok": true, "bytes": 137, "ms": 16}
+{"t": 1794787142.021, "event": "probe", "run": "run_20261115_235855_4262", "target": "h2", "capability": "dataset.count", "ok": true, "bytes": 13, "ms": 16}
+{"t": 1794787142.033, "event": "probe", "run": "run_20261115_235855_4262", "target": "h2", "capability": "dataset.head", "ok": true, "bytes": 328, "ms": 12}
+{"t": 1794787143.969, "event": "result", "run": "run_20261115_235855_4262", "step": 3, "intent": 1, "capability": "dataset.join", "target": "h3", "input": {"right": {"$handle": "hdl_01M7GTCF6B2ZYC3KWBAPYAMRQH"}, "on": [{"left": "customer_id", "right": "customer_id"}]}, "handle": "h4", "ms": 116}
+{"t": 1794787144.584, "event": "result", "run": "run_20261115_235855_4262", "step": 4, "intent": 1, "control": "step_done", "note": "the intent is met"}
+{"t": 1794787145.792, "event": "probe", "run": "run_20261115_235855_4262", "target": "h4", "capability": "dataset.schema", "ok": true, "bytes": 252, "ms": 39}
+{"t": 1794787145.831, "event": "probe", "run": "run_20261115_235855_4262", "target": "h4", "capability": "dataset.count", "ok": true, "bytes": 14, "ms": 39}
+{"t": 1794787145.867, "event": "probe", "run": "run_20261115_235855_4262", "target": "h4", "capability": "dataset.head", "ok": true, "bytes": 590, "ms": 36}
+{"t": 1794787209.768, "event": "result", "run": "run_20261115_235855_4262", "step": 5, "intent": 2, "capability": "dataset.aggregate", "target": "h4", "input": {"group_by": ["country"], "metrics": [{"fn": "sum", "column": "amount", "as": "Top 3 countries by total revenue (purchase events): US = 114333.51, KE = 114130.67, BR = 109455.52"}]}, "handle": "h5", "ms": 112}
+{"t": 1794787210.406, "event": "result", "run": "run_20261115_235855_4262", "step": 6, "intent": 2, "control": "step_done", "note": "the intent is met"}
+{"t": 1794787210.906, "event": "probe", "run": "run_20261115_235855_4262", "target": "h5", "capability": "dataset.schema", "ok": true, "bytes": 183, "ms": 35}
+{"t": 1794787210.945, "event": "probe", "run": "run_20261115_235855_4262", "target": "h5", "capability": "dataset.count", "ok": true, "bytes": 11, "ms": 39}
+{"t": 1794787210.985, "event": "probe", "run": "run_20261115_235855_4262", "target": "h5", "capability": "dataset.head", "ok": true, "bytes": 357, "ms": 39}
+{"t": 1794787212.895, "event": "result", "run": "run_20261115_235855_4262", "step": 7, "intent": 3, "capability": "dataset.sort", "target": "h5", "input": {"by": [{"column": "Top 3 countries by total revenue (purchase events): US = 114333.51, KE = 114130.67, BR = 109455.52", "descending": true}]}, "handle": "h6", "ms": 116}
+{"t": 1794787213.41, "event": "probe", "run": "run_20261115_235855_4262", "target": "h6", "capability": "dataset.schema", "ok": true, "bytes": 183, "ms": 37}
+{"t": 1794787213.451, "event": "probe", "run": "run_20261115_235855_4262", "target": "h6", "capability": "dataset.count", "ok": true, "bytes": 11, "ms": 40}
+{"t": 1794787213.491, "event": "probe", "run": "run_20261115_235855_4262", "target": "h6", "capability": "dataset.head", "ok": true, "bytes": 357, "ms": 40}
+{"t": 1794787214.124, "event": "result", "run": "run_20261115_235855_4262", "step": 8, "intent": 3, "capability": "dataset.limit", "target": "h6", "input": {"n": 3}, "handle": "h7", "ms": 109}
+{"t": 1794787215.428, "event": "result", "run": "run_20261115_235855_4262", "step": 9, "intent": 3, "control": "step_done", "note": "the intent is met"}
+{"t": 1794787216.546, "event": "probe", "run": "run_20261115_235855_4262", "target": "h7", "capability": "dataset.schema", "ok": true, "bytes": 183, "ms": 51}
+{"t": 1794787216.591, "event": "probe", "run": "run_20261115_235855_4262", "target": "h7", "capability": "dataset.count", "ok": true, "bytes": 11, "ms": 44}
+{"t": 1794787216.631, "event": "probe", "run": "run_20261115_235855_4262", "target": "h7", "capability": "dataset.head", "ok": true, "bytes": 240, "ms": 40}
+{"t": 1794787251.096, "event": "result", "run": "run_20261115_235855_4262", "step": 10, "intent": 4, "capability": "dataset.head", "target": "h7", "input": {"n": 3}, "output": "{\"columns\": [\"country\", \"Top 3 countries by total revenue (purchase events): US = 114333.51, KE = 114130.67, BR = 109455.52\"], \"rows\": [[\"US\", 114333.50999999998], [\"KE\", 114130.66999999987], [\"BR\", 109455.51999999996]], \"truncated\": false}", "ms": 115}
+{"t": 1794787252.217, "event": "result", "run": "run_20261115_235855_4262", "step": 11, "intent": 4, "control": "step_done", "note": "the intent is met"}
+{"t": 1794787252.227, "event": "end", "run": "run_20261115_235855_4262", "outcome": "done", "why": "each intent is met", "intents_done": 5, "intents": 5, "tokens": 116159, "seconds": 116.3, "decisions": 38, "operations": 6, "waits": 0, "probes": 21, "questions": 2, "planner_questions": 0, "confirmations": 0, "human_requests": 0}

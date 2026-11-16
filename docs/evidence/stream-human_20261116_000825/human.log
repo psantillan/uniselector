@@ -1,0 +1,8 @@
+$ uniselector-confirm /tmp/scratch/worlds/stream-human_20261116_000825/runs/run_20261116_000830_94de req_1 approve --url http://127.0.0.1:60909
+room.heater on room with input {"on": true}
+approve: recorded
+
+$ uniselector-confirm /tmp/scratch/worlds/stream-human_20261116_000825/runs/run_20261116_000830_94de req_2 approve --url http://127.0.0.1:60909
+room.heater on room with input {"on": false}
+approve: recorded
+

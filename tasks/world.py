@@ -14,9 +14,12 @@ from pathlib import Path
 
 from datahandles.sdk import connect
 
+from uniselector.config import Config
+
 ROLES = {"planner": "UNISELECTOR_PLANNER_TOKEN", "uniselector": "UNISELECTOR_TOKEN",
          "subagent": "UNISELECTOR_SUBAGENT_TOKEN", "human": "UNISELECTOR_HUMAN_TOKEN"}
 BIN = Path(sys.executable).parent
+KEY_ENV = Config.decision_key_env   # the environment variable with the API key of the decision model
 
 
 def free_port() -> int:
@@ -26,7 +29,7 @@ def free_port() -> int:
 
 
 class World:
-    def __init__(self, directory: Path, model_url: str, model: str, budget_tokens: int, wall_seconds: int, human_only=()):
+    def __init__(self, directory: Path, decision_model: str, model_url: str, model: str, budget_tokens: int, wall_seconds: int, human_only=()):
         self.dir = directory.resolve()
         (self.dir / "agent").mkdir(parents=True)
         self.model_url, self.model, self.processes = model_url, model, []
@@ -41,9 +44,11 @@ class World:
         (self.dir / "uniselector.toml").write_text(
             f"[limits]\nbudget_tokens = {budget_tokens}\nwall_seconds = {wall_seconds}\n\n"
             f'[runtime]\ntarget = "{self.url}"\nruns_dir = "{self.runs}"\n\n'
+            f'[decision]\ndecision_model = "{decision_model}"\n\n'
             f'[model]\nmodel_url = "{model_url}"\nmodel = "{model}"\n\n'
             f"[actions]\nhuman_only = {json.dumps(list(human_only))}\n")
-        env = {name: self.tokens[role] for role, name in ROLES.items() if role != "human"}
+        # The client fills in the API key of the decision model from its environment. The key is in no file of the world.
+        env = {**{name: self.tokens[role] for role, name in ROLES.items() if role != "human"}, KEY_ENV: f"${{{KEY_ENV}}}"}
         (self.dir / "mcp.json").write_text(json.dumps({"mcpServers": {
             "datahandles": {"command": sys.executable, "args": ["-m", "datahandles.protocols.mcp", "--url", self.url],
                             "env": {"DATAHANDLES_TOKEN": self.tokens["planner"]}},

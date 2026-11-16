@@ -1,0 +1,65 @@
+{
+ "task": "pipeline",
+ "what": "A data pipeline: filter, join, aggregate, sort, limit.",
+ "at": "20261115_235850",
+ "commit": "969418c+",
+ "prompt": "Two datasets are registered in DataHandles: `events` and `customers`. Find the three countries with the highest total purchase revenue: the sum of `amount` over the events whose `event_type` is `purchase`. Give each country and its total.",
+ "truth": [
+  [
+   "US",
+   114333.51
+  ],
+  [
+   "KE",
+   114130.67
+  ],
+  [
+   "BR",
+   109455.52
+  ]
+ ],
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "subagent_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 123.9,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7016,
+ "context_peak": 11993,
+ "context_added": 4977,
+ "tool_calls": {
+  "handle_find": 1,
+  "plan_submit": 1,
+  "plan_status": 2
+ },
+ "turns": 5,
+ "agent_seconds": 122.0,
+ "answer": "The three countries with the highest total purchase revenue are:\n\n1. US: 114,333.51\n2. KE: 114,130.67\n3. BR: 109,455.52",
+ "agent_error": false,
+ "right": true,
+ "facts": {},
+ "runs": [
+  {
+   "t": 1794787252.227,
+   "event": "end",
+   "run": "run_20261115_235855_4262",
+   "outcome": "done",
+   "why": "each intent is met",
+   "intents_done": 5,
+   "intents": 5,
+   "tokens": 116159,
+   "seconds": 116.3,
+   "decisions": 38,
+   "operations": 6,
+   "waits": 0,
+   "probes": 21,
+   "questions": 2,
+   "planner_questions": 0,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

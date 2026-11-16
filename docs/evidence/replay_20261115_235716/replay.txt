@@ -1,0 +1,110 @@
+== perplexity/pplx-decider-v1.2
+D 1 target : log 'h1: an operation on this handle' p 1.00 | model 'h1: an operation on this handle' p 0.99
+D 10 field n: log 'leave it out' p 0.88 | model 'leave it out' p 0.65
+D 11 target : log 'step_done: the results show that the current' p 0.66 ABSTAINED | model 'step_done: the results show that the current' p 0.97
+D 14 target : log 'step_done: the results show that the current' p 0.52 ABSTAINED | model 'step_done: the results show that the current' p 0.98
+D 19 operation : log 'h2 dataset.join: Derive a handle to the join' p 0.85 | model 'h2 dataset.join: Derive a handle to the join' p 0.95
+D 28 operation : log 'h4 dataset.aggregate: Derive a handle to one' p 0.98 | model 'h4 dataset.aggregate: Derive a handle to one' p 1.00
+D 37 target : log 'h4: an operation on this handle' p 1.00 | model 'h4: an operation on this handle' p 0.98
+D 46 field group_by: log 'add one more item' p 0.75 | model 'stop: the list is complete' p 0.93
+D 51 field group_by[5]: log '"country"  (h4 descriptor: columns > name; h' p 0.51 ABSTAINED | model 'none fits: no value here is right' p 0.29
+D 55 field metrics[0].column: log '"amount"  (h4 descriptor: columns > name; h4' p 0.77 | model '"amount"  (h4 descriptor: columns > name; h4' p 0.96
+D 64 field metrics[2].column: log 'leave it out' p 0.80 | model 'leave it out' p 0.57
+D 73 field metrics[4].as: log '"amount"  (h4 descriptor: columns > name; h4' p 0.93 | model '"amount"  (h4 descriptor: columns > name; h4' p 0.49
+D 82 field group_by: log 'add one more item' p 0.95 | model 'add one more item' p 1.00
+D 91 target : log 'h4: an operation on this handle' p 1.00 | model 'h4: an operation on this handle' p 0.89
+D 98 field metrics[0].fn: log '"max"' p 0.45 ABSTAINED | model '"sum"  (it was in an input that FAILED: Bind' p 0.99
+D 100 field metrics[0].column: log '"amount"  (h4 descriptor: columns > name; h4' p 1.00 | model '"amount"  (h4 descriptor: columns > name; h4' p 1.00
+D 109 field metrics: log 'stop: the list is complete' p 0.93 | model 'stop: the list is complete' p 0.92
+D 113 field metrics[0].fn: log '"max"' p 0.59 ABSTAINED | model '"sum"  (it was in an input that FAILED: metr' p 0.39
+D 118 target : log 'h5: an operation on this handle' p 0.99 | model 'h5: an operation on this handle' p 0.98
+D 124 operation : log 'h6 dataset.select: Derive a handle to a subs' p 0.39 ABSTAINED | model 'h6 dataset.limit: Derive a handle to the fir' p 0.70
+   20 decisions, the same top option as the log: 15, input tokens 28415, cost $0.000568, median 424 ms, longest 772 ms
+== typesafe/jev-1.14
+D 1 target : log 'h1: an operation on this handle' p 1.00 | model 'h1: an operation on this handle' p 1.00
+D 10 field n: log 'leave it out' p 0.88 | model 'leave it out' p 0.72
+D 11 target : log 'step_done: the results show that the current' p 0.66 ABSTAINED | model 'step_done: the results show that the current' p 0.99
+D 14 target : log 'step_done: the results show that the current' p 0.52 ABSTAINED | model 'step_done: the results show that the current' p 1.00
+D 19 operation : log 'h2 dataset.join: Derive a handle to the join' p 0.85 | model 'h2 dataset.join: Derive a handle to the join' p 0.96
+D 28 operation : log 'h4 dataset.aggregate: Derive a handle to one' p 0.98 | model 'h4 dataset.aggregate: Derive a handle to one' p 0.99
+D 37 target : log 'h4: an operation on this handle' p 1.00 | model 'h4: an operation on this handle' p 0.96
+D 46 field group_by: log 'add one more item' p 0.75 | model 'stop: the list is complete' p 0.77
+D 51 field group_by[5]: log '"country"  (h4 descriptor: columns > name; h' p 0.51 ABSTAINED | model 'none fits: no value here is right' p 0.83
+D 55 field metrics[0].column: log '"amount"  (h4 descriptor: columns > name; h4' p 0.77 | model '"amount"  (h4 descriptor: columns > name; h4' p 0.99
+D 64 field metrics[2].column: log 'leave it out' p 0.80 | model 'include it' p 0.72
+D 73 field metrics[4].as: log '"amount"  (h4 descriptor: columns > name; h4' p 0.93 | model '"amount"  (h4 descriptor: columns > name; h4' p 0.48
+D 82 field group_by: log 'add one more item' p 0.95 | model 'add one more item' p 0.99
+D 91 target : log 'h4: an operation on this handle' p 1.00 | model 'h4: an operation on this handle' p 0.95
+D 98 field metrics[0].fn: log '"max"' p 0.45 ABSTAINED | model '"sum"  (it was in an input that FAILED: Bind' p 0.84
+D 100 field metrics[0].column: log '"amount"  (h4 descriptor: columns > name; h4' p 1.00 | model '"amount"  (h4 descriptor: columns > name; h4' p 0.99
+D 109 field metrics: log 'stop: the list is complete' p 0.93 | model 'stop: the list is complete' p 0.94
+D 113 field metrics[0].fn: log '"max"' p 0.59 ABSTAINED | model '"count"' p 0.39
+D 118 target : log 'h5: an operation on this handle' p 0.99 | model 'h5: an operation on this handle' p 0.94
+D 124 operation : log 'h6 dataset.select: Derive a handle to a subs' p 0.39 ABSTAINED | model 'h6 dataset.sort: Derive a handle to the rows' p 0.73
+   20 decisions, the same top option as the log: 14, input tokens 33476, cost $0.001406, median 236 ms, longest 274 ms
+== cloudflare/clef-flash
+D 1 target : log 'h1: an operation on this handle' p 1.00 | model 'h1: an operation on this handle' p 0.90
+D 10 field n: log 'leave it out' p 0.88 | model 'leave it out' p 0.92
+D 11 target : log 'step_done: the results show that the current' p 0.66 ABSTAINED | model 'step_done: the results show that the current' p 0.96
+D 14 target : log 'step_done: the results show that the current' p 0.52 ABSTAINED | model 'step_done: the results show that the current' p 0.95
+D 19 operation : log 'h2 dataset.join: Derive a handle to the join' p 0.85 | model 'h2 dataset.join: Derive a handle to the join' p 0.89
+D 28 operation : log 'h4 dataset.aggregate: Derive a handle to one' p 0.98 | model 'h4 dataset.aggregate: Derive a handle to one' p 0.93
+D 37 target : log 'h4: an operation on this handle' p 1.00 | model 'h4: an operation on this handle' p 0.93
+D 46 field group_by: log 'add one more item' p 0.75 | model 'add one more item' p 0.86
+D 51 field group_by[5]: log '"country"  (h4 descriptor: columns > name; h' p 0.51 ABSTAINED | model '"amount"  (h4 descriptor: columns > name; h4' p 0.41
+D 55 field metrics[0].column: log '"amount"  (h4 descriptor: columns > name; h4' p 0.77 | model '"amount"  (h4 descriptor: columns > name; h4' p 0.78
+D 64 field metrics[2].column: log 'leave it out' p 0.80 | model 'leave it out' p 0.81
+D 73 field metrics[4].as: log '"amount"  (h4 descriptor: columns > name; h4' p 0.93 | model '"country"  (h4 descriptor: columns > name; h' p 0.47
+D 82 field group_by: log 'add one more item' p 0.95 | model 'add one more item' p 0.97
+D 91 target : log 'h4: an operation on this handle' p 1.00 | model 'h4: an operation on this handle' p 0.79
+D 98 field metrics[0].fn: log '"max"' p 0.45 ABSTAINED | model '"sum"  (it was in an input that FAILED: Bind' p 0.93
+D 100 field metrics[0].column: log '"amount"  (h4 descriptor: columns > name; h4' p 1.00 | model '"amount"  (h4 descriptor: columns > name; h4' p 0.40
+D 109 field metrics: log 'stop: the list is complete' p 0.93 | model 'stop: the list is complete' p 0.97
+D 113 field metrics[0].fn: log '"max"' p 0.59 ABSTAINED | model '"sum"  (it was in an input that FAILED: metr' p 0.86
+D 118 target : log 'h5: an operation on this handle' p 0.99 | model 'h5: an operation on this handle' p 0.83
+D 124 operation : log 'h6 dataset.select: Derive a handle to a subs' p 0.39 ABSTAINED | model 'h6 dataset.limit: Derive a handle to the fir' p 0.83
+   20 decisions, the same top option as the log: 15, input tokens 30189, cost $0.000888, median 438 ms, longest 1242 ms
+== perplexity/pplx-decider-v1.3:free
+D 1 target : log 'h1: an operation on this handle' p 1.00 | model 'h1: an operation on this handle' p 1.00
+D 10 field n: log 'leave it out' p 0.88 | model 'leave it out' p 0.82
+D 11 target : log 'step_done: the results show that the current' p 0.66 ABSTAINED | model 'step_done: the results show that the current' p 0.99
+D 14 target : log 'step_done: the results show that the current' p 0.52 ABSTAINED | model 'step_done: the results show that the current' p 0.99
+D 19 operation : log 'h2 dataset.join: Derive a handle to the join' p 0.85 | model 'h2 dataset.join: Derive a handle to the join' p 0.99
+D 28 operation : log 'h4 dataset.aggregate: Derive a handle to one' p 0.98 | model 'h4 dataset.aggregate: Derive a handle to one' p 1.00
+D 37 target : log 'h4: an operation on this handle' p 1.00 | model 'h4: an operation on this handle' p 0.99
+D 46 field group_by: log 'add one more item' p 0.75 | model 'stop: the list is complete' p 0.96
+D 51 field group_by[5]: log '"country"  (h4 descriptor: columns > name; h' p 0.51 ABSTAINED | model '"country"  (h4 descriptor: columns > name; h' p 0.43
+D 55 field metrics[0].column: log '"amount"  (h4 descriptor: columns > name; h4' p 0.77 | model '"amount"  (h4 descriptor: columns > name; h4' p 0.95
+D 64 field metrics[2].column: log 'leave it out' p 0.80 | model 'include it' p 0.52
+D 73 field metrics[4].as: log '"amount"  (h4 descriptor: columns > name; h4' p 0.93 | model '"amount"  (h4 descriptor: columns > name; h4' p 0.63
+D 82 field group_by: log 'add one more item' p 0.95 | model 'add one more item' p 1.00
+D 91 target : log 'h4: an operation on this handle' p 1.00 | model 'h4: an operation on this handle' p 0.96
+D 98 field metrics[0].fn: log '"max"' p 0.45 ABSTAINED | model '"sum"  (it was in an input that FAILED: Bind' p 0.99
+D 100 field metrics[0].column: log '"amount"  (h4 descriptor: columns > name; h4' p 1.00 | model '"amount"  (h4 descriptor: columns > name; h4' p 1.00
+D 109 field metrics: log 'stop: the list is complete' p 0.93 | model 'stop: the list is complete' p 0.97
+D 113 field metrics[0].fn: log '"max"' p 0.59 ABSTAINED | model '"count"' p 0.59
+D 118 target : log 'h5: an operation on this handle' p 0.99 | model 'h5: an operation on this handle' p 0.99
+D 124 operation : log 'h6 dataset.select: Derive a handle to a subs' p 0.39 ABSTAINED | model 'h6 dataset.limit: Derive a handle to the fir' p 0.60
+   20 decisions, the same top option as the log: 15, input tokens 28155, cost $0.000000, median 393 ms, longest 736 ms
+== perplexity/pplx-decider-flash-v1.3:free
+D 1 target : log 'h1: an operation on this handle' p 1.00 | model 'h1: an operation on this handle' p 1.00
+D 10 field n: log 'leave it out' p 0.88 | model 'leave it out' p 0.92
+D 11 target : log 'step_done: the results show that the current' p 0.66 ABSTAINED | model 'step_done: the results show that the current' p 0.97
+D 14 target : log 'step_done: the results show that the current' p 0.52 ABSTAINED | model 'step_done: the results show that the current' p 0.96
+D 19 operation : log 'h2 dataset.join: Derive a handle to the join' p 0.85 | model 'h2 dataset.join: Derive a handle to the join' p 0.98
+D 28 operation : log 'h4 dataset.aggregate: Derive a handle to one' p 0.98 | model 'h4 dataset.aggregate: Derive a handle to one' p 0.99
+D 37 target : log 'h4: an operation on this handle' p 1.00 | model 'h4: an operation on this handle' p 0.98
+D 46 field group_by: log 'add one more item' p 0.75 | model 'stop: the list is complete' p 0.87
+D 51 field group_by[5]: log '"country"  (h4 descriptor: columns > name; h' p 0.51 ABSTAINED | model 'none fits: no value here is right' p 0.92
+D 55 field metrics[0].column: log '"amount"  (h4 descriptor: columns > name; h4' p 0.77 | model '"amount"  (h4 descriptor: columns > name; h4' p 0.98
+D 64 field metrics[2].column: log 'leave it out' p 0.80 | model 'leave it out' p 0.94
+D 73 field metrics[4].as: log '"amount"  (h4 descriptor: columns > name; h4' p 0.93 | model 'none of these: show more options' p 0.84
+D 82 field group_by: log 'add one more item' p 0.95 | model 'add one more item' p 0.99
+D 91 target : log 'h4: an operation on this handle' p 1.00 | model 'h4: an operation on this handle' p 0.96
+D 98 field metrics[0].fn: log '"max"' p 0.45 ABSTAINED | model '"sum"  (it was in an input that FAILED: Bind' p 0.95
+D 100 field metrics[0].column: log '"amount"  (h4 descriptor: columns > name; h4' p 1.00 | model '"amount"  (h4 descriptor: columns > name; h4' p 0.99
+D 109 field metrics: log 'stop: the list is complete' p 0.93 | model 'stop: the list is complete' p 0.96
+D 113 field metrics[0].fn: log '"max"' p 0.59 ABSTAINED | model '"sum"  (it was in an input that FAILED: metr' p 0.55
+D 118 target : log 'h5: an operation on this handle' p 0.99 | model 'h5: an operation on this handle' p 0.97
+D 124 operation : log 'h6 dataset.select: Derive a handle to a subs' p 0.39 ABSTAINED | model 'h6 dataset.limit: Derive a handle to the fir' p 0.76
+   20 decisions, the same top option as the log: 14, input tokens 28155, cost $0.000000, median 246 ms, longest 1463 ms

@@ -1,0 +1,9 @@
+{
+ "handles": [
+  "hdl_01M7GT6PFMT9W6P1PJMPYGH093"
+ ],
+ "intents": [
+  "Run the script one time with no arguments. Read the checksum that it prints at the end."
+ ],
+ "notes": "Run the script only one time. Do not pass arguments."
+}

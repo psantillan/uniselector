@@ -1,0 +1,84 @@
+{
+ "run": "run_20261115_235548_b501",
+ "state": "done",
+ "why": "each intent is met",
+ "plan": {
+  "intents": [
+   {
+    "n": 1,
+    "intent": "Run the script one time with no arguments. Read the checksum that it prints at the end.",
+    "state": "done"
+   }
+  ],
+  "notes": "Run the script only one time. Do not pass arguments."
+ },
+ "pending": null,
+ "handles": [
+  {
+   "alias": "h1",
+   "id": "hdl_01M7GT6PFMT9W6P1PJMPYGH093",
+   "type": "script",
+   "origin": "start",
+   "name": "job",
+   "description": "A Python script. A slow computation: a chain of SHA-256 hashes with a pause after each round. It prints the checksum at the end.",
+   "schema": {
+    "file": "slow_job.py",
+    "lines": 18
+   }
+  },
+  {
+   "alias": "h2",
+   "id": "hdl_01M7GT6XZQ6VNC8ARXTBS0KE3N",
+   "type": "job",
+   "origin": "a job: script.run on h1",
+   "description": "The asynchronous run of script.run on hdl_01M7GT6PFMT9W6P1PJMPYGH093.",
+   "status": "{\"version\": \"completed:1\", \"state\": \"completed\"}"
+  }
+ ],
+ "results": [
+  {
+   "step": 1,
+   "intent": 0,
+   "capability": "script.run",
+   "target": "h1",
+   "input": {},
+   "handle": "h2 (a job: it runs now. Use wait, then job.status and job.result)"
+  },
+  {
+   "step": 2,
+   "intent": 0,
+   "capability": "job.result",
+   "target": "h2",
+   "input": {},
+   "output": "{\"exit_code\": 0, \"seconds\": 152.1, \"output\": \"round 1 of 30\\nround 2 of 30\\nround 3 of 30\\nround 4 of 30\\nround 5 of 30\\nround 6 of 30\\nround 7 of 30\\nround 8 of 30\\nround 9 of 30\\nround 10 of 30\\nround 11 of 30\\nround 12 of 30\\nround 13 of 30\\nround 14 of 30\\nround 15 of 30\\nround 16 of 30\\nround 17 of 30\\nround 18 of 30\\nround 19 of 30\\nround 20 of 30\\nround 21 of 30\\nround 22 of 30\\nround 23 of 30\\nround 24 of 30\\nround 25 of 30\\nround 26 of 30\\nround 27 of 30\\nround 28 of 30\\nround 29 of 30\\nround 30 of 30\\nchecksum: 81504f413660545c\\n\"}"
+  },
+  {
+   "step": 3,
+   "intent": 0,
+   "control": "step_done",
+   "note": "the intent is met"
+  }
+ ],
+ "limits": {
+  "elapsed_s": 153.8,
+  "wall_seconds": 1800,
+  "tokens": 3014,
+  "budget_tokens": 400000,
+  "intents_done": 1,
+  "intents": 1,
+  "spent_share": 0.008
+ },
+ "counts": {
+  "decisions": 4,
+  "operations": 2,
+  "waits": 0,
+  "probes": 0,
+  "questions": 0,
+  "planner_questions": 0,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "lineage": "/tmp/scratch/worlds/code_20261115_235541/runs/run_20261115_235548_b501/lineage.json",
+ "logs": "/tmp/scratch/worlds/code_20261115_235541/runs/run_20261115_235548_b501",
+ "next": "Each intent is met. Read the handles with the DataHandles tools."
+}

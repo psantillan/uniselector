@@ -1,5 +1,6 @@
 """The loop, with a decider that follows a script and a real DataHandles runtime."""
 import json
+import os
 import signal
 import socket
 import subprocess
@@ -14,7 +15,7 @@ from uniselector import confirm
 from uniselector.run import ENDED
 
 FILTER = ["h1 dataset.filter", '"event_type"', '"eq"', '"value": x}', '"purchase"', "stop"]
-PIPELINE = [*FILTER, "step_done", "h2:", "h2 dataset.count", "step_done"]
+PIPELINE = [*FILTER, "step_done", "h2 dataset.count", "step_done"]
 PLAN = ["keep only the purchase events", "count the rows"]
 
 
@@ -190,7 +191,8 @@ def test_a_slow_operation_becomes_a_job_that_the_decision_model_waits_for(cfg, t
     assert summary["handles"][1]["status"] and "completed" in summary["handles"][1]["status"]
 
 
-def test_a_join_key_takes_column_names_and_a_structure_decision_is_never_a_question(cfg, tmp_path):
+def test_a_join_key_takes_column_names_and_a_structure_decision_is_never_a_question(cfg, tmp_path, monkeypatch):
+    monkeypatch.setattr("uniselector.walk.MAX_OPTIONS", 20)   # the two handles have more operations than this: the root is two decisions
     (tmp_path / "orders.csv").write_text("order_id,customer,total\n" + "\n".join(f"{i},c{i % 4},{i * 10}" for i in range(12)))
     (tmp_path / "customers.csv").write_text("customer,country\n" + "\n".join(f"c{i},{'DE' if i % 2 else 'FR'}" for i in range(4)))
     # The decision on one more key is below the abstain threshold: [add, stop]. The top option stands, and no question starts.
@@ -206,6 +208,20 @@ def test_a_join_key_takes_column_names_and_a_structure_decision_is_never_a_quest
     assert first == {'"order_id"', '"customer"', '"total"', '"country"'} and right[-1].startswith("none of these")
     second = next(options for text, options in h.decide.seen if "Choose the operation on h1" in text)
     assert any(o.startswith("step_done") for o in second)   # the control options stay on the second level of the root
+
+
+def test_a_refusal_has_no_top_option_so_a_structure_decision_becomes_a_question(cfg, events):
+    asked = []
+
+    def asker(question, max_tokens, seconds):
+        asked.append((question["field"], question["schema"]))
+        return {"value": False, "calls": [], "tokens": 0}
+
+    # The decision model refuses the decision on one more item of `where`: each option gets 0.
+    h = harness(cfg, [*FILTER[:-1], [0.0, 0.0], "step_done"], asker=asker)
+    summary = finish(h, h.submit({"intents": PLAN[:1], "handles": [table(h, events).id]})["run"])
+    assert summary["state"] == "done" and asked == [("where", {"enum": [True, False]})], summary["why"]
+    assert summary["results"][0]["input"] == {"where": [{"column": "event_type", "op": "eq", "value": "purchase"}]}
 
 
 def test_a_run_ends_when_its_process_ends(cfg, events):
@@ -229,9 +245,9 @@ def test_a_run_ends_in_the_logs_when_the_client_ends_the_server(tmp_path, events
     handle = subprocess.run([sys.executable, "-c", register, str(state), str(events)], capture_output=True, text=True, check=True).stdout.strip()
     (tmp_path / "uniselector.toml").write_text(
         f'[limits]\nbudget_tokens = 1000\nwall_seconds = 60\n[runtime]\ntarget = "{state}"\nruns_dir = "{runs}"\n'
-        f'[model]\nmodel_url = "http://127.0.0.1:{model.getsockname()[1]}"\nmodel = "none"\n')
+        f'[decision]\ndecision_url = "http://127.0.0.1:{model.getsockname()[1]}"\ndecision_model = "none"\ndecision_key_env = "UNISELECTOR_TEST_KEY"\n')
     server = subprocess.Popen([sys.executable, "-m", "uniselector.mcp", "--config", str(tmp_path / "uniselector.toml")],
-                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, env={**os.environ, "UNISELECTOR_TEST_KEY": "none"})
     try:
         def send(message):
             server.stdin.write(json.dumps({"jsonrpc": "2.0", **message}) + "\n")

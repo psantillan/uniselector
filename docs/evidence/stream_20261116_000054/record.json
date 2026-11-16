@@ -1,0 +1,58 @@
+{
+ "task": "stream",
+ "what": "A stream with a condition to watch for. The heater is an action: each switch needs a confirmation.",
+ "at": "20261116_000054",
+ "commit": "969418c+",
+ "prompt": "A room is registered in DataHandles as `room`. Heat it: switch the heater on, wait until the temperature is 26 or more, then switch the heater off. Give the temperature of the last reading that you saw.",
+ "truth": "the heater goes on, then off after a reading of 26 or more",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "subagent_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 242.0,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7003,
+ "context_peak": 14987,
+ "context_added": 7984,
+ "tool_calls": {
+  "handle_find": 1,
+  "plan_submit": 1,
+  "plan_status": 5,
+  "plan_confirm": 2,
+  "plan_answer": 2
+ },
+ "turns": 12,
+ "agent_seconds": 240.3,
+ "answer": "26.141",
+ "agent_error": false,
+ "right": true,
+ "facts": {
+  "heater_on_seq": 2,
+  "heater_off_after_seq": 59,
+  "temperature_then": 26.141
+ },
+ "runs": [
+  {
+   "t": 1794787487.285,
+   "event": "end",
+   "run": "run_20261116_000059_5589",
+   "outcome": "done",
+   "why": "each intent is met",
+   "intents_done": 4,
+   "intents": 4,
+   "tokens": 141633,
+   "seconds": 218.1,
+   "decisions": 49,
+   "operations": 2,
+   "waits": 41,
+   "probes": 37,
+   "questions": 2,
+   "planner_questions": 2,
+   "confirmations": 2,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

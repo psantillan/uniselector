@@ -1,0 +1,11 @@
+{
+ "handles": [
+  "hdl_01M7GTY0EYHQ4GSGTY9EBG64RK"
+ ],
+ "intents": [
+  "Switch the heater on.",
+  "Read the room temperature again and again until the temperature is 26 or more.",
+  "Switch the heater off.",
+  "Report the temperature of the last reading that you saw."
+ ]
+}

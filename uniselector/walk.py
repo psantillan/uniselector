@@ -9,7 +9,7 @@ import json
 import time
 from dataclasses import dataclass, field
 
-from .decide import LABELS, judge
+from .decide import MAX_OPTIONS, judge
 from .pool import NONE_FITS
 from .state import cut
 
@@ -97,10 +97,10 @@ class Walk:
         operations = {e.alias: [self._operation(e, c) for c in [*e.capabilities, *e.actions] if c["name"] not in hidden] for e in entries}
         controls = [Option(f"{name}: {text}", ("control", name), name) for name, text in CONTROLS.items()]
         flat = [o for options in operations.values() for o in options]
-        if len(flat) + len(controls) <= len(LABELS):
+        if len(flat) + len(controls) <= MAX_OPTIONS:
             choice = self.node("operation", "Choose the next operation for the current intent, or a control option.", flat + controls)
         else:
-            # More options than one decision has labels: choose the handle first, then its operation.
+            # More options than one decision can have: choose the handle first, then its operation.
             targets = [Option(f"{e.alias}: an operation on this handle", e, e.alias) for e in entries if operations[e.alias]]
             choice = self.node("target", "Choose the handle of the next operation for the current intent, or a control option.", targets + controls)
             if not isinstance(choice, tuple):   # the control options stay: a look at the operations can show that none is needed
@@ -130,17 +130,17 @@ class Walk:
              field: str | None = None, abstain: bool = True, first: int | None = None):
         """One decision among `options`. `schema` is set for an open value: a question can then give any value that it allows.
         `first` is the size of the first page, when the first options are stronger than the others."""
-        rest, size = options, first or len(LABELS)
+        rest, size = options, first or MAX_OPTIONS
         while True:
             page = rest
             if len(rest) > size:   # show the options in pages
-                page = [*rest[:min(size, len(LABELS) - 1)], Option("none of these: show more options", _MORE, "more options")]
+                page = [*rest[:min(size, MAX_OPTIONS - 1)], Option("none of these: show more options", _MORE, "more options")]
             index = self._pass(kind, text, page, context, field, abstain)
             if index is None or page[index].key == NONE_FITS:
                 return self._question(kind, options, schema, context, field)
             if page[index].value is not _MORE:
                 return page[index].value
-            rest, size = rest[len(page) - 1:], len(LABELS)
+            rest, size = rest[len(page) - 1:], MAX_OPTIONS
 
     def _pass(self, kind, text, options, context, field, abstain) -> int | None:
         if len(options) == 1:   # only one value is possible: no call
@@ -149,16 +149,17 @@ class Walk:
         t0 = time.perf_counter()
         d = self.decide(view, [o.text for o in options])
         self.state.tokens += d.tokens
-        index = judge(d, self.cfg.abstain_top, self.cfg.abstain_ratio, self.cfg.abstain_mass)
+        index = judge(d, self.cfg.abstain_top, self.cfg.abstain_ratio)
         below = index is None   # the decision is below the abstain threshold
-        if below and not abstain:
+        refused = not any(d.probs)   # the decision model gave no distribution: no top option can stand
+        if below and not abstain and not refused:
             index = max(range(len(options)), key=lambda i: d.probs[i])
         self.log({"node": kind, "field": field, "capability": context.capability["name"] if context else None,
                   "target": context.entry.alias if context else None, "partial": context.holder["input"] if context else None,
                   "options": [o.key for o in options], "texts": [o.text for o in options],
-                  "probs": [round(p, 4) for p in d.probs], "mass": round(d.mass, 4),
+                  "probs": [round(p, 4) for p in d.probs], "refused": refused,
                   "choice": None if index is None else options[index].key, "abstained": index is None, "below": below,
-                  "tokens": d.tokens, "ms": round((time.perf_counter() - t0) * 1000), "state": view})
+                  "tokens": d.tokens, "cost": d.cost, "ms": round((time.perf_counter() - t0) * 1000), "state": view})
         self.check()
         return index
 

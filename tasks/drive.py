@@ -169,8 +169,9 @@ def main() -> None:
     p.add_argument("task", choices=list(TASKS))
     p.add_argument("--work", required=True, help="a directory for the world of the run: the runtime state and the tokens")
     p.add_argument("--evidence", required=True, help="a directory for the record and the logs of the run")
-    p.add_argument("--model-url", default="http://localhost:11434", help="the Ollama server of the decision model")
-    p.add_argument("--model", required=True, help="the decision model")
+    p.add_argument("--decision-model", required=True, help="the decision model, on the Decisions API of the configuration default")
+    p.add_argument("--model-url", default="http://localhost:11434", help="the Ollama server of the sub-agent model")
+    p.add_argument("--model", required=True, help="the sub-agent model")
     p.add_argument("--agent-model", default="sonnet", help="the model of the main agent")
     p.add_argument("--seconds", type=float, default=150, help="api, code: how long the slow part takes")
     p.add_argument("--interval-ms", type=int, default=3000, help="stream: the time between two readings")
@@ -178,7 +179,7 @@ def main() -> None:
     p.add_argument("--document", help="helper: the long document")
     a = p.parse_args()
     stamp = time.strftime("%Y%m%d_%H%M%S")
-    world = World(Path(a.work) / f"{a.task}_{stamp}", a.model_url, a.model, BUDGET_TOKENS, WALL_SECONDS,
+    world = World(Path(a.work) / f"{a.task}_{stamp}", a.decision_model, a.model_url, a.model, BUDGET_TOKENS, WALL_SECONDS,
                   human_only=["room.heater"] if a.task == "stream-human" else [])
     world.facts = {}
     stop, confirmed = threading.Event(), []
@@ -196,7 +197,7 @@ def main() -> None:
             except subprocess.TimeoutExpired:
                 pass
         record = {"task": a.task, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
-                  "decision_model": a.model, "limits": {"budget_tokens": BUDGET_TOKENS, "wall_seconds": WALL_SECONDS},
+                  "decision_model": a.decision_model, "subagent_model": a.model, "limits": {"budget_tokens": BUDGET_TOKENS, "wall_seconds": WALL_SECONDS},
                   "seconds": round(time.time() - t0, 1), **measure(world.dir / "agent-stream.jsonl")}
         record["right"] = bool(record["answer"]) and bool(task["check"](record["answer"]))
         record["facts"] = world.facts

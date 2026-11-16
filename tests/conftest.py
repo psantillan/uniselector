@@ -19,10 +19,10 @@ class Scripted:
         assert self.script, f"the script ended at: {state['decision']['text']} {options}"
         want = self.script.pop(0)
         if isinstance(want, list):   # a distribution, to test the abstain rule
-            return Distribution(want, 1.0, self.tokens)
+            return Distribution(want, self.tokens, 0.0)
         index = next((i for i, text in enumerate(options) if want in text), None)
         assert index is not None, f"no option has {want!r}: {options}"
-        return Distribution([float(i == index) for i in range(len(options))], 1.0, self.tokens)
+        return Distribution([float(i == index) for i in range(len(options))], self.tokens, 0.0)
 
 
 def no_asker(question, max_tokens, seconds):

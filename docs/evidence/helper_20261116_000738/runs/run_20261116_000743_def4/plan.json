@@ -1,0 +1,8 @@
+{
+ "handles": [
+  "hdl_01M7GTWK60HNZY42C56CP4JWGC"
+ ],
+ "intents": [
+  "Ask the reader helper this question: 'Which database does the document name for the initial registry, and which database does it name for later?' Return the two database names."
+ ]
+}

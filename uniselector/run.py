@@ -12,6 +12,7 @@ information in the state, and the decision model judges it.
             add a summary of the result to the state
 """
 import json
+import os
 import secrets
 import threading
 import time
@@ -23,7 +24,7 @@ from datahandles.sdk import Handle
 
 from . import lineage
 from .config import Config, clients as make_clients
-from .decide import OllamaDecider
+from .decide import Decider
 from .gate import ALL, Gate
 from .log import RunLog
 from .plan import check, limits, violations
@@ -409,7 +410,7 @@ class Harness:
         self.cfg = cfg
         self.clients = clients or make_clients(cfg)
         self.gate = Gate(self.clients["planner"], cfg.orchestrator, cfg.subagent, cfg.human, self.clients.get("human"))
-        self.decide = decide or OllamaDecider(cfg.model_url, cfg.model, cfg.num_ctx)
+        self.decide = decide or Decider(cfg.decision_url, cfg.decision_model, os.environ[cfg.decision_key_env])
         self.asker = asker or ModelAsker(cfg, self.clients["subagent"])
         self.runs = {}
 

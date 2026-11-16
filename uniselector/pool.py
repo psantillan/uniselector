@@ -13,11 +13,12 @@ first ones. docs/DECISIONS.md (D8) gives the order and its reason.
 import json
 import re
 
+from .decide import MAX_OPTIONS
 from .plan import violations
 
 NONE_FITS = "none fits"
-# One decision has 20 labels (decide.LABELS). One label is for `none fits`.
-MAX_CANDIDATES = 19
+# One decision has MAX_OPTIONS options at most. One option is for `none fits`.
+MAX_CANDIDATES = MAX_OPTIONS - 1
 # ASSUMED: two places tell the decision where a value comes from. More places make the option long.
 MAX_PLACES = 2
 # ASSUMED: four values show what a place holds.

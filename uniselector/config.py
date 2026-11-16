@@ -14,7 +14,7 @@ from datahandles.sdk import Client, connect
 @dataclass
 class Config:
     # The hard limits. A plan can ask for lower limits, never for higher ones.
-    budget_tokens: int    # model tokens (prompt + output) of the decision model and the sub-agents
+    budget_tokens: int    # model tokens (input + output) of the decision model and the sub-agents
     wall_seconds: float   # seconds that the run works; the clock stops while the run waits for the main agent or the human
 
     # Where the DataHandles runtime is: a state directory (a runtime in this process) or an http(s) URL.
@@ -30,16 +30,19 @@ class Config:
         "planner": "UNISELECTOR_PLANNER_TOKEN", "orchestrator": "UNISELECTOR_TOKEN",
         "subagent": "UNISELECTOR_SUBAGENT_TOKEN", "human": "UNISELECTOR_HUMAN_TOKEN"})
 
-    # The decision model and the sub-agent model, on an Ollama server.
+    # The decision model, behind a Decisions API (docs/DECISIONS.md, D17). The API key is in the named environment variable.
+    decision_url: str = "https://openrouter.ai/api/alpha/decisions"
+    decision_model: str = ""
+    decision_key_env: str = "OPENROUTER_API_KEY"
+
+    # The model of the sub-agent, on an Ollama server (D12). A decision model writes no text, so it cannot explore.
     model_url: str = "http://localhost:11434"
     model: str = ""
-    subagent_model: str = ""   # empty: the same model
     num_ctx: int = 8192
 
     # When a decision abstains (docs/DECISIONS.md, D5).
     abstain_top: float = 0.5     # the top option has less than this share
     abstain_ratio: float = 0.5   # the second option has more than this share of the top option
-    abstain_mass: float = 0.5    # less than this share of the probability was on an option label
 
     question_tokens: int = 40_000   # the cap of one sub-agent question (D9)
     human_only: list = field(default_factory=list)   # capabilities that only the human can confirm

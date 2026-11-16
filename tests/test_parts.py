@@ -1,24 +1,67 @@
 """The small parts: the abstain rule, the plan, the candidate pool, the hook, and the tool surface."""
+import http.server
 import io
 import json
 import sys
+import threading
 
 import pytest
 
 from conftest import finish, harness
 from uniselector import mcp, plan
-from uniselector.decide import LABELS, Distribution, judge, render
+from uniselector.decide import Decider, Distribution, judge, render
 from uniselector.hooks import pending
 from uniselector.pool import leaves, literals
 
 
-def test_a_decision_abstains_when_the_top_is_low_or_the_second_is_close_or_the_mass_is_low():
-    rule = dict(top=0.5, ratio=0.5, mass=0.5)
-    assert judge(Distribution([0.1, 0.8, 0.1], 1.0, 0), **rule) == 1
-    assert judge(Distribution([0.45, 0.3, 0.25], 1.0, 0), **rule) is None    # the top option is low
-    assert judge(Distribution([0.6, 0.4, 0.0], 1.0, 0), **rule) is None      # the second option is close
-    assert judge(Distribution([0.9, 0.1, 0.0], 0.3, 0), **rule) is None      # the model did not answer with a label
-    assert judge(Distribution([1.0], 1.0, 0), **rule) == 0
+def test_a_decision_abstains_when_the_top_is_low_or_the_second_is_close_or_the_model_refuses():
+    rule = dict(top=0.5, ratio=0.5)
+    assert judge(Distribution([0.1, 0.8, 0.1], 0, 0.0), **rule) == 1
+    assert judge(Distribution([0.45, 0.3, 0.25], 0, 0.0), **rule) is None    # the top option is low
+    assert judge(Distribution([0.6, 0.4, 0.0], 0, 0.0), **rule) is None      # the second option is close
+    assert judge(Distribution([0.0, 0.0, 0.0], 0, 0.0), **rule) is None      # the model refused the question
+    assert judge(Distribution([1.0], 0, 0.0), **rule) == 0
+
+
+def test_one_decision_is_one_choice_question_to_the_decisions_api():
+    """A server of the test stands in for the Decisions API. It keeps the request, and it gives the next reply."""
+    seen, replies = [], [
+        {"answers": {"decision": {"type": "choice", "choice": "2", "probabilities": {"3": 0.1, "2": 0.7, "1": 0.2}, "confidence": 0.55}},
+         "usage": {"input_tokens": 321, "output_tokens": 1, "cost": 0.0000064}},
+        {"answers": {"decision": {"type": "refusal"}}, "usage": {"input_tokens": 300, "output_tokens": 0, "cost": 0.0}}]
+
+    class Api(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            seen.append((dict(self.headers), json.loads(self.rfile.read(int(self.headers["Content-Length"])))))
+            body = json.dumps(replies.pop(0)).encode()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Api)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    state = {"plan": {"intents": ["count the rows"]}, "intent": 0, "handles": [], "results": [], "decision": {"text": "Choose the next operation."},
+             "limits": {"elapsed_s": 1.0, "wall_seconds": 60, "tokens": 0, "budget_tokens": 1000, "intents_done": 0, "intents": 1, "spent_share": 0.0},
+             "stall": {"seconds": 0.0, "looks": 0}}
+    try:
+        decide = Decider(f"http://127.0.0.1:{server.server_port}/decisions", "some/decision-model", "the-key")
+        d = decide(state, ["first", "second", "third"])
+        refused = decide(state, ["first", "second"])
+    finally:
+        server.shutdown()
+    headers, body = seen[0]
+    assert headers["Authorization"] == "Bearer the-key" and body["model"] == "some/decision-model"
+    assert "1. [CURRENT] count the rows" in body["state"] and "Choose the next operation." not in body["state"]
+    question, = body["questions"].values()
+    assert question["type"] == "choice" and question["instructions"].endswith("Choose the next operation.")
+    assert question["criteria"] == {"1": "first", "2": "second", "3": "third"}
+    # The distribution is in the order of the options, not in the order of the reply.
+    assert (d.probs, d.tokens, d.cost) == ([0.2, 0.7, 0.1], 321, 0.0000064) and judge(d, 0.5, 0.5) == 1
+    assert refused.probs == [0.0, 0.0] and judge(refused, 0.5, 0.5) is None
 
 
 def test_a_plan_is_intents_and_handles_and_nothing_more(cfg):
@@ -52,14 +95,14 @@ def test_the_first_page_of_an_open_value_has_the_values_with_evidence(cfg, event
     assert {o.split("  ")[0] for o in value[:-1]} == {'"purchase"', '"view"', '"cart"'}   # the values at the chosen column
 
 
-def test_the_text_of_a_decision_has_one_letter_for_each_option(cfg, events):
+def test_the_state_text_has_the_plan_the_handles_and_the_results_by_intent(cfg, events):
     h = harness(cfg, ["step_done", "step_done"])
     source = h.clients["planner"].register("events", adapter="duckdb", source={"path": str(events)})
     run = h.submit({"intents": ["count the rows", "stop"], "handles": [source.id]})["run"]
     finish(h, run)
-    text = render({**h.runs[run].state.view("Choose."), "intent": 1}, ["first", "second"])   # the state at the second intent
-    assert text.index("PLAN") < text.index("HANDLES") < text.index("DECISION") < text.index("A. first") < text.index("B. second")
-    assert len(LABELS) == 20 and "h1: dataset events" in text
+    text = render({**h.runs[run].state.view("Choose."), "intent": 1})   # the state at the second intent
+    assert text.index("PLAN") < text.index("HANDLES") < text.index("LIMITS") < text.index("STALL") and "Choose." not in text
+    assert "h1: dataset events" in text
     # The results of the current intent are apart from the results of the earlier intents.
     earlier, current = text.index("RESULTS OF EARLIER INTENTS"), text.index("RESULTS OF THE CURRENT INTENT (2. stop)")
     assert earlier < text.index("- step 1: step_done") < current < text.index("- step 2: step_done") < text.index("LIMITS")
