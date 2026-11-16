@@ -164,7 +164,8 @@ def test_a_silent_feed_gets_a_look_at_times_that_double(cfg, events):
     looks = lines(summary, "decisions")
     assert [look["reason"] for look in looks] == ["change"] + ["silence"] * (len(looks) - 1) and 3 <= len(looks) <= 6
     silent = [look["state"]["objects"][0]["changed_s"] for look in looks[1:]]
-    assert all(b >= 1.8 * a for a, b in zip(silent, silent[1:])), silent   # 10 ticks of 0.1 s, and only a few looks
+    # Look k is due after a silence of 2 ticks times 2 ** k. A slow machine makes a look late, never early.
+    assert all(s >= 2 * cfg.wait_seconds * 2 ** k - 0.05 for k, s in enumerate(silent)), silent
     assert summary["pending"]["outside"][0]["variable"] == "The feed got a new row in the last second."
 
 
