@@ -27,6 +27,8 @@ HERE = Path(__file__).resolve().parent
 HOW = ("Do this work through Uniselector. Find the handle ids with handle_find. Then hand off a plan with plan_submit and follow the run "
        "with plan_status. Do not invoke operations on the handles yourself: you can only read a result that you need for the answer. "
        "Reply with the answer only.")
+# The baseline: the main agent does the same task with the DataHandles tools only, and no run of Uniselector.
+DIRECT = "Do this work yourself with the DataHandles tools: find the handles with handle_find and invoke the operations. Reply with the answer only."
 # The session of a task has one turn. The human decides at a terminal, and the main agent must stay in its turn while it waits.
 ALONE = ("I cannot reply to you in this session. When a request is with me, I see the notice and I decide at my terminal. "
          "Follow the run with plan_status and wait_seconds until I decide.")
@@ -177,6 +179,7 @@ def main() -> None:
     p.add_argument("--interval-ms", type=int, default=3000, help="stream: the time between two readings")
     p.add_argument("--temperature", type=float, default=26, help="stream: the temperature to wait for")
     p.add_argument("--document", help="helper: the long document")
+    p.add_argument("--direct", action="store_true", help="the baseline: the main agent does the task itself, without Uniselector")
     a = p.parse_args()
     stamp = time.strftime("%Y%m%d_%H%M%S")
     world = World(Path(a.work) / f"{a.task}_{stamp}", a.decision_model, a.model_url, a.model, BUDGET_TOKENS, WALL_SECONDS,
@@ -187,7 +190,11 @@ def main() -> None:
         task = TASKS[a.task](world, a)
         if a.task == "stream-human":
             threading.Thread(target=stand_in_for_the_human, args=(world, stop, confirmed), daemon=True).start()
-        command = ["claude", "-p", f"{task['prompt']}\n\n{HOW}" + (f" {ALONE}" if a.task == "stream-human" else ""), "--model", a.agent_model, "--tools", "", "--mcp-config", str(world.dir / "mcp.json"),
+        how, servers = HOW + (f" {ALONE}" if a.task == "stream-human" else ""), world.dir / "mcp.json"
+        if a.direct:   # the baseline has no Uniselector server: the main agent cannot hand the work off
+            how, servers = DIRECT, world.dir / "mcp-direct.json"
+            servers.write_text(json.dumps({"mcpServers": {"datahandles": json.loads((world.dir / "mcp.json").read_text())["mcpServers"]["datahandles"]}}))
+        command = ["claude", "-p", f"{task['prompt']}\n\n{how}", "--model", a.agent_model, "--tools", "", "--mcp-config", str(servers),
                    "--strict-mcp-config", "--settings", str(world.dir / "settings.json"), "--allowedTools", "mcp__datahandles__*,mcp__uniselector__*",
                    "--output-format", "stream-json", "--verbose", "--include-hook-events", "--no-session-persistence"]
         t0 = time.time()
@@ -196,7 +203,7 @@ def main() -> None:
                 subprocess.run(command, cwd=world.dir / "agent", stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, timeout=AGENT_SECONDS)
             except subprocess.TimeoutExpired:
                 pass
-        record = {"task": a.task, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
+        record = {"task": a.task, "direct": a.direct, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
                   "decision_model": a.decision_model, "subagent_model": a.model, "limits": {"budget_tokens": BUDGET_TOKENS, "wall_seconds": WALL_SECONDS},
                   "seconds": round(time.time() - t0, 1), **measure(world.dir / "agent-stream.jsonl")}
         record["right"] = bool(record["answer"]) and bool(task["check"](record["answer"]))
@@ -208,7 +215,7 @@ def main() -> None:
     finally:
         stop.set()
         world.close()
-    evidence = Path(a.evidence) / f"{a.task}_{stamp}"
+    evidence = Path(a.evidence) / f"{a.task}{'-direct' if a.direct else ''}_{stamp}"
     evidence.mkdir(parents=True)
     (evidence / "record.json").write_text(json.dumps(record, indent=1))
     # The stream of the main agent, without the first event: it lists the tools and the settings of the machine.

@@ -1,0 +1,131 @@
+{
+ "run": "run_20261116_002809_eb4e",
+ "state": "left",
+ "why": "the MCP server of the main agent ended before the run did",
+ "plan": {
+  "intents": [
+   {
+    "n": 1,
+    "intent": "Subscribe to the room readings until a reading shows temperature 26 or more. The heater is already on.",
+    "state": "done"
+   },
+   {
+    "n": 2,
+    "intent": "Then switch the heater off.",
+    "state": "current"
+   },
+   {
+    "n": 3,
+    "intent": "Report the temperature of the last reading seen.",
+    "state": "later"
+   }
+  ]
+ },
+ "pending": {
+  "id": "req_1",
+  "kind": "confirmation",
+  "capability": "room.heater",
+  "description": "Switch the heater of the room on or off. This changes the room.",
+  "input": {
+   "on": false
+  },
+  "target": {
+   "alias": "h1",
+   "id": "hdl_01M7GW1GKZCHD73E6CTH0QADMG",
+   "type": "room",
+   "origin": "start",
+   "name": "room",
+   "description": "A simulated room with a temperature sensor and a heater.",
+   "schema": {
+    "interval_ms": 3000,
+    "reading": [
+     "seq",
+     "t_ms",
+     "temperature",
+     "heater"
+    ]
+   },
+   "status": "{\"version\": \"58\", \"heater\": true, \"room.latest\": {\"seq\": 58, \"t_ms\": 174000, \"heater\": true, \"temperature\": 26.099}}"
+  },
+  "observed": {
+   "h1 descriptor": "heater"
+  },
+  "human_only": false,
+  "with": "main agent",
+  "graph": "hdl_01M7GW6ZZBK19205D81YYBQ3ZB"
+ },
+ "handles": [
+  {
+   "alias": "h1",
+   "id": "hdl_01M7GW1GKZCHD73E6CTH0QADMG",
+   "type": "room",
+   "origin": "start",
+   "name": "room",
+   "description": "A simulated room with a temperature sensor and a heater.",
+   "schema": {
+    "interval_ms": 3000,
+    "reading": [
+     "seq",
+     "t_ms",
+     "temperature",
+     "heater"
+    ]
+   },
+   "status": "{\"version\": \"58\", \"heater\": true, \"room.latest\": {\"seq\": 58, \"t_ms\": 174000, \"heater\": true, \"temperature\": 26.099}}"
+  }
+ ],
+ "results": [
+  {
+   "step": 61,
+   "intent": 0,
+   "control": "wait",
+   "note": "waited 2.0 s. h1 after the wait: {\"version\": \"56\", \"heater\": true, \"room.latest\": {\"seq\": 56, \"t_ms\": 168000, \"heater\": true, \"temperature\": 25.976}}"
+  },
+  {
+   "step": 62,
+   "intent": 0,
+   "control": "wait",
+   "note": "waited 2.0 s. h1 after the wait: {\"version\": \"56\", \"heater\": true, \"room.latest\": {\"seq\": 56, \"t_ms\": 168000, \"heater\": true, \"temperature\": 25.976}}"
+  },
+  {
+   "step": 63,
+   "intent": 0,
+   "control": "wait",
+   "note": "waited 2.0 s. h1 after the wait: {\"version\": \"57\", \"heater\": true, \"room.latest\": {\"seq\": 57, \"t_ms\": 171000, \"heater\": true, \"temperature\": 25.965}}"
+  },
+  {
+   "step": 64,
+   "intent": 0,
+   "control": "wait",
+   "note": "waited 2.0 s. h1 after the wait: {\"version\": \"58\", \"heater\": true, \"room.latest\": {\"seq\": 58, \"t_ms\": 174000, \"heater\": true, \"temperature\": 26.099}}"
+  },
+  {
+   "step": 65,
+   "intent": 0,
+   "control": "step_done",
+   "note": "the intent is met"
+  }
+ ],
+ "limits": {
+  "elapsed_s": 158.5,
+  "wall_seconds": 1800,
+  "tokens": 73140,
+  "budget_tokens": 400000,
+  "intents_done": 1,
+  "intents": 3,
+  "spent_share": 0.183
+ },
+ "counts": {
+  "decisions": 68,
+  "operations": 1,
+  "waits": 63,
+  "probes": 53,
+  "questions": 0,
+  "planner_questions": 0,
+  "confirmations": 1,
+  "human_requests": 0
+ },
+ "lineage": "/tmp/scratch/worlds/stream_20261116_002748/runs/run_20261116_002809_eb4e/lineage.json",
+ "logs": "/tmp/scratch/worlds/stream_20261116_002748/runs/run_20261116_002809_eb4e",
+ "next": "The process of the run ended before the run did. Make a new plan from the handles and the results here, and call plan_submit."
+}

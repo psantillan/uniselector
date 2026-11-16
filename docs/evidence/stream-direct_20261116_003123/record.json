@@ -1,0 +1,37 @@
+{
+ "task": "stream",
+ "direct": true,
+ "what": "A stream with a condition to watch for. The heater is an action: each switch needs a confirmation.",
+ "at": "20261116_003123",
+ "commit": "4ab9b83+",
+ "prompt": "A room is registered in DataHandles as `room`. Heat it: switch the heater on, wait until the temperature is 26 or more, then switch the heater off. Give the temperature of the last reading that you saw.",
+ "truth": "the heater goes on, then off after a reading of 26 or more",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "subagent_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 183.3,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 5796,
+ "context_peak": 22010,
+ "context_added": 16214,
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 3,
+  "handle_invoke": 81
+ },
+ "turns": 86,
+ "agent_seconds": 181.7,
+ "answer": "26",
+ "agent_error": false,
+ "right": true,
+ "facts": {
+  "heater_on_seq": 3,
+  "heater_off_after_seq": 59,
+  "temperature_then": 26.044
+ },
+ "runs": [],
+ "human_stand_in": []
+}

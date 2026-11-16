@@ -675,3 +675,18 @@ not occur.
   `stream-human_20261116_000825` (line 2).
 - Open. The spend is in the hard budget of the run, so the hard limit holds.
 
+### F45. The first baseline run was not a baseline, and the session denied an approval
+
+- Part: the task driver. Also: action gate.
+- What happened: the first baseline run told the main agent to do the stream task itself, and it
+  still had the Uniselector tools. The main agent switched the heater on and asked for the newest
+  reading four times. Then it handed the wait off with `plan_submit`. When the run asked for the
+  confirmation of "heater off", the auto mode of Claude Code denied the `plan_confirm` call
+  ("Undermining Oversight"): the prompt had told the main agent to do the work itself. The task
+  ended with the heater on.
+- Evidence: `stream-direct_20261116_002748`, `agent-stream.jsonl` (the calls `plan_submit` and
+  `plan_confirm`, and the result of `plan_confirm`); `record.json` (`"right": false`).
+- Fixed for the driver: a baseline session has no Uniselector server (`tasks/drive.py`,
+  `--direct`). Open: a permission layer of the client can deny an approval of the main agent. The
+  run then waits until its end, and the summary does not say why.
+

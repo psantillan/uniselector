@@ -106,6 +106,30 @@ The decision model made 145 decisions in the six runs. The median time of one de
 (the longest: 2,055 ms). One decision read 496 to 3,252 input tokens (median 1,105). The API
 stated a price of $0.0033 for the 145 decisions together.
 
+### Baseline: the main agent alone
+
+`tasks/drive.py --direct` gives the main agent the same task and only the DataHandles tools. It
+does each operation itself. Each row is one run.
+
+| Task | Mode | Answer | Time | Turns of the main agent | Main agent context, first turn to peak | Cost of the main agent |
+| --- | --- | --- | --- | --- | --- | --- |
+| Data pipeline | Uniselector | right | 123.9 s | 5 | 7,016 to 11,993 | $0.047 |
+| Data pipeline | alone | right | 19.9 s | 13 | 6,971 to 11,849 | $0.063 |
+| Stream | Uniselector | right | 242.0 s | 12 | 7,003 to 14,987 | $0.075 |
+| Stream | alone | right | 183.3 s | 86 | 5,796 to 22,010 | $0.323 |
+
+The time is the time of the session of the main agent. The cost is the cost that Claude Code
+states for the session. It does not have the spend of the run (the table above).
+
+- The pipeline task has 6 operations. Uniselector gives no benefit there: the context of the main
+  agent grows by the same 4,900 tokens, and the task takes six times as long.
+- The stream task is a wait. Alone, the main agent asked for the newest reading 81 times, and each
+  answer stayed in its context. With Uniselector it used 12 turns, half of the added context, and
+  less than a quarter of the cost. Alone, the context grows with the length of the wait.
+- The evidence: `pipeline-direct_20261116_002722` and `stream-direct_20261116_003123`.
+  `stream-direct_20261116_002748` is not a baseline: the main agent still had the Uniselector
+  tools, and after three readings it handed the wait off (F45).
+
 What the rows do not show:
 
 - A question to the sub-agent is the largest cost. In the three runs with questions, the sub-agent
@@ -119,7 +143,7 @@ What the rows do not show:
   in `docs/evidence` too. With the same tasks, the pipeline run of that build took 436.0 s,
   324,769 tokens and 124 decisions. The plans were not the same: the main agent writes its plan
   in each run.
-- `docs/FAILURES.md` has 44 failures. Each one has its evidence and says if it is open.
+- `docs/FAILURES.md` has 45 failures. Each one has its evidence and says if it is open.
 
 ## Documents
 

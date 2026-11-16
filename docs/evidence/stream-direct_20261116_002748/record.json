@@ -1,0 +1,56 @@
+{
+ "task": "stream",
+ "direct": true,
+ "what": "A stream with a condition to watch for. The heater is an action: each switch needs a confirmation.",
+ "at": "20261116_002748",
+ "commit": "4ab9b83+",
+ "prompt": "A room is registered in DataHandles as `room`. Heat it: switch the heater on, wait until the temperature is 26 or more, then switch the heater off. Give the temperature of the last reading that you saw.",
+ "truth": "the heater goes on, then off after a reading of 26 or more",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "subagent_model": "ornith-1.5:9b",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 189.3,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 6958,
+ "context_peak": 12709,
+ "context_added": 5751,
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 2,
+  "handle_invoke": 6,
+  "plan_submit": 1,
+  "plan_status": 2,
+  "plan_confirm": 1
+ },
+ "turns": 14,
+ "agent_seconds": 187.6,
+ "answer": "I could not finish the task. The heater is still on.\n\nThe room reached 26.099 at seq 58, which is the last reading I saw. The run then asked me to approve switching the heater off. The permission system denied my approval with the reason \"Undermining Oversight\".\n\nI did not switch the heater off through another tool. That would work around the denial. Do you want me to switch it off directly with `room.heater` `{\"on\": false}`? You can also allow `mcp__uniselector__plan_confirm` in your settings, and I will approve the pending request.",
+ "agent_error": false,
+ "right": false,
+ "facts": {},
+ "runs": [
+  {
+   "t": 1794789057.657,
+   "event": "end",
+   "run": "run_20261116_002809_eb4e",
+   "outcome": "left",
+   "why": "the MCP server of the main agent ended before the run did",
+   "intents_done": 1,
+   "intents": 3,
+   "tokens": 73140,
+   "seconds": 158.5,
+   "decisions": 68,
+   "operations": 1,
+   "waits": 63,
+   "probes": 53,
+   "questions": 0,
+   "planner_questions": 0,
+   "confirmations": 1,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}
