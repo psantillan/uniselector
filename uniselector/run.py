@@ -266,8 +266,6 @@ class Run:
             self._event({"event": "no_look", "why": str(e)})
             return
         self.state.fresh = False
-        self.counts["looks"] += 1
-        self._spend(d.tokens, d.cost)
         outside, owners, news, failed, found = [], [], [], {}, judge(d, self.cfg.inside)
         for i in found:
             text, entry, form = asked[i]
@@ -280,9 +278,12 @@ class Run:
             outside.append(item)
             if not own and text not in self.told:   # a statement with no object is the main agent's, and the main agent does not know it
                 news.append(text)
-        self.log.write("decisions", {"run": self.id, "look": self.counts["looks"], "reason": reason, "state": view, "statements": statements,
+        # The log gets the look before the counts do: a summary that shows a look has the line of that look in the log.
+        self.log.write("decisions", {"run": self.id, "look": self.counts["looks"] + 1, "reason": reason, "state": view, "statements": statements,
                                      "probs": d.probs, "outside": [statements[i] for i in found], "tokens": d.tokens, "cost": d.cost,
                                      "ms": round((time.perf_counter() - t0) * 1000)})
+        self.counts["looks"] += 1
+        self._spend(d.tokens, d.cost)
         for entry in self.state.entries.values():   # the look judges each repair that it can see
             if entry.trial and entry.first_at is not None:
                 entry.trial = False

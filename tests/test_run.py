@@ -194,7 +194,9 @@ def test_a_busy_decision_model_makes_no_look_and_the_look_stays_due(cfg, events)
     assert (summary["state"], summary["counts"]["looks"], summary["limits"]["tokens"]) == ("running", 1, 100)
     log = lines(summary, "events")
     assert [e["why"] for e in log if e["event"] == "no_look"] == ["HTTP 429: Too Many Requests"] * 2
-    assert [look["reason"] for look in lines(summary, "decisions")] == ["change"] and summary["objects"][0]["output"] == json.dumps({"rows": 60})
+    # The run goes on while the test reads the log, so the test reads only the looks that the summary counts.
+    looks = lines(summary, "decisions")[:summary["counts"]["looks"]]
+    assert [look["reason"] for look in looks] == ["change"] and summary["objects"][0]["output"] == json.dumps({"rows": 60})
 
 
 def test_a_look_at_a_silence_stays_due_when_the_decision_model_is_busy(cfg, events):
