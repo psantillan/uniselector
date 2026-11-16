@@ -1,0 +1,97 @@
+{
+ "id": "gr_run_20261116_164318_7bb5",
+ "nodes": [
+  {
+   "id": "hdl_01M7JKV4DZ89WJ1P4PAF0NVAAD",
+   "kind": "resource",
+   "reference": "hdl_01M7JKV4DZ89WJ1P4PAF0NVAAD"
+  },
+  {
+   "id": "op_01M7JKVDSQX2Q9XMDCKJ9TB84F",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.aggregate",
+    "input": {
+     "metrics": [
+      {
+       "fn": "count",
+       "as": "n"
+      },
+      {
+       "fn": "max",
+       "column": "temperature",
+       "as": "max_t"
+      },
+      {
+       "fn": "max",
+       "column": "seq",
+       "as": "last_seq"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7JKVDSXQA7JK5VTKK2BM6FZ",
+   "kind": "derived",
+   "reference": "hdl_01M7JKVDSXQA7JK5VTKK2BM6FZ"
+  },
+  {
+   "id": "hdl_01M7JKV4ESAFW6N9JRK1NRRDEF",
+   "kind": "resource",
+   "reference": "hdl_01M7JKV4ESAFW6N9JRK1NRRDEF"
+  },
+  {
+   "id": "op_01M7JKVEN2EA2NK77VSHS2NWWY",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.aggregate",
+    "input": {
+     "metrics": [
+      {
+       "fn": "count",
+       "as": "n"
+      },
+      {
+       "fn": "max",
+       "column": "temperature",
+       "as": "max_t"
+      },
+      {
+       "fn": "max",
+       "column": "seq",
+       "as": "last_seq"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7JKVEN8Y4VK0329M6ZRZEA1",
+   "kind": "derived",
+   "reference": "hdl_01M7JKVEN8Y4VK0329M6ZRZEA1"
+  }
+ ],
+ "edges": [
+  {
+   "from": "hdl_01M7JKV4DZ89WJ1P4PAF0NVAAD",
+   "to": "op_01M7JKVDSQX2Q9XMDCKJ9TB84F"
+  },
+  {
+   "from": "op_01M7JKVDSQX2Q9XMDCKJ9TB84F",
+   "to": "hdl_01M7JKVDSXQA7JK5VTKK2BM6FZ"
+  },
+  {
+   "from": "hdl_01M7JKV4ESAFW6N9JRK1NRRDEF",
+   "to": "op_01M7JKVEN2EA2NK77VSHS2NWWY"
+  },
+  {
+   "from": "op_01M7JKVEN2EA2NK77VSHS2NWWY",
+   "to": "hdl_01M7JKVEN8Y4VK0329M6ZRZEA1"
+  }
+ ],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}

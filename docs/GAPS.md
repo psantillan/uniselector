@@ -64,8 +64,8 @@ action has no job form, so the run waits for it in a second thread and stops at 
 ## G6. A derived handle has no version
 
 `info.version` of a computation handle is `""`, and `observe` gives the same value until a
-parent changes. Uniselector caches probes by (handle id, observed version). This is correct for
-one run but it gives no key that two runs can share.
+parent changes. Uniselector runs the operation of an object again when the observed version is
+new. This is correct for one run but it gives no key that two runs can share.
 
 Workaround: none needed in one run.
 
@@ -74,7 +74,8 @@ Workaround: none needed in one run.
 The job of an operation that the orchestrator starts is a handle of the orchestrator. The main
 agent, which owns the resource, holds nothing on it and cannot read its result after a wake.
 
-Workaround: the orchestrator grants the main agent `*` on each job that it starts.
+Workaround: none needed now. The main agent reads the handle of the object, not the job
+(`docs/DECISIONS.md`, D35). The first design granted the main agent `*` on each job.
 
 ## G8. A handle input does not say which type of handle it needs
 
@@ -111,11 +112,14 @@ A job holds that lock while it runs. Only `discover` does not wait. `observe` an
 operation on the same resource wait until the job ends. Measured: `observe` took 3.73 s while a
 job of 4 s ran on a script handle.
 
-Effect: while a job runs on a resource, a regulator cannot look at that resource. The fast loop
-makes no decision, and the stall signal does not grow. A look that is not bounded can hold a run
-past its wall time. See `docs/FAILURES.md`, F31.
+Effect: while a job runs on a resource, a regulator cannot look at that resource. A look that is
+not bounded can hold a run past its wall time. See `docs/FAILURES.md`, F31. With two objects on
+one slow resource, the `observe` of the second object waits for the job of the first, and the
+loop does not reach the other objects in that time.
 
-Workaround: the wall time bounds each look (`Run._observe`). The run still waits for the job.
+Workaround: the wall time bounds each `observe` (`Run._bounded`). The run does not observe an
+object while the job of that object runs. The run still waits when another object has a job on
+the same resource.
 
 Proposal for DataHandles: `observe` does not take the lock of the resource, or it returns the
 last observation with a mark that the resource is busy.
@@ -134,3 +138,48 @@ spend of the resources.
 
 Proposal for DataHandles: a `cost` object in the result of an operation, with a unit, and the
 same object in `job.status`.
+
+## G13. A handle id cannot get a new computation
+
+A derived handle is its computation: the id stands for one operation on one parent. No protocol
+method replaces the computation behind an existing id, and no method gives a name to a handle of
+the type `computation` (`register` names a resource).
+
+Effect: the ultrastable design needs an interface that stays while the object behind it is
+replaced (`docs/DECISIONS.md`, D34). A repair after a schema break gives a new handle id. Each
+reader of the old id still reads the broken computation.
+
+Workaround: the name of the object in the run is the stable interface. The run maps the name to
+the newest handle, and the summary gives that handle to the main agent.
+
+Proposal for DataHandles: an alias. A named handle that points at another handle, with one method
+that changes the target, and `observe` that shows the target's version.
+
+## G14. A describe of a derived handle is not a fresh read
+
+After the source of a derived handle loses a column, `handle_describe` (brief form) of the derived
+handle still shows the old schema, and `observe` gives a new version with no error. Only a read
+fails: `ADAPTER_ERROR`, "Binder Error: Referenced column ... not found".
+
+Effect: a regulator cannot detect a schema break from the description or the version of a handle.
+
+Workaround: an object is a handle and one read operation (`docs/DECISIONS.md`, D30). The error of
+the read is in the state, and the decision model judges it.
+
+Proposal for DataHandles: `observe` of a derived handle states if its computation is still valid
+against the newest schema of its source.
+
+## G15. `observe` of an `api` handle gives a new version at each call
+
+A live service has no version, so the `api` adapter gives a new one at each `observe`.
+
+Effect: the loop runs the operation of an object on an `api` handle again at each tick. For a
+slow or a costly service, that is one request for each tick, or one request after the other with
+no pause.
+
+Workaround: none in the protocol. The main agent can state the goal as a variable and end the run
+when the first response is there.
+
+Proposal for DataHandles: a resource states how it changes: a version, a poll interval, or "no
+signal", so that a caller can choose when to read again.
+

@@ -1,0 +1,27 @@
+{
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7JKABD20E0Z3HHD4ZCR48ED",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   }
+  },
+  {
+   "name": "row_count",
+   "handle": "hdl_01M7JK9ZZSWEDQE8PDWKD6PKYN",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  }
+ ],
+ "variables": [
+  "The feed has fewer than 600 rows.",
+  "The totals object reads without error: the columns region, status and amount still exist."
+ ],
+ "notes": "totals = sum of amount by region for status=paid. Feed ends at 600 rows. A column may be renamed without notice. Then rebuild the filter and aggregate with the new name."
+}

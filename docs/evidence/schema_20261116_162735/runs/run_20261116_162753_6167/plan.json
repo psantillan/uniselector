@@ -1,0 +1,29 @@
+{
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7JJZ9ZZMPZQ7P1ZYE75846R",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   }
+  },
+  {
+   "name": "rowcount",
+   "handle": "hdl_01M7JJZAMXWD3268WBCQC3NSXV",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 1
+    }
+   }
+  }
+ ],
+ "variables": [
+  "The row count n is less than 600.",
+  "The totals object reads without a column error."
+ ],
+ "notes": "Totals are the sum of amount by region for status=paid. If a column is renamed, rebuild the filter and aggregate on the new name."
+}

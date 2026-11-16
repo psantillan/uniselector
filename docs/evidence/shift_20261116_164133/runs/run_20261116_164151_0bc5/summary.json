@@ -1,0 +1,87 @@
+{
+ "run": "run_20261116_164151_0bc5",
+ "state": "done",
+ "why": "the main agent ended the run",
+ "plan": {
+  "variables": [
+   "The row_count is less than 600.",
+   "The statuses in totals_by_region_status are only paid, settled, pending, and refunded. No other new status name is present."
+  ],
+  "notes": "Feed ends at 600 rows. A renamed status has the meaning of the old one. If paid is renamed, the paid total must include both names. Wake when row_count is 600 or a new status appears."
+ },
+ "objects": [
+  {
+   "name": "row_count",
+   "handle": "hdl_01M7JKRGBNAC34652CGCN9M78X",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   },
+   "written": "plan",
+   "output": "{\"rows\": 600}",
+   "runs": 15,
+   "changed_s": 1.8
+  },
+  {
+   "name": "totals_by_region_status",
+   "handle": "hdl_01M7JKSWYJ0WK8QN94V69KHN1A",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 20
+    }
+   },
+   "written": "wake_1",
+   "output": "{\"columns\": [\"status\", \"min_id\", \"max_id\", \"n\"], \"rows\": [[\"settled\", 302, 618, 140], [\"refunded\", 0, 616, 158], [\"paid\", 2, 382, 144], [\"pending\", 22, 610, 158]], \"truncated\": false}",
+   "runs": 8,
+   "changed_s": 1.8
+  },
+  {
+   "name": "paid_total_by_region",
+   "handle": "hdl_01M7JKT3TK6QMEET4QK3X8VZ71",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 20
+    }
+   },
+   "written": "wake_1",
+   "output": "{\"columns\": [\"region\", \"total\"], \"rows\": [[\"east\", 15677.18], [\"north\", 10483.22], [\"south\", 15527.259999999998], [\"west\", 14504.719999999996]], \"truncated\": false}",
+   "runs": 8,
+   "changed_s": 1.8
+  }
+ ],
+ "pending": null,
+ "last_wake": {
+  "id": "wake_2",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "The row_count is less than 600.",
+    "probability": 0.0
+   }
+  ],
+  "answer": {
+   "end": true
+  }
+ },
+ "lineage": "/tmp/scratch/worlds/shift_20261116_164133/runs/run_20261116_164151_0bc5/lineage.json",
+ "logs": "/tmp/scratch/worlds/shift_20261116_164133/runs/run_20261116_164151_0bc5",
+ "limits": {
+  "elapsed_s": 46.0,
+  "wall_seconds": 1800,
+  "tokens": 11771,
+  "budget_tokens": 400000
+ },
+ "counts": {
+  "looks": 15,
+  "wakes": 2,
+  "operations": 38,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The run ended at your word. Read the handles of the objects with the DataHandles tools."
+}

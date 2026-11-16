@@ -1,0 +1,27 @@
+{
+ "objects": [
+  {
+   "name": "row_count",
+   "handle": "hdl_01M7JKRGBNAC34652CGCN9M78X",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  },
+  {
+   "name": "totals_by_region_status",
+   "handle": "hdl_01M7JKRV2G634MFFXT1WSFRMVP",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 100
+    }
+   }
+  }
+ ],
+ "variables": [
+  "The row_count is less than 600.",
+  "The statuses in totals_by_region_status are only paid, pending, and refunded. No new status name is present."
+ ],
+ "notes": "Feed ends at 600 rows. A renamed status has the meaning of the old one. If paid is renamed, the paid total must include both names. Wake when row_count is 600 or a new status appears."
+}

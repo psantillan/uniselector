@@ -1,0 +1,16 @@
+{
+ "objects": [
+  {
+   "name": "job_run",
+   "handle": "hdl_01M7JMAXTBBACSPER7RS60JAST",
+   "operation": {
+    "capability": "script.run",
+    "input": {}
+   }
+  }
+ ],
+ "variables": [
+  "The job has not ended with exit code 0 and a checksum in the output."
+ ],
+ "notes": "Run the script one time only. Do not run it again."
+}

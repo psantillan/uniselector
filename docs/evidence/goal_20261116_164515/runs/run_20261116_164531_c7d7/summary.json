@@ -1,0 +1,56 @@
+{
+ "run": "run_20261116_164531_c7d7",
+ "state": "done",
+ "why": "the main agent ended the run",
+ "plan": {
+  "variables": [
+   "The temperature of the room is less than 26."
+  ],
+  "notes": "Heater was switched on at seq 3. When the temperature is 26 or more, the variable is false and the agent must wake, switch the heater off, and report the last reading."
+ },
+ "objects": [
+  {
+   "name": "latest",
+   "handle": "hdl_01M7JKZ8RGB7S63FEJPNH4FKB7",
+   "type": "room",
+   "operation": {
+    "capability": "room.latest",
+    "input": {}
+   },
+   "written": "plan",
+   "output": "{\"seq\": 59, \"t_ms\": 177000, \"heater\": true, \"temperature\": 26.044}",
+   "runs": 56,
+   "changed_s": 0.0
+  }
+ ],
+ "pending": null,
+ "last_wake": {
+  "id": "wake_1",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "The temperature of the room is less than 26.",
+    "probability": 0.001
+   }
+  ],
+  "answer": {
+   "end": true
+  }
+ },
+ "lineage": "/tmp/scratch/worlds/goal_20261116_164515/runs/run_20261116_164531_c7d7/lineage.json",
+ "logs": "/tmp/scratch/worlds/goal_20261116_164515/runs/run_20261116_164531_c7d7",
+ "limits": {
+  "elapsed_s": 164.1,
+  "wall_seconds": 1800,
+  "tokens": 21273,
+  "budget_tokens": 400000
+ },
+ "counts": {
+  "looks": 55,
+  "wakes": 1,
+  "operations": 56,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The run ended at your word. Read the handles of the objects with the DataHandles tools."
+}

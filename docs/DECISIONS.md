@@ -4,16 +4,31 @@ Each entry is a design question that came up, the answer, and the reason. The re
 Ashby's theory or from an experiment. An entry that starts with ASSUMED has a number that no
 measurement gave.
 
+The design changed one time, on 2026-11-16 (D29). D1 to D28 are from the first design: a decision
+model that chose each operation of a plan. Each entry of the first design has a status line. An
+entry with the status "Superseded" stays as the record of that design, and its code is gone.
+
 The words used here:
 
-- **Decision**: one call of `decide(state, options)`. It gives a distribution over the options.
+- **Main agent**: the generative agent that builds the objects and submits the plan. Its
+  DataHandles principal is `planner`.
+- **Object**: a name, a handle, and one operation that reads a small value from the handle. The
+  main agent builds it. It runs with no model.
+- **Essential variable** (short: variable): a sentence that is true while the work is viable.
 - **Decision model**: a model that reads a state and typed questions and gives probabilities. It
   writes no text (D17).
-- **Walk**: the decisions that choose one operation and fill its input.
-- **Main agent**: the agent that submits the plan. Its DataHandles principal is `planner`.
-- **Sub-agent**: an agent with a fresh context that finds one value.
+- **Look**: one call of `decide(state, statements)`. It gives one probability for each variable.
+- **Wake**: the run gives the main agent the variables that are outside their limits, and waits
+  for its answer.
+- **Tick**: one pass of the loop over the objects (`wait_seconds`).
+
+Words of the first design, in D1 to D28 only: a **decision** was one call of `decide(state,
+options)`; the **walk** was the decisions that chose one operation and filled its input; a
+**sub-agent** was an agent with a fresh context that found one value.
 
 ## D1. The gate: the orchestrator never holds an action
+
+Status after D29: Holds.
 
 The brief asks for this: the orchestrator holds `graph.run` and not `graph.approve`. A test
 showed that this does not gate an action in DataHandles 0.4 (`docs/GAPS.md`, G1 and G2).
@@ -28,6 +43,8 @@ refuses the action, not the orchestrator. `tests/test_gate.py` shows it.
 
 ## D2. The budget is model tokens. The wall time is the time that the run works
 
+Status after D29: Changed by D36: the budget counts the decision model only, and the state has no burn rate.
+
 Decision: the hard budget counts the input tokens of the decision model, and the prompt and output
 tokens of the sub-agents. A decision model has no output tokens. The wall clock stops while the
 run waits for the main agent or for the human.
@@ -40,6 +57,8 @@ The burn rate in the state is the share of the budget spent against the share of
 
 ## D3. Each operation runs as a job
 
+Status after D29: Changed by D35: the operation of each object runs as a job. The decision model does not choose `wait`.
+
 Decision: the orchestrator starts each operation with `background=True` and waits for it for one
 wait interval (D10). If the job ends in that time, the result goes to the state. If not, the job
 handle goes to the state, and the decision model chooses `wait`, `job.status`, `job.result` or
@@ -51,6 +70,8 @@ decision model makes again each time it looks" holds for code, an API, and a sub
 way. A stream gives its first event and stops; the decision model reads more with a new operation.
 
 ## D4. One `choice` question for each decision, and 255 options at most
+
+Status after D29: Superseded by D29.
 
 Decision: one decision is one `choice` question to the decision model. The request has the state
 as text, the rules and the decision as the instructions of the question, and the options as the
@@ -75,6 +96,8 @@ first build read the log probabilities of one letter from a chat model, and 20 w
 
 ## D5. When a decision abstains
 
+Status after D29: Superseded by D29 and D31.
+
 Decision: a decision abstains when one of these is true:
 
 - the top option has less than 0.5 of the probability (`abstain_top`)
@@ -96,6 +119,8 @@ Removed: the rule `abstain_mass`. It measured how much probability a chat model 
 A decision model puts its probability on the options only.
 
 ## D6. The walk
+
+Status after D29: Superseded by D29.
 
 The walk follows the JSON input schema of the chosen capability. One schema node is one decision.
 
@@ -122,6 +147,8 @@ model chose a list for `eq` with p 0.68 to 0.77. With the container shown, it ch
 
 ## D7. Capabilities that are not options
 
+Status after D29: Superseded by D29.
+
 `log.own` and `log.audit` are on each handle. They are not offered as operations
 (`hidden_capabilities`).
 
@@ -129,6 +156,8 @@ Reason: they read the operation log of DataHandles, not the resource. They doubl
 root options and no intent of a plan needs them. A sub-agent can still use them.
 
 ## D8. The candidate pool: sources, order, and two strengths
+
+Status after D29: Superseded by D29.
 
 The pool for an open value has these sources, in this order:
 
@@ -171,6 +200,8 @@ experiment was not done again with a decision model.
 
 ## D9. The question, and its cap
 
+Status after D29: Superseded by D29.
+
 A decision that abstains, or that chooses `none fits`, becomes a question with the fields of the
 brief: plan, intent, capability, field, the input chosen so far, and the candidates.
 
@@ -183,6 +214,8 @@ tokens). The failure log has the cost of each question, to set this number from 
 
 ## D10. The wait interval
 
+Status after D29: Changed by D35: `wait_seconds` is the time of one tick.
+
 ASSUMED: one `wait` is 2 seconds (`wait_seconds`). It is also the time that the orchestrator waits
 for a new job before it gives the job handle to the decision model (D3).
 
@@ -191,6 +224,8 @@ same job. The first reason for this number was the time of one decision of the f
 1 second). A decision of the decision model takes about 0.4 seconds, so that reason is void.
 
 ## D11. The bounds of the state
+
+Status after D29: Changed by D36: `value_chars` is the one bound.
 
 ASSUMED: the state shows the last 5 results (`results_kept`), 600 characters of one value
 (`value_chars`), and 8 handles: the start handles and the newest ones (`handles_kept`).
@@ -204,6 +239,8 @@ The stall signal is the seconds since the last change and the number of looks wi
 change is a new result, or a new observed version of a shown handle.
 
 ## D12. The sub-agent is a small agent loop on the local model
+
+Status after D29: Superseded by D29.
 
 Decision: `subagent.ModelAsker` runs a tool loop on a chat model on an Ollama server, with the
 DataHandles tools (`handle_find`, `handle_describe`, `handle_invoke`) and two final tools:
@@ -222,6 +259,8 @@ their names (ground rule 3). The decision model has its own settings (D17).
 
 ## D13. The human channel
 
+Status after D29: Holds.
+
 Decision: the main agent passes a request to the human with `plan_confirm(run, request, "human")`.
 An approve from the main agent for a human-only capability also goes to the human. The run then
 has the state `waiting_human`. The human decides with a command:
@@ -237,6 +276,8 @@ give it.
 
 ## D14. The states of a run
 
+Status after D29: Changed by D33.
+
 `running`, `waiting_answer`, `waiting_confirm`, `waiting_human`, then one end state: `done`,
 `woke`, `aborted`, `limit`, or `failed`.
 
@@ -249,6 +290,8 @@ When a run ends, the orchestrator cancels the jobs that still run, unless the st
 
 ## D15. A value that failed is marked, not removed
 
+Status after D29: Superseded by D29.
+
 When an operation fails with an error that is not retryable, each option that would give the same
 value at the same field of the same capability and target shows
 `(it was in an input that FAILED: ...)`.
@@ -260,6 +303,8 @@ hard stop: the harness enforces only the two limits and the gate.
 
 ## D16. The logs
 
+Status after D29: Changed by D36.
+
 A run directory has:
 
 - `decisions.jsonl`: one line for each decision node (the state, the partial input, the option
@@ -270,6 +315,8 @@ A run directory has:
 - `summary.json` and `lineage.json`, written at the end.
 
 ## D17. The decision model
+
+Status after D29: Holds for the model and the API. The question type changed: D31.
 
 A decision model is a class of model. It reads a state and typed questions. It gives one
 probability for each allowed answer of each question, and it writes no text. The makers call the
@@ -314,12 +361,16 @@ The state is the `state` of the request. The option names are numbers (D4).
 
 ## D18. Lineage
 
+Status after D29: Holds. The handles of the lineage are the handles of the objects (D34).
+
 The lineage of a run is the union of `Handle.graph()` of each handle that the run made, less the
 job handles. It is a DataHandles graph: `Client.submit` runs it again. An approved action is in
 the operation log of DataHandles and in `events.jsonl`, and it is not in the lineage graph: a
 replay must not repeat an action.
 
 ## D19. `plan_status` can wait
+
+Status after D29: Holds.
 
 `plan_status(run, wait_seconds)` returns when the run is not `running` any more, or when the time
 is over. The default is 0: the call returns at once.
@@ -330,6 +381,8 @@ the limit is the tool-call timeout of the client, and a timeout loses nothing be
 continues.
 
 ## D20. What the regulator sees: results by intent, and the look at a stream
+
+Status after D29: Superseded by D29.
 
 Three changes to the state came from the first runs on a stream (`docs/FAILURES.md`, F7 to F9).
 Each one is information for the decision model. None is a check in code.
@@ -356,6 +409,8 @@ the candidate pool reads them when a field needs them.
 
 ## D21. A sub-agent that fails returns the question to the main agent
 
+Status after D29: Superseded by D29.
+
 A model call of the sub-agent can fail. The first case was an HTTP 500 of the model server:
 "llama-server returned invalid tool call arguments" (`docs/FAILURES.md`, F10). The run then
 failed. Now the question goes to the main agent with the reason "the sub-agent failed: ...".
@@ -365,6 +420,8 @@ A failed call of the decision model still ends the run with the state `failed`: 
 left to continue.
 
 ## D22. A field with the schema of a chosen sibling is the same kind of thing
+
+Status after D29: Superseded by D29.
 
 `dataset.join` takes `on: [{left, right}]`. The two fields have one schema, and the schema does not
 say that each one is a column. With `left` = `customer_id` chosen, the rule of D8 ("a value from a
@@ -381,6 +438,8 @@ Two fields with one schema are interchangeable for the schema, so the evidence f
 for the other.
 
 ## D23. A decision on the structure of the input is never a question
+
+Status after D29: Superseded by D29.
 
 Two kinds of decision choose structure and not a value: "does the input have this optional
 field" and "does the list get one more item". When one of these is below the abstain threshold,
@@ -400,12 +459,16 @@ than a question, and the error is information for the next try.
 
 ## D24. The control options are on each level of the root
 
+Status after D29: Superseded by D29.
+
 With more options than one question can hold, the root is two decisions: the handle, then its
 operation (D4).
 The control options are now in the two of them. Before, a decision model that chose a handle
 could not choose `step_done` any more (`docs/FAILURES.md`, F13).
 
 ## D25. A run ends when its process ends
+
+Status after D29: Holds.
 
 A run is a thread in the process of the MCP server. That process ends when the main agent ends
 its session. Each run that works at that time ends with the state `left`, and its logs and its
@@ -422,11 +485,15 @@ only leave. A fifth tool is a change of the surface in the brief, so it is not a
 
 ## D26. A pending question in the summary is its text and its schema
 
+Status after D29: Superseded by D29.
+
 The summary of a waiting run had the question two times: as fields (the plan, the candidates, the
 handles) and as text. It has the id, the field, the schema, the reason and the text now. In the
 first task run, the `pending` part was 3,254 of 9,876 characters of one summary.
 
 ## D27. A token that is not a plain word is a stated value
+
+Status after D29: Superseded by D29.
 
 The pool took two kinds of literal from an intent: a quoted string and a number. The intent "Get
 the report at the path /reports/quarterly" has no quote characters, so the pool did not have the
@@ -441,8 +508,211 @@ writes a path as it is. A plain word stays a weak candidate ("a word of the curr
 
 ## D28. The wall time bounds each look at a handle
 
+Status after D29: Holds (`Run._bounded`).
+
 A look at a handle (`observe`) can wait as long as a job on the same resource runs
 (`docs/GAPS.md`, G11). The wall time is a hard limit, so the run makes each look in a second
 thread and stops at the limit, the same way as for an approved action (G5). The run does not skip
 the look at a busy resource: the protocol does not say which handles share a lock, so the run
 cannot know which looks will wait.
+
+## D29. The decision model is the detector of the second loop. It is not in the first loop
+
+The first design put the decision model in the path of each operation: it chose the capability,
+then each field of the input, for each step of the plan. The measurements showed the cost
+(`docs/FAILURES.md`, F46). On a bounded sequence of 6 operations the run took six times as long as
+the main agent alone. On a long wait the run helped, and it helped because the decision model
+took the repeated observation away from the main agent, not because it chose operations.
+
+Decision: the system is Ashby's ultrastable system (*Design for a Brain*, 2nd ed. 1960, chapter 7).
+
+| Ashby | In this system |
+| --- | --- |
+| Environment | The resources behind the handles: a feed, a room, a service, a script |
+| Reacting part R | The objects that the main agent built. DataHandles runs them. No model is in this loop |
+| First loop | An object reads its handle again when the handle has a new version |
+| Essential variables | The two hard limits, and the sentences that the main agent wrote |
+| Second loop | The decision model looks at what the objects show, and judges each sentence |
+| Step-function | A wake: the main agent replaces the object that is broken, and nothing else |
+| Uniselector | The main agent at a wake: it selects the next configuration |
+| Good regulator is a model of the system | The state: each object, its operation, its newest output |
+
+The generative agent does not monitor. It builds the thing that monitors, and it leaves. The
+decision model does not build and does not route. It judges one thing: is each essential variable
+inside its limits? When each one is inside, the run does nothing.
+
+Reason: in the Homeostat, the uniselector does not move while the essential variable is inside
+its limits. The unit regulates with its current settings, and the second loop is silent. A
+uniselector that steps at each moment is not a second loop: it is a part of the first one, and the
+system pays for it at each step.
+
+What left the code: the walk (`walk.py`), the candidate pool (`pool.py`), the sub-agent
+(`subagent.py`), the questions, and the control options `step_done`, `wait`, `wake_agent`, `abort`.
+Steps 3 and 4 of the brief described them. The user's ruling of 2026-11-16 replaced those steps.
+
+## D30. A plan is objects and variables
+
+A plan has `objects`, `variables`, optional `notes`, and optional lower `limits`. An object is
+`{name, handle, operation: {capability, input}}`. A variable is one sentence.
+
+- The plan has no `intents` and no start `handles`. An intent was an order to the decision model
+  to choose operations. The main agent chooses the operations now, with the DataHandles tools,
+  before it submits the plan.
+- An object needs an operation. A `handle_describe` of a derived handle is not a fresh read: after
+  a schema break of its source it still shows the old schema (`docs/GAPS.md`, G14). Only a read
+  shows the break.
+- The operation must give a small value. The state keeps `value_chars` characters of it (D36).
+- `prepare` refuses an operation whose capability is a stream. A stream gives its first event and
+  stops, so one run of it shows nothing about the feed. The error text tells the main agent to
+  read the newest value with a plain operation.
+- An object whose operation is an action runs one time for one approval, and not again at a new
+  version of its handle (the action gate, D1).
+
+Reason: the brief says that steps, states and expectations are information and not code. A
+variable is a sentence for that reason: the harness has no code for "a schema break" or "a silent
+sensor". The main agent states what viable means for its own work.
+
+## D31. A variable is inside its limits when p is 0.5 or more
+
+One look is one call to the Decisions API with one `noul` question for each variable. A `noul`
+answer is one probability that the statement is true. A variable is outside its limits when its
+probability is less than `inside` (0.5). A refusal counts as 0.
+
+Origin of the number: 0.5 is the point where the model holds "true" and "not true" as equally
+likely. A check with 24 statements of known truth on 12 states (`tasks/probe.py`, output in
+`docs/evidence/probe_20261116`) gave 0.99 to 1.00 for each true statement and 0.00 to 0.04 for
+each false one. Each threshold between 0.05 and 0.98 gives the same 24 judgments, so the data
+gives no reason for a value other than the middle. The first design had two thresholds for a
+choice among many options (D5). A `noul` answer has no "top two", so those rules have no meaning
+here.
+
+Each run has one more variable that the harness adds: "No object shows an error." The harness does
+not stop on an error and does not wake on one by code. An error can be a fault of one read, or a
+break of the structure, and that is a judgment. The decision model makes it.
+
+## D32. When the decision model looks
+
+The decision model looks in two cases:
+
+1. **A change**: the output or the error of an object is not the same as before. The look comes at
+   the end of that tick. Many changes in one tick give one look.
+2. **Silence**: no output changed for a time. The first silent look comes after
+   `2 * max(gap, wait_seconds)`, where `gap` is the longest time between two changes that the run
+   saw. The time doubles after each silent look. A change resets it.
+
+A new object gets one tick to show its first output before a look.
+
+Reason for 1: the essential variables can only leave their limits when what the objects show
+changes, or when time passes. A look at a state that did not change, a moment later, gives the same
+answer.
+
+Reason for 2: a variable can be about time ("the feed got new rows in the last 30 seconds"), and a
+missing sensor shows as no change at all. The harness has no number for "too long": a model would
+guess that number, and a guess is not a limit. So the looks start at two times the longest gap of
+this run, which is a measured value, and each later one doubles. A silent run of T seconds gets
+about log2(T / gap) looks. The decision model reads "last change of the output: N s ago" and
+judges the sentence of the main agent.
+
+The cost of a look is small and it is not zero: 569 to 598 input tokens in the first task run,
+about $0.000012. A feed that changes at each tick gets one look at each tick. That is the price of
+a detector that reads sentences. It is not in the path of the operations: an object runs again
+without the look.
+
+## D33. A wake parks the run. The answer replaces objects
+
+The states of a run are `running`, `woke`, `waiting_confirm`, `waiting_human`, then one end state:
+`done`, `limit`, `failed` or `left`. This changes D14: `woke` is not an end state now, and
+`aborted` and `waiting_answer` are gone.
+
+At a wake the run stops its clock and waits. The summary has `pending.outside` (each variable
+that is outside, with its probability), each object with what it shows now, the plan, and the last
+wake with its answer. The main agent answers with `plan_answer(run, question, value)`; `question`
+is the id of the wake. The value has one or more of:
+
+- `objects`: new versions. An object with the name of a current object replaces it. A new name
+  adds an object.
+- `remove`: names of objects that the run must stop.
+- `variables`: a new list of variables.
+- `end: true`: the work is complete. The run ends with the state `done`.
+
+The run checks the answer the same way as a plan. A value that is not valid returns as an error
+value, and the run stays in `woke`.
+
+Reason: the step-function changes the parameters of the reacting part, and the system goes on
+with the same essential variables. The first design ended the run at `wake_agent` and the main
+agent submitted a new plan (D14). That discarded each object that was still good. Now the main
+agent "rewrites only what is broken". The tool names of the brief stay: `plan_answer` had the
+purpose "the main agent gives what the regulator could not find", and it keeps that purpose.
+
+A goal that is met is a wake too. The main agent writes the goal as a variable that is true while
+the goal is not met ("the feed has fewer than 600 rows"). The decision model cannot end a run, and
+the harness cannot: the end of the work is the main agent's word.
+
+## D34. The stable interface is the name of the object
+
+The ruling says: the interface (the data handle) stays stable, and the object behind it is
+replaced. DataHandles cannot put a new computation behind an existing handle id
+(`docs/GAPS.md`, G13). So the name of the object in the run is the stable interface. The summary,
+the state of the decision model and the logs use the name. The handle id behind the name changes
+at a wake, and `events.jsonl` has each version with the wake that wrote it (`written`).
+
+The lineage of a run is the graph of each handle that was an object, the replaced ones too (D18).
+
+## D35. The first loop: observe, and run again at a new version
+
+At each tick (`wait_seconds`, 2 s), for each object with no running job, the run asks
+`observe()` for the version of the handle. When the version is new, the run starts the operation
+again as a job. This is the whole first loop. It has no model call.
+
+- A derived handle (a filter, an aggregate) reads the newest data of its source at each read, and
+  its `observe` gives the version of its source. So one object on a derived handle is a live view.
+- The loop does not observe an object while its own job runs (G11).
+- `wait_seconds` is ASSUMED: 2 s. It bounds how old an output can be. No measurement gave it.
+- The job handle of an operation belongs to the orchestrator (G7). The first design granted it to
+  the main agent. The main agent reads the handle of the object now, so the grant is gone.
+
+## D36. The state, the budget and the logs
+
+- The state has the notes, each object (name, type, operation, output or error, the number of
+  runs, the seconds since the last change, the seconds that a job runs), and the two limits with
+  the spend. It has no history: the decision model judges what is true now. This changes D11 and
+  D20: `results_kept` and `handles_kept` are gone.
+- `value_chars` (600) is the size of one output or one error message in the state. ASSUMED. A
+  longer value keeps its first and its last part (D38).
+- The hard budget counts the input tokens of the decision model. Nothing else in a run uses a
+  model. The spend of the main agent is not in the budget: the run cannot measure it.
+- `decisions.jsonl` has one line for each look: the reason (`change` or `silence`), the state, the
+  statements, the probabilities, the variables outside, the tokens, the cost and the time. The
+  last line is the outcome of the run. `questions.jsonl` is gone.
+- `plan_status` gives a brief summary (the state, the limits, the counts, what to do next) when a
+  wait ends and the run still has the state `running`. Reason: the main agent must add little to
+  its context when nothing needs it. Each other status gives the full summary.
+
+## D37. The order of escalation
+
+The brief had four levels: the decision model, a sub-agent, the main agent, the human. Now there
+are three: the objects (no model), the main agent at a wake, and the human at the action gate.
+The decision model is not a level of the escalation. It is the detector that decides when the
+escalation happens.
+
+The sub-agent of the brief found one input value for the decision tree. With no decision tree,
+it has no question to answer. The main agent explores with the DataHandles tools when it is awake,
+with its own judgment about what the user meant.
+
+## D38. A long value keeps its first and its last part
+
+`cut` keeps the first half and the last half of `value_chars`, with the number of characters that
+it removed between them.
+
+Reason: the end of an output often has the result (the last line of a script, the newest rows),
+and the start has its form (the keys, the columns). The first build of this design kept the start
+only. The task runs of 2026-11-16 used that build. One output in those runs was longer than the
+bound (`docs/FAILURES.md`, F50).
+
+## D39. A mutation that no test stops
+
+The tests were checked with 17 mutations of `run.py`, `decide.py`, `state.py` and `plan.py`. A
+test failed for 16 of them. The one that lives removes the wall-time test of `Run._check`.
+`Run._bounded` enforces the same limit at the next `observe` or the next look, so the run stops at
+the same tick. The two checks are kept: `_check` gives the plain message.
+

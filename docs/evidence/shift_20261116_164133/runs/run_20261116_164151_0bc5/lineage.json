@@ -1,0 +1,158 @@
+{
+ "id": "gr_run_20261116_164151_0bc5",
+ "nodes": [
+  {
+   "id": "hdl_01M7JKRGBNAC34652CGCN9M78X",
+   "kind": "resource",
+   "reference": "hdl_01M7JKRGBNAC34652CGCN9M78X"
+  },
+  {
+   "id": "op_01M7JKRV291ZQM1ZBPJM3A1YBC",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.aggregate",
+    "input": {
+     "group_by": [
+      "region",
+      "status"
+     ],
+     "metrics": [
+      {
+       "fn": "sum",
+       "column": "amount",
+       "as": "total"
+      },
+      {
+       "fn": "count",
+       "as": "n"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7JKRV2G634MFFXT1WSFRMVP",
+   "kind": "derived",
+   "reference": "hdl_01M7JKRV2G634MFFXT1WSFRMVP"
+  },
+  {
+   "id": "op_01M7JKSWYA8TW8V36EMNNYE78H",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.aggregate",
+    "input": {
+     "group_by": [
+      "status"
+     ],
+     "metrics": [
+      {
+       "fn": "min",
+       "column": "id",
+       "as": "min_id"
+      },
+      {
+       "fn": "max",
+       "column": "id",
+       "as": "max_id"
+      },
+      {
+       "fn": "count",
+       "as": "n"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7JKSWYJ0WK8QN94V69KHN1A",
+   "kind": "derived",
+   "reference": "hdl_01M7JKSWYJ0WK8QN94V69KHN1A"
+  },
+  {
+   "id": "op_01M7JKT1SY18CVWDS8NM7AM8SB",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "status",
+       "op": "in",
+       "value": [
+        "paid",
+        "settled"
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7JKT1T65XC974K6EY07MPYR",
+   "kind": "derived",
+   "reference": "hdl_01M7JKT1T65XC974K6EY07MPYR"
+  },
+  {
+   "id": "op_01M7JKT3TB4QVH1D3DNSBECVPR",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.aggregate",
+    "input": {
+     "group_by": [
+      "region"
+     ],
+     "metrics": [
+      {
+       "fn": "sum",
+       "column": "amount",
+       "as": "total"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7JKT3TK6QMEET4QK3X8VZ71",
+   "kind": "derived",
+   "reference": "hdl_01M7JKT3TK6QMEET4QK3X8VZ71"
+  }
+ ],
+ "edges": [
+  {
+   "from": "hdl_01M7JKRGBNAC34652CGCN9M78X",
+   "to": "op_01M7JKRV291ZQM1ZBPJM3A1YBC"
+  },
+  {
+   "from": "op_01M7JKRV291ZQM1ZBPJM3A1YBC",
+   "to": "hdl_01M7JKRV2G634MFFXT1WSFRMVP"
+  },
+  {
+   "from": "hdl_01M7JKRGBNAC34652CGCN9M78X",
+   "to": "op_01M7JKSWYA8TW8V36EMNNYE78H"
+  },
+  {
+   "from": "op_01M7JKSWYA8TW8V36EMNNYE78H",
+   "to": "hdl_01M7JKSWYJ0WK8QN94V69KHN1A"
+  },
+  {
+   "from": "hdl_01M7JKRGBNAC34652CGCN9M78X",
+   "to": "op_01M7JKT1SY18CVWDS8NM7AM8SB"
+  },
+  {
+   "from": "op_01M7JKT1SY18CVWDS8NM7AM8SB",
+   "to": "hdl_01M7JKT1T65XC974K6EY07MPYR"
+  },
+  {
+   "from": "hdl_01M7JKT1T65XC974K6EY07MPYR",
+   "to": "op_01M7JKT3TB4QVH1D3DNSBECVPR"
+  },
+  {
+   "from": "op_01M7JKT3TB4QVH1D3DNSBECVPR",
+   "to": "hdl_01M7JKT3TK6QMEET4QK3X8VZ71"
+  }
+ ],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}

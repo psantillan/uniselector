@@ -1,0 +1,40 @@
+{
+ "task": "schema",
+ "direct": true,
+ "what": "A live data pipeline with a schema break: the column `amount` gets the name `amount_usd`.",
+ "at": "20261116_162916",
+ "commit": "2d8108c+",
+ "prompt": "A feed of orders is registered in DataHandles as `orders`. It gets new rows for the next minutes, and it ends at 600 rows. Keep a live total of `amount` for each region, over the orders whose `status` is `paid`. The team that owns the feed can give a column a new name without notice. When that happens, repair your work. When the feed has 600 rows, give the total of each region.",
+ "truth": "the total of each region over the paid orders of the final feed (record: facts.truth)",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 157.7,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 5852,
+ "context_peak": 36702,
+ "context_added": 30850,
+ "tool_calls": {
+  "handle_find": 2,
+  "handle_describe": 3,
+  "handle_invoke": 67
+ },
+ "turns": 73,
+ "agent_seconds": 155.9,
+ "answer": "I can't give the final totals. The feed has stayed at 200 rows, and it has not reached 600.\n\nI polled the row count and the schema many times. The count never changed from 200. The `source_version` in the log never changed. The schema never changed, so I saw no column rename.\n\nThese are the totals for the 200 rows that exist now. They cover only `paid` orders:\n\n| region | total |\n|---|---|\n| east | 3607.19 |\n| north | 4057.31 |\n| south | 5275.78 |\n| west | 4248.48 |\n\nThese totals are not final. I did not check that the totals update when the feed grows. I also did not check that the pipeline survives a rename. I have not confirmed either one, because the feed has not changed.\n\nDo you want me to keep polling? If you do, I will check again until the count is 600. If a column is renamed, I will rebuild the filter and the totals before I report.",
+ "agent_error": false,
+ "right": false,
+ "facts": {
+  "rows": 200,
+  "truth": {
+   "north": 4057.31,
+   "south": 5275.78,
+   "east": 3607.19,
+   "west": 4248.48
+  }
+ },
+ "runs": [],
+ "human_stand_in": []
+}

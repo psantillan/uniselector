@@ -1,0 +1,15 @@
+{
+ "id": "gr_run_20261116_165146_e79a",
+ "nodes": [
+  {
+   "id": "hdl_01M7JMAXTBBACSPER7RS60JAST",
+   "kind": "resource",
+   "reference": "hdl_01M7JMAXTBBACSPER7RS60JAST"
+  }
+ ],
+ "edges": [],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}

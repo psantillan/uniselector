@@ -11,8 +11,6 @@ docs/GAPS.md (G1 to G4) says why the gate has this shape.
 from datahandles import HandleError
 from datahandles.sdk import Client
 
-ALL = "*"
-
 
 def is_action(capability: dict) -> bool:
     """The definition of an action in the DataHandles specification, read from a capability descriptor."""
@@ -26,14 +24,14 @@ def action_graph(target: str, capability: str, input: dict) -> dict:
 
 
 class Gate:
-    def __init__(self, planner: Client, orchestrator: str, subagent: str, human: str, human_client: Client | None = None):
+    def __init__(self, planner: Client, orchestrator: str, human: str, human_client: Client | None = None):
         self.planner, self.human_client = planner, human_client
-        self.orchestrator, self.subagent, self.human = orchestrator, subagent, human
+        self.orchestrator, self.human = orchestrator, human
 
     def delegate(self, handle_id: str) -> list[dict]:
-        """Give the orchestrator the capabilities of a handle that are not actions, and give the
-        sub-agent the capabilities that do not write. Return the descriptors of the actions: the
-        orchestrator cannot see them and cannot invoke them. It can only request them."""
+        """Give the orchestrator the capabilities of a handle that are not actions. Return the
+        descriptors of the actions: the orchestrator cannot see them and cannot invoke them. It
+        can only request them."""
         try:
             handle = self.planner.resolve(handle_id)
             capabilities = handle.describe()["capabilities"]
@@ -41,7 +39,6 @@ class Gate:
             return []
         free = [c["name"] for c in capabilities if not is_action(c)]
         handle.grant(self.orchestrator, free)
-        handle.grant(self.subagent, [c["name"] for c in capabilities if not c["effects"]["write"]])
         return [c for c in capabilities if is_action(c)]
 
     def open(self, name: str, target: str, capability: str, input: dict) -> str:

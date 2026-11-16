@@ -1,0 +1,26 @@
+{
+ "objects": [
+  {
+   "name": "heater_on",
+   "handle": "hdl_01M7JM4WCM71X13H2TX5V23D0Z",
+   "operation": {
+    "capability": "room.heater",
+    "input": {
+     "on": true
+    }
+   }
+  },
+  {
+   "name": "temperature",
+   "handle": "hdl_01M7JM4WCM71X13H2TX5V23D0Z",
+   "operation": {
+    "capability": "room.latest",
+    "input": {}
+   }
+  }
+ ],
+ "variables": [
+  "The temperature is less than 26."
+ ],
+ "notes": "Goal: heat the room to 26 or more, then switch the heater off. The heater switch needs human approval. After the temperature is 26 or more, replace heater_on with an object that switches the heater off."
+}

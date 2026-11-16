@@ -63,7 +63,7 @@ Observed in `hook-input.jsonl` of each evidence directory. The input has these k
   tool. A request that goes to the human shows at the next call.
 - The response of `plan_confirm`. The matcher names `plan_status` only, and the response of
   `plan_confirm` has no pending request in it.
-- The decisions, the questions and the step history of the run. They are not in the summary.
+- The looks of the decision model and the history of the operations. They are not in the summary.
 - The token of the human.
 
 ### Where the message goes

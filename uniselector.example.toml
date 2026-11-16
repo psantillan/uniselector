@@ -2,28 +2,23 @@
 
 # The hard limits. The user decides them. They have no default.
 [limits]
-budget_tokens = 400000   # model tokens of the decision model and the sub-agents, for one run
-wall_seconds = 1800      # seconds that one run works
+budget_tokens = 400000   # input tokens of the decision model, for one run
+wall_seconds = 1800      # seconds that one run works. The clock stops while the run waits for the main agent or the human
 
 # Where the DataHandles runtime is: a state directory, or the URL of a DataHandles HTTP server.
 # With a URL, each principal needs a bearer token in the environment:
-#   UNISELECTOR_PLANNER_TOKEN, UNISELECTOR_TOKEN, UNISELECTOR_SUBAGENT_TOKEN, UNISELECTOR_HUMAN_TOKEN
+#   UNISELECTOR_PLANNER_TOKEN, UNISELECTOR_TOKEN, UNISELECTOR_HUMAN_TOKEN
 [runtime]
 target = ".datahandles"
 runs_dir = ".uniselector/runs"
 
-# The decision model: a model behind a Decisions API. It reads the state and one `choice` question,
-# and it gives a probability for each option. The API key is in the environment variable that
-# decision_key_env names. It is not in this file.
+# The decision model: a model behind a Decisions API. At one look it reads the state and one `noul`
+# question for each essential variable, and it gives the probability that each one is true. The
+# API key is in the environment variable that decision_key_env names. It is not in this file.
 [decision]
 decision_url = "https://openrouter.ai/api/alpha/decisions"
 decision_model = "perplexity/pplx-decider-v1.2"
 decision_key_env = "OPENROUTER_API_KEY"
-
-# The model of the sub-agent: a chat model with tool calls on an Ollama server.
-[model]
-model_url = "http://localhost:11434"
-model = "ornith-1.5:9b"
 
 # Capabilities that only the human can confirm. The main agent cannot approve them.
 [actions]

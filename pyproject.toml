@@ -25,11 +25,10 @@ uniselector-mcp = "uniselector.mcp:main"
 uniselector-confirm = "uniselector.confirm:main"
 uniselector-hook = "uniselector.hooks.pending:main"
 
-# The task fixtures of docs/FAILURES.md are a second package. They hold two resource adapters, and
+# The task fixtures of docs/FAILURES.md are a second package. They hold one resource adapter, and
 # an adapter is part of a DataHandles runtime, not of the orchestrator.
 [project.entry-points."datahandles.adapters"]
 script = "uniselector_tasks.adapters:ScriptAdapter"
-helper = "uniselector_tasks.adapters:HelperAdapter"
 
 [tool.setuptools]
 packages = ["uniselector", "uniselector.hooks", "uniselector_tasks"]

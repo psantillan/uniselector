@@ -1,18 +1,21 @@
 """Run one long task with a real main agent, and record what the main agent's context held.
 
-  python -m uniselector_tasks.drive TASK --work DIRECTORY --evidence DIRECTORY
+  python -m uniselector_tasks.drive TASK --work DIRECTORY --evidence DIRECTORY --decision-model MODEL
 
 The main agent is Claude Code in non-interactive mode. It gets a plain task, the DataHandles tools
-and the four Uniselector tools. It writes the plan itself. The driver records the largest context
-of the main agent, the tool calls, the runs, and whether the answer is right.
+and the four Uniselector tools. It builds the objects and writes the variables itself. The driver
+changes the world while the main agent sleeps: a column gets a new name, a sensor stops. It records
+the largest context of the main agent, the tool calls, the runs, and whether the answer is right.
 
-TASK is one of: pipeline, stream, stream-human, api, code, helper.
+TASK is one of: schema, shift, silent, goal, goal-human, code, api.
 """
 import argparse
 import csv
 import hashlib
 import json
+import os
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -21,50 +24,121 @@ import time
 from pathlib import Path
 
 from .slow_api import REPORT
-from .world import BIN, World
+from .world import BIN, World, free_port
 
 HERE = Path(__file__).resolve().parent
-HOW = ("Do this work through Uniselector. Find the handle ids with handle_find. Then hand off a plan with plan_submit and follow the run "
-       "with plan_status. Do not invoke operations on the handles yourself: you can only read a result that you need for the answer. "
-       "Reply with the answer only.")
+HOW = ("Use Uniselector for each part of this work that waits or watches: do not wait or watch yourself. Reply with the answer only.")
 # The baseline: the main agent does the same task with the DataHandles tools only, and no run of Uniselector.
 DIRECT = "Do this work yourself with the DataHandles tools: find the handles with handle_find and invoke the operations. Reply with the answer only."
 # The session of a task has one turn. The human decides at a terminal, and the main agent must stay in its turn while it waits.
-ALONE = ("I cannot reply to you in this session. When a request is with me, I see the notice and I decide at my terminal. "
+ALONE = ("The heater needs my approval for each switch. Do not switch it yourself: give each switch to the run as an object, and pass its "
+         "request to me. I cannot reply to you in this session. When a request is with me, I see the notice and I decide at my terminal. "
          "Follow the run with plan_status and wait_seconds until I decide.")
 # ASSUMED: the hard limits of the task runs. The user decides the hard limits; these are the values of uniselector.example.toml.
 BUDGET_TOKENS, WALL_SECONDS = 400_000, 1800
 # ASSUMED: 40 minutes. The longest time that the driver gives the main agent for one task.
 AGENT_SECONDS = 2400
+# The first operation of the main agent in its event stream. The name of the tool is also in the first event, in the list of the tools.
+FIRST_OPERATION = re.compile(r'"type":"tool_use","id":"[^"]*","name":"mcp__datahandles__handle_invoke"')
+REGIONS = ["north", "south", "east", "west"]
+# The feed of the two order tasks: it starts with FIRST rows, it gets BATCH rows at each step, it changes at CHANGE rows, and it ends at LAST rows.
+FIRST, BATCH, CHANGE, LAST = 200, 20, 300, 600
 
 
-def pipeline(world: World, a) -> dict:
-    """A data pipeline: filter, join, aggregate, sort, limit."""
-    rng = random.Random(7)
-    countries = ["DE", "FR", "JP", "BR", "US", "IN", "MX", "KE"]
-    customers = [(f"c{n:04d}", rng.choice(countries), rng.choice(["free", "pro", "team"])) for n in range(400)]
-    events = [(n, rng.choice(customers)[0], rng.choice(["view", "view", "cart", "purchase", "refund"]), round(rng.uniform(5, 400), 2))
-              for n in range(20_000)]
-    for name, header, rows in (("customers", ["customer_id", "country", "segment"], customers),
-                               ("events", ["id", "customer_id", "event_type", "amount"], events)):
-        with open(world.dir / f"{name}.csv", "w", newline="") as f:
-            csv.writer(f).writerows([header, *rows])
+def write(path: Path, rows: list) -> None:
+    """Replace a CSV file in one step, so that no reader sees a part of a row."""
+    with open(path.with_suffix(".new"), "w", newline="") as f:
+        csv.writer(f).writerows(rows)
+    os.replace(path.with_suffix(".new"), path)
+
+
+def orders(world: World, a, change: str) -> dict:
+    """A feed of orders that gets rows, and that changes one time: the name of a column, or the name of a status."""
+    rng = random.Random(11)
+    header, rows = ["id", "region", "status", "amount"], []
+
+    def more(n: int, paid: str) -> None:
+        rows.extend([len(rows) + i, rng.choice(REGIONS), rng.choice([paid, paid, "pending", "refunded"]), round(rng.uniform(5, 400), 2)] for i in range(n))
+
+    more(FIRST, "paid")
+    path = world.dir / "orders.csv"
+    write(path, [header, *rows])
+    world.planner.register("orders", adapter="duckdb", source={"path": str(path)})
+
+    def schedule(stop: threading.Event, mark) -> None:
+        paid = "paid"
+        while len(rows) < LAST and not stop.wait(a.interval_ms / 1000):
+            if len(rows) == CHANGE:
+                if change == "schema":
+                    header[3] = "amount_usd"
+                else:
+                    paid = "settled"
+                mark(change)
+            more(BATCH, paid)
+            write(path, [header, *rows])
+        mark("the feed ended")
+
+    def check(text: str) -> bool:
+        total = {r: round(sum(row[3] for row in rows if row[1] == r and row[2] in ("paid", "settled")), 2) for r in REGIONS}
+        world.facts |= {"rows": len(rows), "truth": total}
+        return len(rows) == LAST and all(r in text.lower() and str(int(v)) in text.replace(",", "") for r, v in total.items())
+
+    what = {"schema": "The team that owns the feed can give a column a new name without notice. When that happens, repair your work.",
+            "shift": "The team that owns the feed can give a status a new name without notice. A status with a new name has the meaning of the "
+                     "status that it replaced, and the total must then have the orders of the two names."}[change]
+    return {"prompt": f"A feed of orders is registered in DataHandles as `orders`. It gets new rows for the next minutes, and it ends at {LAST} "
+                      f"rows. Keep a live total of `amount` for each region, over the orders whose `status` is `paid`. {what} "
+                      f"When the feed has {LAST} rows, give the total of each region.",
+            "truth": "the total of each region over the paid orders of the final feed (record: facts.truth)", "check": check, "schedule": schedule}
+
+
+def schema(world: World, a) -> dict:
+    """A live data pipeline with a schema break: the column `amount` gets the name `amount_usd`."""
+    return orders(world, a, "schema")
+
+
+def shift(world: World, a) -> dict:
+    """A live data pipeline with a shift of the values: new orders have the status `settled` in place of `paid`."""
+    return orders(world, a, "shift")
+
+
+def silent(world: World, a) -> dict:
+    """A missing sensor: the feed in use stops, and a second feed goes on."""
+    rng = random.Random(5)
+    header, feeds, last = ["seq", "temperature"], {"sensor_a": [], "sensor_b": []}, 60
+
+    def more(name: str) -> None:
+        feeds[name].append([len(feeds[name]), round(rng.uniform(18, 29) + (2.5 if name == "sensor_b" else 0), 1)])
+        write(world.dir / f"{name}.csv", [header, *feeds[name]])
+
+    for name in feeds:
+        for _ in range(5):
+            more(name)
         world.planner.register(name, adapter="duckdb", source={"path": str(world.dir / f"{name}.csv")})
-    country = {c[0]: c[1] for c in customers}
-    revenue = {}
-    for _, customer, kind, amount in events:
-        if kind == "purchase":
-            revenue[country[customer]] = revenue.get(country[customer], 0) + amount
-    top = sorted(revenue.items(), key=lambda kv: -kv[1])[:3]
-    return {"prompt": "Two datasets are registered in DataHandles: `events` and `customers`. Find the three countries with the highest total "
-                      "purchase revenue: the sum of `amount` over the events whose `event_type` is `purchase`. Give each country and its total.",
-            "truth": [[c, round(v, 2)] for c, v in top],
-            # The answer names the three countries, and each total is right to the unit.
-            "check": lambda text: all(c in text and str(int(v)) in text.replace(",", "") for c, v in top)}
+
+    def schedule(stop: threading.Event, mark) -> None:
+        while len(feeds["sensor_b"]) < last and not stop.wait(a.interval_ms / 1000):
+            if len(feeds["sensor_a"]) == 15 and len(feeds["sensor_b"]) == 15:
+                mark("sensor_a stopped")
+            if len(feeds["sensor_b"]) < 15:
+                more("sensor_a")
+            more("sensor_b")
+        mark("the feed ended")
+
+    def check(text: str) -> bool:
+        world.facts |= {"readings": {name: len(rows) for name, rows in feeds.items()}, "truth": max(r[1] for r in feeds["sensor_b"])}
+        return len(feeds["sensor_b"]) == last and str(world.facts["truth"]) in text
+
+    seconds = a.interval_ms / 1000
+    return {"prompt": f"Two sensors of one room are registered in DataHandles as the feeds `sensor_a` and `sensor_b`. A sensor writes one new "
+                      f"reading each {seconds:g} seconds. Keep a live highest `temperature` from `sensor_a`. A sensor can stop without notice. "
+                      f"When the sensor that you use gives no new reading for {5 * seconds:g} seconds or more, use the other sensor in its place. "
+                      f"The work ends when the sensor that you use has {last} readings. Then give the highest temperature of that sensor.",
+            "truth": "the highest temperature of sensor_b (record: facts.truth)", "check": check, "schedule": schedule}
 
 
-def stream(world: World, a) -> dict:
-    """A stream with a condition to watch for. The heater is an action: each switch needs a confirmation."""
+def goal(world: World, a) -> dict:
+    """A stream with a goal to watch for. The heater is an action."""
     room = world.planner.register("room", adapter="room", source={"interval_ms": a.interval_ms})
 
     def check(text: str) -> bool:
@@ -75,17 +149,16 @@ def stream(world: World, a) -> dict:
         if not on or readings[-1]["heater"]:
             return False
         last = next(r for r in readings if r["seq"] == on[-1])   # the last reading with the heater on
-        world.facts = {"heater_on_seq": on[0], "heater_off_after_seq": on[-1], "temperature_then": last["temperature"]}
+        world.facts |= {"heater_on_seq": on[0], "heater_off_after_seq": on[-1], "temperature_then": last["temperature"]}
         return last["temperature"] >= a.temperature
 
     return {"prompt": f"A room is registered in DataHandles as `room`. Heat it: switch the heater on, wait until the temperature is "
-                      f"{a.temperature} or more, then switch the heater off. Give the temperature of the last reading that you saw.",
-            "truth": f"the heater goes on, then off after a reading of {a.temperature} or more", "check": check}
+                      f"{a.temperature:g} or more, then switch the heater off. Give the temperature of the last reading that you saw.",
+            "truth": f"the heater goes on, then off after a reading of {a.temperature:g} or more", "check": check}
 
 
 def api(world: World, a) -> dict:
     """A slow API: one response takes minutes."""
-    from .world import free_port
     port = free_port()
     world.start([sys.executable, "-m", "uniselector_tasks.slow_api", "--port", str(port), "--seconds", str(a.seconds)])
     world.planner.register("reports", adapter="api", source={"base_url": f"http://127.0.0.1:{port}", "timeout_ms": int(a.seconds * 1000) + 120_000})
@@ -110,16 +183,17 @@ def code(world: World, a) -> dict:
             "truth": value.hex()[:16], "check": lambda text: value.hex()[:16] in text}
 
 
-def helper(world: World, a) -> dict:
-    """A sub-agent: a helper model that reads a long document, part by part."""
-    world.planner.register("reader", adapter="helper", source={"document": str(Path(a.document).resolve()), "url": world.model_url, "model": world.model})
-    return {"prompt": "A helper agent is registered in DataHandles as `reader`. It reads one long architecture document, and one question "
-                      "takes minutes. Ask it this question: 'Which database does the document name for the initial registry, and which "
-                      "database does it name for later?' Give the two database names.",
-            "truth": ["SQLite", "PostgreSQL"], "check": lambda text: "sqlite" in text.lower() and "postgres" in text.lower()}
+TASKS = {"schema": schema, "shift": shift, "silent": silent, "goal": goal, "goal-human": goal, "code": code, "api": api}
 
 
-TASKS = {"pipeline": pipeline, "stream": stream, "stream-human": stream, "api": api, "code": code, "helper": helper}
+def change_the_world(world: World, task: dict, direct: bool, stop: threading.Event, t0: float) -> None:
+    """Start the schedule of the task when the main agent started its work: at the first run, or at the first operation of the baseline."""
+    stream = world.dir / "agent-stream.jsonl"
+    while not (any(world.runs.glob("*/plan.json")) or (direct and FIRST_OPERATION.search(stream.read_text()))):
+        if stop.wait(0.5):
+            return
+    world.facts["changes"] = [{"what": "the schedule started", "agent_s": round(time.time() - t0, 1)}]
+    task["schedule"](stop, lambda what: world.facts["changes"].append({"what": what, "agent_s": round(time.time() - t0, 1)}))
 
 
 def stand_in_for_the_human(world: World, stop: threading.Event, done: list) -> None:
@@ -172,25 +246,21 @@ def main() -> None:
     p.add_argument("--work", required=True, help="a directory for the world of the run: the runtime state and the tokens")
     p.add_argument("--evidence", required=True, help="a directory for the record and the logs of the run")
     p.add_argument("--decision-model", required=True, help="the decision model, on the Decisions API of the configuration default")
-    p.add_argument("--model-url", default="http://localhost:11434", help="the Ollama server of the sub-agent model")
-    p.add_argument("--model", required=True, help="the sub-agent model")
     p.add_argument("--agent-model", default="sonnet", help="the model of the main agent")
     p.add_argument("--seconds", type=float, default=150, help="api, code: how long the slow part takes")
-    p.add_argument("--interval-ms", type=int, default=3000, help="stream: the time between two readings")
-    p.add_argument("--temperature", type=float, default=26, help="stream: the temperature to wait for")
-    p.add_argument("--document", help="helper: the long document")
+    p.add_argument("--interval-ms", type=int, default=3000, help="the time between two readings of the room or a sensor, or two steps of a feed")
+    p.add_argument("--temperature", type=float, default=26, help="goal: the temperature to wait for")
     p.add_argument("--direct", action="store_true", help="the baseline: the main agent does the task itself, without Uniselector")
     a = p.parse_args()
     stamp = time.strftime("%Y%m%d_%H%M%S")
-    world = World(Path(a.work) / f"{a.task}_{stamp}", a.decision_model, a.model_url, a.model, BUDGET_TOKENS, WALL_SECONDS,
-                  human_only=["room.heater"] if a.task == "stream-human" else [])
-    world.facts = {}
+    world = World(Path(a.work) / f"{a.task}_{stamp}", a.decision_model, BUDGET_TOKENS, WALL_SECONDS,
+                  human_only=["room.heater"] if a.task == "goal-human" else [])
     stop, confirmed = threading.Event(), []
     try:
         task = TASKS[a.task](world, a)
-        if a.task == "stream-human":
+        if a.task == "goal-human":
             threading.Thread(target=stand_in_for_the_human, args=(world, stop, confirmed), daemon=True).start()
-        how, servers = HOW + (f" {ALONE}" if a.task == "stream-human" else ""), world.dir / "mcp.json"
+        how, servers = HOW + (f" {ALONE}" if a.task == "goal-human" else ""), world.dir / "mcp.json"
         if a.direct:   # the baseline has no Uniselector server: the main agent cannot hand the work off
             how, servers = DIRECT, world.dir / "mcp-direct.json"
             servers.write_text(json.dumps({"mcpServers": {"datahandles": json.loads((world.dir / "mcp.json").read_text())["mcpServers"]["datahandles"]}}))
@@ -198,13 +268,15 @@ def main() -> None:
                    "--strict-mcp-config", "--settings", str(world.dir / "settings.json"), "--allowedTools", "mcp__datahandles__*,mcp__uniselector__*",
                    "--output-format", "stream-json", "--verbose", "--include-hook-events", "--no-session-persistence"]
         t0 = time.time()
+        if "schedule" in task:
+            threading.Thread(target=change_the_world, args=(world, task, a.direct, stop, t0), daemon=True).start()
         with open(world.dir / "agent-stream.jsonl", "w") as out:
             try:
                 subprocess.run(command, cwd=world.dir / "agent", stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, timeout=AGENT_SECONDS)
             except subprocess.TimeoutExpired:
                 pass
         record = {"task": a.task, "direct": a.direct, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
-                  "decision_model": a.decision_model, "subagent_model": a.model, "limits": {"budget_tokens": BUDGET_TOKENS, "wall_seconds": WALL_SECONDS},
+                  "decision_model": a.decision_model, "limits": {"budget_tokens": BUDGET_TOKENS, "wall_seconds": WALL_SECONDS},
                   "seconds": round(time.time() - t0, 1), **measure(world.dir / "agent-stream.jsonl")}
         record["right"] = bool(record["answer"]) and bool(task["check"](record["answer"]))
         record["facts"] = world.facts

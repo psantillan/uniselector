@@ -1,0 +1,17 @@
+{
+ "objects": [
+  {
+   "name": "report",
+   "handle": "hdl_01M7JME8NHZ6XEJXBSB7NRX3EA",
+   "operation": {
+    "capability": "api.get",
+    "input": {
+     "path": "/reports/quarterly"
+    }
+   }
+  }
+ ],
+ "variables": [
+  "The report at /reports/quarterly is not yet returned with status 200."
+ ]
+}

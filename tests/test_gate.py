@@ -16,7 +16,7 @@ ON = {"on": True}
 @pytest.fixture
 def world(tmp_path):
     planner = connect(str(tmp_path / "state"), "planner")
-    others = {name: Client(planner.runtime, name) for name in ("uniselector", "subagent", "human")}
+    others = {name: Client(planner.runtime, name) for name in ("uniselector", "human")}
     room = planner.register("room", adapter="room", source={"interval_ms": 50})
     return planner, others, room
 
@@ -43,12 +43,11 @@ def test_graph_approval_alone_does_not_gate_a_principal_that_holds_the_action(wo
 def test_the_orchestrator_cannot_run_an_action_that_it_does_not_hold(world):
     planner, others, room = world
     orchestrator = others["uniselector"]
-    gate = Gate(planner, "uniselector", "subagent", "human", others["human"])
+    gate = Gate(planner, "uniselector", "human", others["human"])
     actions = gate.delegate(room.id)
     assert [a["name"] for a in actions] == ["room.heater"]
     held = [c["name"] for c in orchestrator.resolve(room.id).describe()["capabilities"]]
     assert "room.latest" in held and "room.heater" not in held
-    assert "room.heater" not in [c["name"] for c in others["subagent"].resolve(room.id).describe()["capabilities"]]
     # Each way that the orchestrator has to an action fails in the runtime.
     with pytest.raises(HandleError) as denied:
         orchestrator.resolve(room.id).invoke("room.heater", ON)

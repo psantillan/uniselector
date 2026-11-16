@@ -1,0 +1,52 @@
+{
+ "task": "api",
+ "direct": false,
+ "what": "A slow API: one response takes minutes.",
+ "at": "20261116_165326",
+ "commit": "2d8108c+",
+ "prompt": "A reports service is registered in DataHandles as `reports`. It is slow: one request can take minutes. Get the report at the path /reports/quarterly. Give the region with the highest revenue, and that revenue.",
+ "truth": [
+  "west",
+  91377
+ ],
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 103.1,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7735,
+ "context_peak": 9589,
+ "context_added": 1854,
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 1,
+  "plan_submit": 1,
+  "plan_status": 1
+ },
+ "turns": 5,
+ "agent_seconds": 101.4,
+ "answer": "The region with the highest revenue is **west**. Its revenue is **91,377 USD** (2026-Q3).",
+ "agent_error": false,
+ "right": true,
+ "facts": {},
+ "runs": [
+  {
+   "t": 1794848109.584,
+   "event": "end",
+   "run": "run_20261116_165337_e63f",
+   "outcome": "left",
+   "why": "the MCP server of the main agent ended before the run did",
+   "tokens": 2143,
+   "cost": 4.3e-05,
+   "seconds": 90.5,
+   "looks": 6,
+   "wakes": 1,
+   "operations": 1,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

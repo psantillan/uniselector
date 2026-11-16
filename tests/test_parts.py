@@ -1,4 +1,4 @@
-"""The small parts: the abstain rule, the plan, the candidate pool, the hook, and the tool surface."""
+"""The small parts: the detector's call, the plan, the hook, and the tool surface."""
 import http.server
 import io
 import json
@@ -9,26 +9,18 @@ import pytest
 
 from conftest import finish, harness
 from uniselector import mcp, plan
-from uniselector.decide import Decider, Distribution, judge, render
+from uniselector.decide import NO_ERROR, Decider, judge
 from uniselector.hooks import pending
-from uniselector.pool import leaves, literals
+from uniselector.state import cut
+
+OBJECT = {"name": "purchases", "handle": "hdl_1", "operation": {"capability": "dataset.count"}}
 
 
-def test_a_decision_abstains_when_the_top_is_low_or_the_second_is_close_or_the_model_refuses():
-    rule = dict(top=0.5, ratio=0.5)
-    assert judge(Distribution([0.1, 0.8, 0.1], 0, 0.0), **rule) == 1
-    assert judge(Distribution([0.45, 0.3, 0.25], 0, 0.0), **rule) is None    # the top option is low
-    assert judge(Distribution([0.6, 0.4, 0.0], 0, 0.0), **rule) is None      # the second option is close
-    assert judge(Distribution([0.0, 0.0, 0.0], 0, 0.0), **rule) is None      # the model refused the question
-    assert judge(Distribution([1.0], 0, 0.0), **rule) == 0
-
-
-def test_one_decision_is_one_choice_question_to_the_decisions_api():
+def test_one_look_is_one_call_to_the_decisions_api_with_one_question_for_each_variable():
     """A server of the test stands in for the Decisions API. It keeps the request, and it gives the next reply."""
     seen, replies = [], [
-        {"answers": {"decision": {"type": "choice", "choice": "2", "probabilities": {"3": 0.1, "2": 0.7, "1": 0.2}, "confidence": 0.55}},
-         "usage": {"input_tokens": 321, "output_tokens": 1, "cost": 0.0000064}},
-        {"answers": {"decision": {"type": "refusal"}}, "usage": {"input_tokens": 300, "output_tokens": 0, "cost": 0.0}}]
+        {"answers": {"v2": {"type": "noul", "noul": 0.12}, "v1": {"type": "noul", "noul": 0.93}, "v3": {"type": "refusal"}},
+         "usage": {"input_tokens": 321, "output_tokens": 0, "cost": 0.0000064}}]
 
     class Api(http.server.BaseHTTPRequestHandler):
         def do_POST(self):
@@ -44,68 +36,51 @@ def test_one_decision_is_one_choice_question_to_the_decisions_api():
 
     server = http.server.HTTPServer(("127.0.0.1", 0), Api)
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    state = {"plan": {"intents": ["count the rows"]}, "intent": 0, "handles": [], "results": [], "decision": {"text": "Choose the next operation."},
-             "limits": {"elapsed_s": 1.0, "wall_seconds": 60, "tokens": 0, "budget_tokens": 1000, "intents_done": 0, "intents": 1, "spent_share": 0.0},
-             "stall": {"seconds": 0.0, "looks": 0}}
+    state = {"notes": "The feed gets new rows.",
+             "objects": [{"name": "purchases", "handle": "hdl_1", "type": "computation", "operation": {"capability": "dataset.count"}, "written": "plan",
+                          "output": '{"rows": 21}', "runs": 3, "changed_s": 4.0},
+                         {"name": "totals", "handle": "hdl_2", "type": "computation", "operation": {"capability": "dataset.head", "input": {"limit": 5}},
+                          "written": "wake_1", "error": {"code": "ADAPTER_ERROR", "message": "no column amount"}, "runs": 2, "changed_s": 0.1},
+                         {"name": "job", "handle": "hdl_3", "type": "resource", "operation": {"capability": "script.run"}, "written": "plan",
+                          "running_s": 12.5, "runs": 0, "changed_s": 12.5}],
+             "limits": {"elapsed_s": 14.0, "wall_seconds": 60, "tokens": 500, "budget_tokens": 1000}}
     try:
         decide = Decider(f"http://127.0.0.1:{server.server_port}/decisions", "some/decision-model", "the-key")
-        d = decide(state, ["first", "second", "third"])
-        refused = decide(state, ["first", "second"])
+        d = decide(state, [NO_ERROR, "The count is less than 200.", "The job did not finish."])
     finally:
         server.shutdown()
     headers, body = seen[0]
     assert headers["Authorization"] == "Bearer the-key" and body["model"] == "some/decision-model"
-    assert "1. [CURRENT] count the rows" in body["state"] and "Choose the next operation." not in body["state"]
-    question, = body["questions"].values()
-    assert question["type"] == "choice" and question["instructions"].endswith("Choose the next operation.")
-    assert question["criteria"] == {"1": "first", "2": "second", "3": "third"}
-    # The distribution is in the order of the options, not in the order of the reply.
-    assert (d.probs, d.tokens, d.cost) == ([0.2, 0.7, 0.1], 321, 0.0000064) and judge(d, 0.5, 0.5) == 1
-    assert refused.probs == [0.0, 0.0] and judge(refused, 0.5, 0.5) is None
+    # The decision model reads what each object shows. The statements are the questions, not a part of the state.
+    for text in ("The feed gets new rows.", 'purchases (computation): dataset.count {}', 'output: {"rows": 21}', 'dataset.head {"limit": 5}',
+                 "ERROR ADAPTER_ERROR: no column amount", "no output yet", "the operation runs now, for 12.5 s", "time: 14.0 s of 60 s. tokens: 500 of 1000."):
+        assert text in body["state"], text
+    assert "The count is less than 200." not in body["state"]
+    assert list(body["questions"]) == ["v1", "v2", "v3"] and {q["type"] for q in body["questions"].values()} == {"noul"}
+    assert body["questions"]["v2"]["instructions"].endswith("Statement: The count is less than 200.")
+    # The probabilities are in the order of the statements, not in the order of the reply. A refusal is not a "true".
+    assert (d.probs, d.tokens, d.cost) == ([0.93, 0.12, 0.0], 321, 0.0000064)
+    assert judge(d, 0.5) == [1, 2] and judge(d, 0.1) == [2]
 
 
-def test_a_plan_is_intents_and_handles_and_nothing_more(cfg):
-    good = {"intents": ["count the rows"], "handles": ["hdl_1"]}
-    assert plan.check(good) is good
-    for bad in ({"intents": [], "handles": ["hdl_1"]}, {"intents": ["x"]}, {**good, "operations": []}, {**good, "limits": {"rows": 5}}):
-        with pytest.raises(ValueError):
+def test_a_plan_is_objects_and_variables_and_nothing_more(cfg):
+    good = {"objects": [OBJECT], "variables": ["The count is less than 200."]}
+    assert plan.check(good) is good and plan.check({**good, "notes": "n", "limits": {"wall_seconds": 5}})
+    for bad in ({"objects": [OBJECT]}, {**good, "variables": []}, {**good, "objects": []}, {**good, "intents": ["count the rows"]},
+                {**good, "objects": [{"name": "purchases", "handle": "hdl_1"}]},   # an object with no operation shows nothing
+                {**good, "objects": [{**OBJECT, "expected_rows": 20}]}, {**good, "objects": [OBJECT, OBJECT]}):
+        with pytest.raises(ValueError, match="not valid"):
             plan.check(bad)
-    assert plan.limits(cfg, {**good, "limits": {"wall_seconds": 5}}) == (cfg.budget_tokens, 5)
+    # The plan can ask for lower limits, never higher ones.
+    assert plan.limits(cfg, {"limits": {"budget_tokens": 50, "wall_seconds": 10**6}}) == (50, cfg.wall_seconds)
 
 
-def test_a_table_output_gives_each_cell_with_its_column_as_the_place():
-    table = {"columns": ["country", "n"], "rows": [["US", 3], ["DE", 1]], "truncated": False}
-    assert ("US", ("rows", "country")) in leaves(table) and (1, ("rows", "n")) in leaves(table)
-    assert literals('keep "gold" customers over $100 in 2 regions') == ["gold", 100, 2]
-    # A token that is not a plain word is a value: a path, a dotted name, a date.
-    assert literals("Get the report at the path /reports/quarterly (not v1.2), from 2026-01-31.") == ["/reports/quarterly", "v1.2", "2026-01-31"]
-
-
-def test_the_first_page_of_an_open_value_has_the_values_with_evidence(cfg, events):
-    h = harness(cfg, ["h1 dataset.filter", '"event_type"', '"eq"', '"value": x}', '"purchase"', "stop", "step_done", "step_done"])
-    source = h.clients["planner"].register("events", adapter="duckdb", source={"path": str(events)})
-    finish(h, h.submit({"intents": ["keep only the purchase events", "count the rows"], "handles": [source.id]})["run"])
-    column = next(options for text, options in h.decide.seen if "`where[0].column`" in text)
-    # The column names come from the descriptor. A bare word of the intent ("purchase") is not on the first page.
-    first = [o.split("  ")[0] for o in column[:-1]]
-    assert {'"id"', '"customer_id"', '"event_type"', '"amount"'} <= set(first) and '"purchase"' not in first
-    shown = next(o for o in column if o.startswith('"event_type"'))
-    assert column[-1].startswith("none of these") and 'Values at event_type: "purchase"' in shown
-    value = next(options for text, options in h.decide.seen if "Choose the value of `where[0].value`" in text)
-    assert {o.split("  ")[0] for o in value[:-1]} == {'"purchase"', '"view"', '"cart"'}   # the values at the chosen column
-
-
-def test_the_state_text_has_the_plan_the_handles_and_the_results_by_intent(cfg, events):
-    h = harness(cfg, ["step_done", "step_done"])
-    source = h.clients["planner"].register("events", adapter="duckdb", source={"path": str(events)})
-    run = h.submit({"intents": ["count the rows", "stop"], "handles": [source.id]})["run"]
-    finish(h, run)
-    text = render({**h.runs[run].state.view("Choose."), "intent": 1})   # the state at the second intent
-    assert text.index("PLAN") < text.index("HANDLES") < text.index("LIMITS") < text.index("STALL") and "Choose." not in text
-    assert "h1: dataset events" in text
-    # The results of the current intent are apart from the results of the earlier intents.
-    earlier, current = text.index("RESULTS OF EARLIER INTENTS"), text.index("RESULTS OF THE CURRENT INTENT (2. stop)")
-    assert earlier < text.index("- step 1: step_done") < current < text.index("- step 2: step_done") < text.index("LIMITS")
+def test_a_long_value_keeps_its_first_and_its_last_part():
+    value = {"output": "first " + "x" * 2000 + " checksum: 81504f41"}
+    text, size = cut(value, 600), len(json.dumps(value))
+    assert text.startswith('{"output": "first ') and text.endswith('checksum: 81504f41"}')
+    assert f"(cut: {size - 600} of {size} characters)" in text and len(text) < 700
+    assert cut("short", 600) == "short"
 
 
 def test_the_hook_shows_a_request_only_when_it_is_with_the_human(monkeypatch, capsys):
@@ -124,12 +99,23 @@ def test_the_hook_shows_a_request_only_when_it_is_with_the_human(monkeypatch, ca
 
 
 def test_the_tool_surface_gives_errors_as_values(cfg, events):
-    h = harness(cfg, ["step_done"])
+    h = harness(cfg)
+    variables = ["The count is less than 200."]
     assert [t["name"] for t in mcp.TOOLS] == ["plan_submit", "plan_status", "plan_answer", "plan_confirm"]
-    assert mcp.dispatch(h, "plan_submit", {"plan": {"intents": []}})["error"]["code"] == "INVALID_INPUT"
+    assert mcp.dispatch(h, "plan_submit", {"plan": {"objects": []}})["error"]["code"] == "INVALID_INPUT"
     assert mcp.dispatch(h, "plan_status", {"run": "run_none"})["error"]["code"] == "INVALID_INPUT"
-    assert mcp.dispatch(h, "plan_submit", {"plan": {"intents": ["x"], "handles": ["hdl_none"]}})["error"]["code"] == "HANDLE_NOT_FOUND"
+    assert mcp.dispatch(h, "plan_submit", {"plan": {"objects": [{**OBJECT, "handle": "hdl_none"}], "variables": variables}})["error"]["code"] == "HANDLE_NOT_FOUND"
     source = h.clients["planner"].register("events", adapter="duckdb", source={"path": str(events)})
-    run = mcp.dispatch(h, "plan_submit", {"plan": {"intents": ["count the rows"], "handles": [source.id]}})["run"]
-    assert finish(h, run)["state"] == "done"
+    room = h.clients["planner"].register("room", adapter="room", source={"interval_ms": 20})
+    for handle, operation, fault in ((source, {"capability": "dataset.nothing"}, "It has: dataset.aggregate"),
+                                     (source, {"capability": "dataset.head", "input": {"limit": "many"}}, "does not match the schema"),
+                                     (room, {"capability": "room.readings"}, "is a stream")):
+        error = mcp.dispatch(h, "plan_submit", {"plan": {"objects": [{"name": "x", "handle": handle.id, "operation": operation}], "variables": variables}})["error"]
+        assert error["code"] == "INVALID_INPUT" and fault in error["message"], error
+    assert h.runs == {}   # a plan with a fault starts no run
+    run = mcp.dispatch(h, "plan_submit", {"plan": {"objects": [{**OBJECT, "handle": source.id}], "variables": variables}})["run"]
+    assert mcp.dispatch(h, "plan_status", {"run": run, "wait_seconds": 0.3})["state"] == "running"
     assert mcp.dispatch(h, "plan_confirm", {"run": run, "request": "req_1", "decision": "approve"})["error"]["code"] == "INVALID_INPUT"
+    assert mcp.dispatch(h, "plan_answer", {"run": run, "question": "wake_1", "value": {"end": True}})["error"]["code"] == "INVALID_INPUT"
+    h.close()
+    assert finish(h, run)["state"] == "left"

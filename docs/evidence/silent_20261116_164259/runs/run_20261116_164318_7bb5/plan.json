@@ -1,0 +1,29 @@
+{
+ "objects": [
+  {
+   "name": "sensor_a_stats",
+   "handle": "hdl_01M7JKVDSXQA7JK5VTKK2BM6FZ",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 1
+    }
+   }
+  },
+  {
+   "name": "sensor_b_stats",
+   "handle": "hdl_01M7JKVEN8Y4VK0329M6ZRZEA1",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 1
+    }
+   }
+  }
+ ],
+ "variables": [
+  "The sensor in use (start: sensor_a) still gives new readings: its last_seq grew within the last 10 seconds.",
+  "The sensor in use has fewer than 60 readings (n < 60)."
+ ],
+ "notes": "Each sensor writes 1 reading each 2 seconds. n is the reading count, max_t is the highest temperature, last_seq is the newest seq. Start with sensor_a. If sensor_a gives no new reading for 10 seconds or more, use sensor_b. The work ends when the sensor in use has n >= 60. The answer is max_t of that sensor."
+}

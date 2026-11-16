@@ -1,8 +1,6 @@
-"""The state of one run: the decision model's model of the run.
+"""The state of one run: the objects, what each one shows now, and the spend against the hard limits.
 
-The state holds the plan, the current intent, brief summaries of the current handles, the last few
-results, the errors, the time and the spend against the hard limits, and the stall signal.
-`view` gives the bounded form that one decision reads.
+`view` gives the bounded form that the decision model reads at one look.
 """
 import json
 import time
@@ -10,9 +8,12 @@ from dataclasses import dataclass, field
 
 
 def cut(value, chars: int) -> str:
-    """A value as JSON text of a bounded size."""
+    """A value as JSON text of a bounded size. A long value keeps its first and its last part (docs/DECISIONS.md, D38)."""
     text = value if isinstance(value, str) else json.dumps(value, default=str)
-    return text if len(text) <= chars else f"{text[:chars]}... (cut: {len(text)} characters)"
+    if len(text) <= chars:
+        return text
+    half = chars // 2
+    return f"{text[:half]} ... (cut: {len(text) - 2 * half} of {len(text)} characters) ... {text[-half:]}"
 
 
 class Clock:
@@ -35,92 +36,65 @@ class Clock:
 
 @dataclass
 class Entry:
-    """One handle of the run."""
-    alias: str          # the short name that the decision model reads: h1, h2, ...
-    handle: object      # the SDK handle of the orchestrator's principal
-    origin: str         # "start", or the operation that made it
-    capabilities: list  # the descriptors of the capabilities that the orchestrator can invoke
-    actions: list       # the descriptors of the actions: the orchestrator can only request them
-    status: str | None = None
-    version: str | None = None
+    """One object of the run: a handle that the main agent built, and the operation that reads it."""
+    name: str
+    handle: object            # the SDK handle of the orchestrator's principal
+    operation: dict           # {"capability": ..., "input": {...}}
+    written: str              # what wrote this version of the object: "plan", or the id of a wake
+    action: dict | None       # the descriptor of the capability, when the operation is an action
+    version: str | None = None   # the version of the handle when the operation last started
+    job: object = None           # the job handle, while the operation runs
+    started: float = 0.0
+    runs: int = 0
+    output: str | None = None
+    error: dict | None = None
+    changed_at: float = 0.0
 
     @property
     def id(self) -> str:
         return self.handle.id
 
-    def summary(self, chars: int) -> dict:
-        info = self.handle.info
-        out = {"alias": self.alias, "id": self.id, "type": info["type"], "origin": self.origin}
-        for key in ("name", "description"):
-            if info["descriptor"].get(key):
-                out[key] = info["descriptor"][key]
-        if info["descriptor"].get("schema") is not None:
-            schema = info["descriptor"]["schema"]
-            out["schema"] = schema if len(json.dumps(schema)) <= chars else cut(schema, chars)
-        if self.status:
-            out["status"] = self.status
-        return out
+    def settled(self) -> bool:
+        """The operation ran one time or more, and it does not run now."""
+        return self.job is None and (self.runs > 0 or self.error is not None)
+
+    def summary(self, now: float) -> dict:
+        out = {"name": self.name, "handle": self.id, "type": self.handle.info["type"], "operation": self.operation, "written": self.written}
+        if self.error is not None:
+            out["error"] = self.error
+        elif self.output is not None:
+            out["output"] = self.output
+        if self.job is not None:
+            out["running_s"] = round(now - self.started, 1)
+        return {**out, "runs": self.runs, "changed_s": round(now - self.changed_at, 1)}
 
 
 @dataclass
 class State:
-    plan: dict
+    variables: list
+    notes: str | None
     budget_tokens: int
     wall_seconds: float
-    results_kept: int
-    handles_kept: int
-    value_chars: int
-    intent: int = 0
-    step: int = 0
     tokens: int = 0
-    entries: list = field(default_factory=list)
-    start: int = 0                                 # the number of start handles
-    results: list = field(default_factory=list)    # each result of the run, in the bounded form
-    outputs: list = field(default_factory=list)    # the output values of the last few results, for the candidate pool
+    entries: dict = field(default_factory=dict)    # the current object of each name
     clock: Clock = field(default_factory=Clock)
-    looks: int = 0                                 # the looks since the last change
-    seen: set = field(default_factory=set)
+    changed_at: float = 0.0    # when an output last changed
+    gap: float = 0.0           # the longest time between two changes so far
+    fresh: bool = False        # an output changed after the last look
+    quiet: float = 0.0         # the silent time at which the next look with no change is due
 
-    def __post_init__(self):
-        self.changed_at = self.clock.elapsed()
-
-    def add(self, entry: Entry) -> Entry:
-        self.entries.append(entry)
-        return entry
-
-    def entry(self, alias_or_id: str) -> Entry | None:
-        return next((e for e in self.entries if alias_or_id in (e.alias, e.id)), None)
-
-    def shown(self) -> list:
-        """The handles that a decision reads: the start handles and the newest handles."""
-        made = self.entries[self.start:]
-        room = max(self.handles_kept - self.start, 1)
-        return self.entries[:self.start] + made[-room:]
-
-    def record(self, result: dict, output=None) -> dict:
-        """Add one result. A result that the run did not see before is a change: it resets the stall signal."""
-        result = {"step": self.step, "intent": self.intent, **result}
-        key = json.dumps({k: result.get(k) for k in ("capability", "target", "input", "output", "handle", "error")}, sort_keys=True, default=str)
-        if "control" not in result and "error" not in result and key not in self.seen:
-            self.changed()
-        self.seen.add(key)
-        self.results.append(result)
-        if output is not None:
-            self.outputs = [*self.outputs, output][-self.results_kept:]
-        return result
-
-    def changed(self) -> None:
-        self.changed_at, self.looks = self.clock.elapsed(), 0
+    def changed(self, entry: Entry) -> None:
+        now = self.clock.elapsed()
+        self.gap, self.changed_at, entry.changed_at = max(self.gap, now - self.changed_at), now, now
+        self.fresh, self.quiet = True, 0.0
 
     def limits(self) -> dict:
-        n = len(self.plan["intents"])
         return {"elapsed_s": round(self.clock.elapsed(), 1), "wall_seconds": self.wall_seconds, "tokens": self.tokens,
-                "budget_tokens": self.budget_tokens, "intents_done": self.intent, "intents": n,
-                "spent_share": round(self.tokens / self.budget_tokens, 3)}
+                "budget_tokens": self.budget_tokens}
 
-    def view(self, decision: str) -> dict:
-        return {"plan": {k: self.plan[k] for k in ("intents", "notes") if k in self.plan}, "intent": self.intent,
-                "handles": [e.summary(self.value_chars) for e in self.shown()],
-                "results": self.results[-self.results_kept:], "limits": self.limits(),
-                "stall": {"seconds": round(self.clock.elapsed() - self.changed_at, 1), "looks": self.looks},
-                "decision": {"text": decision}}
+    def objects(self) -> list:
+        now = self.clock.elapsed()
+        return [e.summary(now) for e in self.entries.values()]
+
+    def view(self) -> dict:
+        return {**({"notes": self.notes} if self.notes else {}), "objects": self.objects(), "limits": self.limits()}

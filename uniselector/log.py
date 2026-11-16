@@ -1,8 +1,7 @@
 """The logs of one run: JSON lines in the directory of the run.
 
-decisions.jsonl  one line for each decision node, and one last line with the outcome of the run
-questions.jsonl  one line for each question to a sub-agent, with the answer and each call it made
-events.jsonl     one line for each step, probe, wait, wake and confirmation
+decisions.jsonl  one line for each look of the decision model, and one last line with the outcome of the run
+events.jsonl     one line for each version of an object, each change of an output, each wake, answer and confirmation
 """
 import json
 import threading

@@ -1,149 +1,177 @@
 # Uniselector
 
-Uniselector carries out a long task for an agent while the agent's context stays small. The agent
-states its intent as a short plan: "X, then Y, then Z". A decision model carries out each step with
-operations on [DataHandles](https://github.com/psantillan/datahandles) handles. The agent sees
-nothing until the work is done, an action needs its confirmation, or the decision model gives up.
+Uniselector watches the work of an agent, so that the agent does not monitor. The agent builds
+objects on [DataHandles](https://github.com/psantillan/datahandles) handles: a filter, an
+aggregate, a reading of a stream, a job. It states the essential variables: sentences that are true
+while it can sleep. The objects then run with no model. A decision model judges only one thing: is
+each essential variable inside its limits? When one is not, Uniselector wakes the agent with the
+reason and the objects. The agent replaces the object that is broken, and it sleeps again.
 
-It is an implementation of W. Ross Ashby's regulator (*Design for a Brain*, 1952; *An Introduction
-to Cybernetics*, 1956). The name is the Homeostat's uniselector: the stepping switch that chose a
-new configuration when a unit's essential variable left its limits.
+It is an implementation of W. Ross Ashby's ultrastable system (*Design for a Brain*, 2nd ed. 1960,
+chapter 7; *An Introduction to Cybernetics*, 1956). The name is the Homeostat's uniselector: the
+stepping switch that chose a new configuration when a unit's essential variable left its limits.
 
 ## How it works
 
-A plan is a list of intents (sentences), the handle ids to start from, optional notes, and
-optional lower limits. It has no operations.
+| Ashby | In this system |
+| --- | --- |
+| Environment | The resources behind the handles: a feed, a room, a service, a script |
+| Reacting part R | The objects that the main agent built. DataHandles runs them. No model is in this loop |
+| First loop | An object reads its handle again when the handle has a new version |
+| Essential variables | The two hard limits, and the sentences that the main agent wrote |
+| Second loop | The decision model looks at what the objects show, and judges each sentence |
+| Step-function | A wake: the main agent replaces the object that is broken, and nothing else |
+| Uniselector | The main agent at a wake: it selects the next configuration |
+| The good regulator is a model of the system | The state: each object, its operation, its newest output |
 
-    for each intent:
-        loop:
-            walk one tree of single-pass decisions: the operation, then each field of its input
-            a control option (step_done, wait, wake_agent, abort): handle it
-            an action: request a confirmation, and continue when it is given
-            invoke the operation, and add a bounded summary of the result to the state
+A plan is the objects, the variables, optional notes, and optional lower limits:
 
-There is one primitive: `decide(state, options)` gives a distribution over a set of options that
-differs at each call. The first decision of a walk chooses among each capability of the current
-handles and the control options. The walk then follows the JSON input schema of the capability: one
-schema node is one decision. An open value is a choice from a candidate pool that is collected
-from the state. When the pool is not enough, a sub-agent with a fresh context finds the value.
-What the sub-agent cannot settle goes to the main agent.
+    {"objects": [{"name": "totals", "handle": "h_...",
+                  "operation": {"capability": "dataset.head", "input": {"n": 20}}}],
+     "variables": ["The totals object shows a row for each region, with a number in total."]}
 
-The harness enforces two things, because they must hold when the model is wrong:
+The main agent builds each handle with the DataHandles tools before it submits the plan. The plan
+has no steps. The object name is the stable interface: at a wake, the main agent writes a new
+handle or a new operation behind the same name.
 
-1. **Hard limits**: a token budget and a wall time, from the configuration.
+The decision model looks when the output of an object changes. While nothing changes, it looks
+after a silence, and the silence doubles after each look. One look is one request: the state, and
+one yes-or-no question for each variable. A variable is outside its limits when the probability of
+"yes" is below 0.5 (`docs/DECISIONS.md`, D31 and D32).
+
+The harness enforces two things, because they must hold when a model is wrong:
+
+1. **Hard limits**: a token budget and a wall time, from the configuration. A plan can ask for
+   lower limits, never for higher ones.
 2. **The action gate**: an action (a capability that writes, reaches outside, and is not
    idempotent) needs a confirmation. The DataHandles runtime enforces it: the orchestrator's
    principal never holds an action.
 
-Each other rule is information in the decision model's state.
-
-| Ashby | In this system |
-| --- | --- |
-| Regulator | The decision model |
-| Essential variables | The hard limits, and whether the current intent is met |
-| Requisite variety | The options at each decision. A sub-agent, then the main agent, then the human add variety at a higher cost |
-| Fast loop | Walk, invoke, observe |
-| Slow loop (step-function) | `wake_agent`: the main agent makes a new plan |
-| Amplification | One plan drives many operations |
-| Attenuation | Handles and bounded summaries |
-| The good regulator is a model of the system | The state of the decision model is the model of the run |
+The first design of this repository put the decision model in the path of each operation. That was
+wrong (`docs/FAILURES.md`, F46; `docs/DECISIONS.md`, D29). D1 to D28 and F1 to F45 are the record
+of that design.
 
 ## Use
 
     pip install "uniselector @ git+https://github.com/psantillan/uniselector"
-    cp uniselector.example.toml uniselector.toml     # state the two hard limits and the two models
+    cp uniselector.example.toml uniselector.toml     # state the two hard limits
     uniselector-mcp --config uniselector.toml
-
-The server reads the key of the Decisions API from the environment variable `OPENROUTER_API_KEY`.
-The key is in no file.
 
 The MCP server has four tools:
 
 - `plan_submit(plan)` starts a run and returns a run id.
-- `plan_status(run)` returns a bounded summary: the state, the plan with the current intent, a
-  pending question or confirmation, the handles, the last results, and what to do next.
-- `plan_answer(run, question, value)` answers a question that a sub-agent could not.
+- `plan_status(run, wait_seconds)` returns a bounded summary: the state, the variables, what each
+  object shows now, a pending wake or confirmation, and what to do next. With `wait_seconds`, the
+  call waits until the run needs the main agent.
+- `plan_answer(run, question, value)` answers a wake. The value has the new version of an object,
+  the names of objects to remove, a new list of variables, or `end`. Only what it names changes.
 - `plan_confirm(run, request, decision)` approves an action, denies it, or passes it to the human.
 
 A human decides with `uniselector-confirm`. `docs/HOOKS.md` has the hook that shows a pending
 request to the user of Claude Code or Codex.
 
-The decision model is a model of its own class. It reads a state and typed questions, it gives one
-probability for each allowed answer, and it writes no text. Examples are TypeSafe Jev, Perplexity
-pplx-decider and Cloudflare Clef. One decision is one `choice` question to a Decisions API: the
-options of the decision are the options of the question. `docs/DECISIONS.md` (D17) has the model
-and the reasons. Another decision model replaces it with one setting, or as one callable:
-`decide(state, options)`.
+### The two models
 
-The sub-agent is a different model: a chat model with tool calls on an Ollama server. A decision
-model cannot explore, because it writes nothing.
+- **The main agent** is the MCP client. Its model is a setting of that client, not of Uniselector.
+- **The decision model** is in the `[decision]` section of the configuration: `decision_url`,
+  `decision_model`, and `decision_key_env` (the name of the environment variable that has the API
+  key; the key is in no file). A decision model is a model of its own class: it reads a state and
+  typed questions, it gives one probability for each allowed answer, and it writes no text.
+  Examples are TypeSafe Jev, Perplexity pplx-decider and Cloudflare Clef. A model behind another
+  API replaces it as one callable: `Harness(cfg, decide=...)`.
+
+The threshold 0.5 belongs to the decision model. Run the detector check (below) for a new model
+before you use it.
 
 ## Measurements
 
-Each row is one run of one task with a real main agent, on 2026-11-15 and 2026-11-16 (UTC). The
-main agent was Claude Code in headless mode (`claude-sonnet-5-5`) with only the DataHandles tools
-and the four tools above. The decision model was `perplexity/pplx-decider-v1.2` on the Decisions
-API of OpenRouter. The sub-agent model was `ornith-1.5:9b` on an Ollama server. The hard limits
-were 400,000 tokens and 1,800 s. `tasks/drive.py` runs a task and checks the answer against a
-truth that it computes without a model. The rows are single runs, not a benchmark.
+Each row is one run of one task with a real main agent, on 2026-11-16 (UTC). The main agent was
+Claude Code in headless mode (`claude-sonnet-5-5`) with only the DataHandles tools and the four
+tools above. The decision model was `perplexity/pplx-decider-v1.2` on the Decisions API of
+OpenRouter. The hard limits were 400,000 tokens and 1,800 s. `tasks/drive.py` runs a task, changes
+the world on a schedule while the main agent works, and checks the answer against a truth that it
+computes without a model. The rows are single runs, not a benchmark.
 
-| Task | Answer | Run time | Run tokens | Of these, decision model | Decisions | Operations | Questions to the sub-agent | Confirmations | Main agent context, first turn to peak |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Data pipeline: filter, join, aggregate, top 3 rows | right | 116.3 s | 116,159 | 58,930 | 38 | 6 | 2 | 0 | 7,016 to 11,993 |
-| Stream: heater on, wait for 26 degrees, heater off | right | 218.1 s | 141,633 | 51,375 | 49 | 2 | 2, and the 2 went on to the main agent | 2 | 7,003 to 14,987 |
-| The same stream task, with the action marked human-only | right | 262.6 s | 121,265 | 44,636 | 44 | 3 | 2, and 1 went on to the main agent | 2, each one by the human | 7,063 to 16,823 |
-| Slow API: a request that takes 150 s | right | 154.6 s | 4,831 | 4,831 | 6 | 2 | 0 | 0 | 7,001 to 9,382 |
-| Slow code: a script that takes 150 s | right | 153.8 s | 3,014 | 3,014 | 4 | 2 | 0 | 0 | 6,986 to 9,415 |
-| Sub-agent: a helper agent answers a question | right | 39.4 s | 2,760 | 2,760 | 4 | 2 | 0 | 0 | 7,016 to 8,403 |
+The tasks:
 
-The run time and the run tokens are the spend against the two hard limits. The clock of a run
-stops while a request waits for a confirmation. No run chose `wake_agent`. The evidence of each
-row is a directory in `docs/evidence`, in the order of the table: `pipeline_20261115_235850`,
-`stream_20261116_000054`, `stream-human_20261116_000825`, `api_20261116_000457`,
-`code_20261115_235541`, `helper_20261116_000738`.
+- **schema**: a feed of orders grows. The main agent keeps totals for each region. After 18 s
+  (60 s feed) or 60 s (200 s feed), the column `amount` gets the name `amount_usd`.
+- **shift**: the same feed. New orders get the status `settled` in place of `paid`.
+- **silent**: two temperature sensors. The sensor in use stops, and the other one goes on.
+- **goal**: switch a heater on, wait for 26 degrees, switch it off. The heater is an action.
+- **goal-human**: the same, with the heater marked human-only.
+- **code**: a script that runs for 90 s and prints a checksum.
+- **api**: one request that takes 90 s.
 
-The decision model made 145 decisions in the six runs. The median time of one decision was 402 ms
-(the longest: 2,055 ms). One decision read 496 to 3,252 input tokens (median 1,105). The API
-stated a price of $0.0033 for the 145 decisions together.
+| Task | Answer | Session time | Turns of the main agent | Main agent context, first turn to peak | Cost of the main agent | Looks | Wakes | Operations | Confirmations | Run tokens | Cost of the decision model |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| schema, 60 s feed | right | 83.1 s | 15 | 7,793 to 14,275 | $0.0929 | 19 | 2 | 38 | 0 | 11,105 | $0.000222 |
+| schema, 200 s feed | right | 226.7 s | 18 | 7,793 to 16,122 | $0.0960 | 22 | 3 | 42 | 0 | 12,942 | $0.000259 |
+| shift | right | 85.6 s | 17 | 7,817 to 16,153 | $0.1012 | 15 | 2 | 38 | 0 | 11,771 | $0.000235 |
+| silent | right | 135.1 s | 12 | 7,827 to 14,465 | $0.0792 | 54 | 2 | 65 | 0 | 34,233 | $0.000685 |
+| goal | right | 183.5 s | 11 | 7,737 to 10,947 | $0.0504 | 55 | 1 | 56 | 0 | 21,273 | $0.000425 |
+| goal-human | right | 197.6 s | 14 | 7,839 to 14,494 | $0.0770 | 58 | 1 | 61 | 2, each one by the human | 25,648 | $0.000513 |
+| code | right | 107.2 s | 6 | 7,720 to 9,863 | $0.0371 | 6 | 1 | 1 | 0 | 2,345 | $0.000047 |
+| api | right | 103.1 s | 5 | 7,735 to 9,589 | $0.0339 | 6 | 1 | 1 | 0 | 2,143 | $0.000043 |
+
+A look is one request to the decision model. An operation is one run of an object. The run tokens
+are the spend against the token budget: the input tokens of the decision model. The two costs are
+the costs that Claude Code and the Decisions API state. The evidence of each row is a directory in
+`docs/evidence`, in the order of the table: `schema_20261116_162735`, `schema_20261116_163338`,
+`shift_20261116_164133`, `silent_20261116_164259`, `goal_20261116_164515`,
+`goal-human_20261116_164819`, `code_20261116_165137`, `api_20261116_165326`.
 
 ### Baseline: the main agent alone
 
 `tasks/drive.py --direct` gives the main agent the same task and only the DataHandles tools. It
-does each operation itself. Each row is one run.
+watches the feed itself. Each row is one run.
 
-| Task | Mode | Answer | Time | Turns of the main agent | Main agent context, first turn to peak | Cost of the main agent |
+| Task | Mode | Answer | Session time | Turns of the main agent | Main agent context, first turn to peak | Cost of the main agent |
 | --- | --- | --- | --- | --- | --- | --- |
-| Data pipeline | Uniselector | right | 123.9 s | 5 | 7,016 to 11,993 | $0.047 |
-| Data pipeline | alone | right | 19.9 s | 13 | 6,971 to 11,849 | $0.063 |
-| Stream | Uniselector | right | 242.0 s | 12 | 7,003 to 14,987 | $0.075 |
-| Stream | alone | right | 183.3 s | 86 | 5,796 to 22,010 | $0.323 |
+| schema, 60 s feed | Uniselector | right | 83.1 s | 15 | 7,793 to 14,275 | $0.0929 |
+| schema, 60 s feed | alone | right | 69.8 s | 31 | 5,852 to 13,204 | $0.1139 |
+| schema, 200 s feed | Uniselector | right | 226.7 s | 18 | 7,793 to 16,122 | $0.0960 |
+| schema, 200 s feed | alone | right | 225.3 s | 93 | 5,852 to 26,993 | $0.3889 |
 
-The time is the time of the session of the main agent. The cost is the cost that Claude Code
-states for the session. It does not have the spend of the run (the table above).
+- With Uniselector, the feed that is 3.3 times as long added 3 turns and $0.003 to the main agent.
+  Alone, it added 62 turns and $0.275: the main agent made 88 `handle_invoke` calls, and each
+  answer stayed in its context.
+- On the 60 s feed the two modes are close. Alone, the main agent was 13 s faster and its context
+  stayed smaller. In that baseline the feed also started 16 s earlier in the session (F48).
+- Uniselector starts with about 1,900 more tokens of context: the text of its four tools.
+- The evidence: `schema-direct_20261116_163205` and `schema-direct_20261116_163736`.
+  `schema-direct_20261116_162916` is void: the driver did not start the feed (F48).
+- No baseline was run for the other tasks of this design. A baseline of the first design did the
+  goal task alone, with the same prompt and the same room: 183.3 s, 86 turns, context 5,796 to
+  22,010, $0.323 (`stream-direct_20261116_003123`).
 
-- The pipeline task has 6 operations. Uniselector gives no benefit there: the context of the main
-  agent grows by the same 4,900 tokens, and the task takes six times as long.
-- The stream task is a wait. Alone, the main agent asked for the newest reading 81 times, and each
-  answer stayed in its context. With Uniselector it used 12 turns, half of the added context, and
-  less than a quarter of the cost. Alone, the context grows with the length of the wait.
-- The evidence: `pipeline-direct_20261116_002722` and `stream-direct_20261116_003123`.
-  `stream-direct_20261116_002748` is not a baseline: the main agent still had the Uniselector
-  tools, and after three readings it handed the wait off (F45).
+### Detector check
 
-What the rows do not show:
+`tasks/probe.py` gives the decision model 12 small states and 24 sentences with a known answer: a
+schema error, a row count over a limit, a new status value, a sensor that stopped, a goal that is
+met, a job that ended, and the same states with no fault. The model was right on 24 of 24. It gave 0.9884 to 0.9995 to each
+true sentence and 0.0004 to 0.0438 to each sentence that was not true. The check cost 4,244 tokens
+($0.000084). The evidence: `docs/evidence/probe_20261116`. The states are small and the author of
+the detector wrote them, so the check shows that the threshold separates the two cases. It is not
+a measure of accuracy.
 
-- A question to the sub-agent is the largest cost. In the three runs with questions, the sub-agent
-  used 57,229, 90,258 and 76,629 tokens: more than the decision model in two of the three. Three
-  of the six questions reached the cap of a question and went to the main agent (F42, F43, F44).
-- The decision model abstains when two options fit the intent (F42) and when an intent needs no
-  operation (F43). The rule for two close options cannot tell these cases from a real doubt.
-- In the stream run, 40 of the 49 decisions chose `wait` (F30).
-- In the three runs with a slow job, the run made no decision while the job ran (F31).
-- The first build had a chat model behind `decide`, not a decision model (F39). Its six runs are
-  in `docs/evidence` too. With the same tasks, the pipeline run of that build took 436.0 s,
-  324,769 tokens and 124 decisions. The plans were not the same: the main agent writes its plan
-  in each run.
-- `docs/FAILURES.md` has 45 failures. Each one has its evidence and says if it is open.
+### What the rows do not show
+
+- The decision model looks at each change of an output. An object that shows each new reading
+  gave 54 to 58 looks in the three stream runs, and all but one or two of the looks in each run
+  found nothing. At the 387 tokens for each look of the goal run, the budget of 400,000 tokens ends such a run
+  after about 50 minutes (F49). An object whose output changes only when the work needs attention
+  removes that cost. No run measured it.
+- One wake had no fault: the main agent wrote a variable about columns that its object did not
+  show (F47).
+- The runs used the code before one change: a long output kept only its first part then. It keeps
+  its first and its last part now. A new value in the middle of a long output still does not
+  reach the decision model (F50).
+- In the goal task with no human-only capability, the main agent switched the heater itself. The
+  gate is in the path of the orchestrator only (F52).
+- In the api task, the main agent gave its answer at the wake and did not end the run (F51).
+- No run made the main agent compact its context, so no run tested a wake into a fresh context.
+- `docs/FAILURES.md` has 52 entries. Each one has its evidence and says if it is open.
 
 ## Documents
 

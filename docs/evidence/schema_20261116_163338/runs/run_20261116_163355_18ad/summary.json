@@ -1,0 +1,72 @@
+{
+ "run": "run_20261116_163355_18ad",
+ "state": "done",
+ "why": "the main agent ended the run",
+ "plan": {
+  "variables": [
+   "The feed has fewer than 600 rows.",
+   "The totals object shows a row for each region with a number in total, and shows no error."
+  ],
+  "notes": "totals = sum of amount by region for status=paid. Feed ends at 600 rows. A column may be renamed without notice. Then rebuild the filter and aggregate with the new name."
+ },
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7JKCMT732TSY465QV33MZNP",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "written": "wake_2",
+   "output": "{\"columns\": [\"region\", \"total\"], \"rows\": [[\"north\", 10483.22], [\"south\", 15527.259999999998], [\"west\", 14504.719999999996], [\"east\", 15677.18]], \"truncated\": false}",
+   "runs": 14,
+   "changed_s": 1.9
+  },
+  {
+   "name": "row_count",
+   "handle": "hdl_01M7JK9ZZSWEDQE8PDWKD6PKYN",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   },
+   "written": "plan",
+   "output": "{\"rows\": 600}",
+   "runs": 21,
+   "changed_s": 1.9
+  }
+ ],
+ "pending": null,
+ "last_wake": {
+  "id": "wake_3",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "The feed has fewer than 600 rows.",
+    "probability": 0.001
+   }
+  ],
+  "answer": {
+   "end": true
+  }
+ },
+ "lineage": "/tmp/scratch/worlds/schema_20261116_163338/runs/run_20261116_163355_18ad/lineage.json",
+ "logs": "/tmp/scratch/worlds/schema_20261116_163338/runs/run_20261116_163355_18ad",
+ "limits": {
+  "elapsed_s": 186.0,
+  "wall_seconds": 1800,
+  "tokens": 12942,
+  "budget_tokens": 400000
+ },
+ "counts": {
+  "looks": 22,
+  "wakes": 3,
+  "operations": 42,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The run ended at your word. Read the handles of the objects with the DataHandles tools."
+}

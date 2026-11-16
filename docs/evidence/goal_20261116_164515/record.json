@@ -1,0 +1,55 @@
+{
+ "task": "goal",
+ "direct": false,
+ "what": "A stream with a goal to watch for. The heater is an action.",
+ "at": "20261116_164515",
+ "commit": "2d8108c+",
+ "prompt": "A room is registered in DataHandles as `room`. Heat it: switch the heater on, wait until the temperature is 26 or more, then switch the heater off. Give the temperature of the last reading that you saw.",
+ "truth": "the heater goes on, then off after a reading of 26 or more",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 183.5,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7737,
+ "context_peak": 10947,
+ "context_added": 3210,
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 3,
+  "handle_invoke": 2,
+  "plan_submit": 1,
+  "plan_status": 2,
+  "plan_answer": 1
+ },
+ "turns": 11,
+ "agent_seconds": 181.6,
+ "answer": "26.0",
+ "agent_error": false,
+ "right": true,
+ "facts": {
+  "heater_on_seq": 3,
+  "heater_off_after_seq": 59,
+  "temperature_then": 26.044
+ },
+ "runs": [
+  {
+   "t": 1794847698.365,
+   "event": "end",
+   "run": "run_20261116_164531_c7d7",
+   "outcome": "done",
+   "why": "the main agent ended the run",
+   "tokens": 21273,
+   "cost": 0.000425,
+   "seconds": 164.1,
+   "looks": 55,
+   "wakes": 1,
+   "operations": 56,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

@@ -1,4 +1,4 @@
-"""The world of one task run: a DataHandles HTTP server, four principals, and the files for the main agent.
+"""The world of one task run: a DataHandles HTTP server, three principals, and the files for the main agent.
 
 Both MCP servers of the main agent (DataHandles and Uniselector) reach one runtime through the
 HTTP transport. The human's token is not in the environment of the Uniselector server.
@@ -16,8 +16,7 @@ from datahandles.sdk import connect
 
 from uniselector.config import Config
 
-ROLES = {"planner": "UNISELECTOR_PLANNER_TOKEN", "uniselector": "UNISELECTOR_TOKEN",
-         "subagent": "UNISELECTOR_SUBAGENT_TOKEN", "human": "UNISELECTOR_HUMAN_TOKEN"}
+ROLES = {"planner": "UNISELECTOR_PLANNER_TOKEN", "uniselector": "UNISELECTOR_TOKEN", "human": "UNISELECTOR_HUMAN_TOKEN"}
 BIN = Path(sys.executable).parent
 KEY_ENV = Config.decision_key_env   # the environment variable with the API key of the decision model
 
@@ -29,10 +28,10 @@ def free_port() -> int:
 
 
 class World:
-    def __init__(self, directory: Path, decision_model: str, model_url: str, model: str, budget_tokens: int, wall_seconds: int, human_only=()):
+    def __init__(self, directory: Path, decision_model: str, budget_tokens: int, wall_seconds: int, human_only=()):
         self.dir = directory.resolve()
         (self.dir / "agent").mkdir(parents=True)
-        self.model_url, self.model, self.processes = model_url, model, []
+        self.processes, self.facts = [], {}
         self.tokens = {role: secrets.token_hex(16) for role in ROLES}
         tokens = self.dir / "tokens.json"
         tokens.write_text(json.dumps({t: {"principal": role, "create": role == "planner"} for role, t in self.tokens.items()}))
@@ -45,7 +44,6 @@ class World:
             f"[limits]\nbudget_tokens = {budget_tokens}\nwall_seconds = {wall_seconds}\n\n"
             f'[runtime]\ntarget = "{self.url}"\nruns_dir = "{self.runs}"\n\n'
             f'[decision]\ndecision_model = "{decision_model}"\n\n'
-            f'[model]\nmodel_url = "{model_url}"\nmodel = "{model}"\n\n'
             f"[actions]\nhuman_only = {json.dumps(list(human_only))}\n")
         # The client fills in the API key of the decision model from its environment. The key is in no file of the world.
         env = {**{name: self.tokens[role] for role, name in ROLES.items() if role != "human"}, KEY_ENV: f"${{{KEY_ENV}}}"}

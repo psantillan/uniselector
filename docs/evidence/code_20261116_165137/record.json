@@ -1,0 +1,50 @@
+{
+ "task": "code",
+ "direct": false,
+ "what": "Code that takes time to run.",
+ "at": "20261116_165137",
+ "commit": "2d8108c+",
+ "prompt": "A script is registered in DataHandles as `job`. It takes minutes to run. Run it one time, with no arguments, and give the checksum that it prints at the end.",
+ "truth": "81504f413660545c",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 107.2,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7720,
+ "context_peak": 9863,
+ "context_added": 2143,
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 1,
+  "plan_submit": 1,
+  "plan_status": 1,
+  "plan_answer": 1
+ },
+ "turns": 6,
+ "agent_seconds": 105.5,
+ "answer": "81504f413660545c",
+ "agent_error": false,
+ "right": true,
+ "facts": {},
+ "runs": [
+  {
+   "t": 1794848004.186,
+   "event": "end",
+   "run": "run_20261116_165146_e79a",
+   "outcome": "done",
+   "why": "the main agent ended the run",
+   "tokens": 2345,
+   "cost": 4.7e-05,
+   "seconds": 96.0,
+   "looks": 6,
+   "wakes": 1,
+   "operations": 1,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

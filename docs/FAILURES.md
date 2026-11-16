@@ -9,6 +9,13 @@ F1 to F38 are from runs with the first model behind `decide`. That model was a c
 decision model (F39). Those entries stay as the record of that build. "The decision model" in
 F1 to F38 means that chat model. The runs after F39 use a decision model.
 
+F1 to F45 are from the first design: a decision model that chose each operation of a plan. F46 is
+the failure of that design. The code of the parts "decision tree", "candidate pool", "abstain" and
+"question" is gone (`docs/DECISIONS.md`, D29), so an open entry of those parts cannot occur again.
+The entries stay as the record. F47 and later are from the ultrastable design. Its parts are:
+plan (the objects and the variables that the main agent wrote), look (when the decision model
+looks), decision model, state, wake, action gate, summary, DataHandles, and the task driver.
+
 The evidence is in `docs/evidence/`. `dev/` has the runs from the development of the harness: the
 orchestrator alone, with no main agent. The other directories have the task runs with a real main
 agent. In a run directory, `decisions.jsonl` has one line for each decision, `questions.jsonl` one
@@ -689,4 +696,156 @@ not occur.
 - Fixed for the driver: a baseline session has no Uniselector server (`tasks/drive.py`,
   `--direct`). Open: a permission layer of the client can deny an approval of the main agent. The
   run then waits until its end, and the summary does not say why.
+
+## The design
+
+### F46. The decision model sat in the first loop
+
+- Part: the design (the loop and the decision tree of the brief, Steps 3 and 4).
+- What happened: the decision model chose each operation and each field of its input. It was a
+  router in the path of the work. The user found the fault on 2026-11-16: "You drifted by
+  optimizing it for accurate classification on every step."
+- Evidence: the pipeline task has 6 operations. With Uniselector it took 123.9 s
+  (`pipeline_20261115_235850`: 38 decisions, 2 questions, 116,159 run tokens). The main agent
+  alone took 19.9 s (`pipeline-direct_20261116_002722`), and its context grew by the same 4,900
+  tokens. A bounded sequence needs no second control layer. The stream task improved
+  (`stream_20261116_000054`: 12 turns, against 86 in `stream-direct_20261116_003123`), and 40 of
+  its 49 decisions chose `wait`: the gain came from the observation that the run took away from
+  the main agent, not from the choices.
+- Fixed: the ultrastable design (`docs/DECISIONS.md`, D29). The main agent builds the objects, the
+  objects run with no model, and the decision model judges only if each essential variable is
+  inside its limits.
+
+## Task runs of the ultrastable design
+
+Each run is one task with a real main agent (Claude Code in headless mode, `claude-sonnet-5-5`)
+on 2026-11-16 (UTC). The decision model was `perplexity/pplx-decider-v1.2`. The runs used the
+working tree that became the commit of this entry, with one difference: `cut` kept only the first
+part of a long value (F50). In a run directory, "D 7" means line 7 of `decisions.jsonl` (one line
+for each look) and "E 16" means line 16 of `events.jsonl`.
+
+| Run | Answer | Looks | Wakes | Operations | Confirmations |
+| --- | --- | --- | --- | --- | --- |
+| `schema_20261116_162735` | right | 19 | 2 | 38 | 0 |
+| `schema_20261116_163338` | right | 22 | 3 | 42 | 0 |
+| `shift_20261116_164133` | right | 15 | 2 | 38 | 0 |
+| `silent_20261116_164259` | right | 54 | 2 | 65 | 0 |
+| `goal_20261116_164515` | right | 55 | 1 | 56 | 0 |
+| `goal-human_20261116_164819` | right | 58 | 1 | 61 | 2, each one by the human |
+| `code_20261116_165137` | right | 6 | 1 | 1 | 0 |
+| `api_20261116_165326` | right | 6 | 1 | 1 | 0 |
+
+What the brief said to watch for, in these runs:
+
+- **A wake when nothing was wrong:** one (F47). **No wake when something was:** none. Each break
+  gave a wake at the first look after it. In `schema_20261116_162735` the column got its new name
+  18.0 s after the feed started, and the look that woke the main agent was at 20.1 s of run time
+  (D 7). In `silent_20261116_164259` the variable said "within the last 10 seconds", and the wake
+  came at the look where the object showed "last change 10.0 s ago" (D 16).
+- **An early choice that makes each later choice consistent and wrong:** none seen. The detector
+  makes no choice that a later look builds on: each look judges the state of that moment.
+- **Probes that cost more than the decisions they inform:** the design has no probes now.
+- **An action that reached confirmation and should not have, or the reverse:** F52.
+- **A summary that was not enough to continue from a fresh context:** not tested. Each main agent
+  kept its context for the whole task, and no run made the main agent compact.
+
+One more event is not a failure of Uniselector. In `silent_20261116_164259` the client refused
+the first `plan_submit` call: the main agent wrote JSON that did not parse
+(`agent-stream.jsonl`, "InputValidationError"). The second call was valid.
+
+### F47. A variable about something that the state does not show gave a wake with no fault
+
+- Part: plan.
+- What happened: the main agent wrote the variable "The totals object reads without error: the
+  columns region, status and amount still exist." The object showed the totals with the columns
+  `region` and `total`. The state had no `status` and no `amount`, so the decision model gave the
+  sentence 0.14 at the first look, and the run woke the main agent 0.1 s after its start. Nothing
+  was broken. The main agent wrote a new variable ("... shows a row for each region with a number
+  in total, and shows no error"), and the run went on.
+- Evidence: `schema_20261116_163338`, D 1 (`probs` 1.0, 0.98, 0.14) and the `answer` event of
+  `wake_1` in `events.jsonl`.
+- Open. The cost was one wake. The decision model was right: the sentence was not true of the
+  state. The tool text does not say that a variable must be about what an object shows.
+
+### F48. The driver did not start the feed of a baseline run, and then started it too early
+
+- Part: the task driver.
+- What happened: in the baseline mode, the driver waited for a new handle of its own DataHandles
+  client before it started the changes of the feed. The handles that the main agent derived did
+  not show there, so the feed stayed at 200 rows. The main agent asked for the row count and the
+  schema 67 times in 73 turns, its context went from 5,852 to 36,702 tokens, and the session cost
+  $0.52. It then said that the feed did not change, and it gave no final totals. That answer was
+  correct for the feed that it saw. The run is void as a baseline.
+- The first fix looked for the text `handle_invoke` in the event stream of the main agent. The
+  first event of the stream lists the tools, so the feed started 1.5 s into the session, before
+  the main agent built anything (`schema-direct_20261116_163205`, `facts.changes`). That run is a
+  valid task run, and its feed ran 16 s earlier in the session than in the Uniselector run.
+- Evidence: `schema-direct_20261116_162916` (`record.json`: `"right": false`, `"rows": 200`, no
+  `changes`); `schema-direct_20261116_163205`.
+- Fixed: the driver starts the feed at the first `handle_invoke` call of the main agent
+  (`FIRST_OPERATION` in `tasks/drive.py`; `schema-direct_20261116_163736` started at 7.5 s).
+
+### F49. The decision model looks at each change, so the looks grow with the feed
+
+- Part: look.
+- What happened: an object that shows each new reading changes at each reading, and each change
+  gives a look (`docs/DECISIONS.md`, D32). In `goal_20261116_164515` the run made 55 looks for 56
+  operations in 164 s. 54 of the 55 looks found each variable inside its limits. The looks cost
+  21,273 tokens ($0.000425), about 387 tokens for each one.
+- Evidence: the outcome line of `decisions.jsonl` in `goal_20261116_164515` (55 looks),
+  `silent_20261116_164259` (54) and `goal-human_20261116_164819` (58). Each look of these runs
+  has the reason `change`. `code_20261116_165137` and `api_20261116_165326` have 5 looks with the
+  reason `silence` in 90 s: at 4, 8, 16, 32 and 64 s.
+- Open. The money is small. The hard budget is the limit: at 387 tokens for each look and one
+  change each 3 s, a budget of 400,000 tokens ends a run after about 1,030 looks, which is about
+  50 minutes. A main agent can build an object whose output changes only when the work needs
+  attention (a count of the rows that break a rule). Then a change is rare, and the silent looks
+  double. No run measured that.
+
+### F50. An output was longer than the bound of the state
+
+- Part: state.
+- What happened: the main agent built an object that shows the totals for each region and each
+  status. After the new status, that table had 16 rows and more than 600 characters. The state
+  kept the first 600. The row with `settled` was row 4, so the decision model saw it, and the
+  wake was right. With that row at the end of the table, the decision model does not see the new
+  status.
+- Evidence: `shift_20261116_164133`, E 16 (the output ends with "(cut:"), and D 7.
+- Changed: a long value keeps its first and its last part now (`docs/DECISIONS.md`, D38), and the
+  tool text says so. Open: a new value in the middle of a long output does not reach the decision
+  model. The object that fits is small (one row for each status). The main agent built that
+  object at the wake.
+
+### F51. The main agent left a run at a wake
+
+- Part: wake.
+- What happened: the task was one slow request. The variable was "The report at
+  /reports/quarterly is not yet returned with status 200." The response came after 90 s, the run
+  woke the main agent, and the summary had the report. The main agent gave the answer to the user
+  and ended its session. It did not answer the wake with `end: true`. The run ended with the
+  state `left`.
+- Evidence: `api_20261116_165326`, `events.jsonl` (the last events are `woke` and `end`, with no
+  `answer`), and `record.json` (`"outcome": "left"`). In `code_20261116_165137` the main agent
+  did answer with `end: true`.
+- Open. The answer of the task was right. The log of the run says `left`, not `done`, so a review
+  of the logs cannot tell this from a main agent that failed. A run on an `api` handle that goes
+  on after the wake also sends the request again at each tick (`docs/GAPS.md`, G15).
+
+### F52. The main agent switched the heater itself, with no confirmation
+
+- Part: action gate.
+- What happened: in the task with no human-only capability, the main agent switched the heater
+  on with a direct `handle_invoke`, gave the run one object that reads the newest temperature,
+  slept, and switched the heater off with a second direct `handle_invoke` after the wake. No
+  request for a confirmation existed. This is the gate as designed: the main agent is the
+  approver, and its principal holds the action (`docs/DECISIONS.md`, D1). The gate is in the path
+  of the orchestrator only.
+- In the task with `room.heater` marked human-only, the main agent gave each switch to the run as
+  an object, and the human approved each one (2 confirmations, 2 human requests). The prompt told
+  it to do that. The protocol does not stop a direct invoke of that capability by the main
+  agent's principal (`docs/GAPS.md`, G1).
+- Evidence: `goal_20261116_164515`, `record.json` (`tool_calls`: `handle_invoke` 2,
+  `confirmations` 0); `goal-human_20261116_164819`, the two `confirmation` events with
+  `"by": "human"`.
+- Open in DataHandles (G1).
 

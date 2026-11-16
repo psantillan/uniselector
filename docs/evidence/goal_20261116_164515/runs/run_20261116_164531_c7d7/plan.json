@@ -1,0 +1,16 @@
+{
+ "objects": [
+  {
+   "name": "latest",
+   "handle": "hdl_01M7JKZ8RGB7S63FEJPNH4FKB7",
+   "operation": {
+    "capability": "room.latest",
+    "input": {}
+   }
+  }
+ ],
+ "variables": [
+  "The temperature of the room is less than 26."
+ ],
+ "notes": "Heater was switched on at seq 3. When the temperature is 26 or more, the variable is false and the agent must wake, switch the heater off, and report the last reading."
+}

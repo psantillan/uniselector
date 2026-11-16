@@ -1,0 +1,71 @@
+{
+ "task": "silent",
+ "direct": false,
+ "what": "A missing sensor: the feed in use stops, and a second feed goes on.",
+ "at": "20261116_164259",
+ "commit": "2d8108c+",
+ "prompt": "Two sensors of one room are registered in DataHandles as the feeds `sensor_a` and `sensor_b`. A sensor writes one new reading each 2 seconds. Keep a live highest `temperature` from `sensor_a`. A sensor can stop without notice. When the sensor that you use gives no new reading for 10 seconds or more, use the other sensor in its place. The work ends when the sensor that you use has 60 readings. Then give the highest temperature of that sensor.",
+ "truth": "the highest temperature of sensor_b (record: facts.truth)",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "seconds": 135.1,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 7827,
+ "context_peak": 14465,
+ "context_added": 6638,
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 2,
+  "handle_invoke": 2,
+  "plan_submit": 2,
+  "plan_status": 2,
+  "plan_answer": 2
+ },
+ "turns": 12,
+ "agent_seconds": 133.1,
+ "answer": "31.3",
+ "agent_error": false,
+ "right": true,
+ "facts": {
+  "changes": [
+   {
+    "what": "the schedule started",
+    "agent_s": 19.0
+   },
+   {
+    "what": "sensor_a stopped",
+    "agent_s": 41.0
+   },
+   {
+    "what": "the feed ended",
+    "agent_s": 129.1
+   }
+  ],
+  "readings": {
+   "sensor_a": 15,
+   "sensor_b": 60
+  },
+  "truth": 31.3
+ },
+ "runs": [
+  {
+   "t": 1794847514.332,
+   "event": "end",
+   "run": "run_20261116_164318_7bb5",
+   "outcome": "done",
+   "why": "the main agent ended the run",
+   "tokens": 34233,
+   "cost": 0.000685,
+   "seconds": 110.2,
+   "looks": 54,
+   "wakes": 2,
+   "operations": 65,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

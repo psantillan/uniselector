@@ -2,9 +2,9 @@
 
   uniselector-mcp --config uniselector.toml
 
-The main agent hands off a plan with `plan_submit` and reads a bounded summary with `plan_status`.
-It gets no raw data and no step history. `plan_answer` and `plan_confirm` are the two things that a
-run can need from it.
+The main agent hands off its objects and the essential variables with `plan_submit`, and it sleeps
+in `plan_status`. It gets no raw data and no history of the operations. `plan_answer` and
+`plan_confirm` are the two things that a run can need from it.
 """
 import argparse
 import json
@@ -18,29 +18,32 @@ from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
 from .config import load
-from .plan import PLAN_SCHEMA
+from .plan import ANSWER_SCHEMA, PLAN_SCHEMA
 from .run import Harness
 
 INSTRUCTIONS = (
-    "Uniselector carries out a long task on DataHandles handles while your context stays small. State your intent as a short "
-    "plan: a list of intents (sentences), and the handle ids to start from. Call plan_submit, then plan_status with wait_seconds. "
-    "A decision model chooses the operations. plan_status gives a bounded summary. You must act only when a run has a pending question "
-    "(plan_answer) or a pending confirmation of an action (plan_confirm), or when it returned the work to you.")
+    "Uniselector watches objects that you built, so that you do not monitor. Do not read data again and again to see if something "
+    "changed. Build the thing that monitors, then leave. First build each object with the DataHandles tools: a handle (for example a "
+    "filter and an aggregate on a dataset) and one operation on it that gives a small value: the run keeps only the first and the last "
+    "part of a long output. A handle that you derive reads the newest data of its source at each read. Then state the essential variables: sentences that are true while you can sleep. Call "
+    "plan_submit, then plan_status with wait_seconds. The objects run without you, and a decision model judges the variables. It "
+    "wakes you when one is not true. The summary then has the reason and the objects. Build a new version of only the object that is "
+    "broken, write it back with plan_answer, and sleep again.")
 
 _RUN = {"type": "string", "description": "The run id from plan_submit."}
 TOOLS = [
-    {"name": "plan_submit", "description": "Start a run of a plan. Return the run id. The plan is a list of intents, not a list of operations.",
+    {"name": "plan_submit", "description": "Start a run of a plan. Return the run id. The plan is the objects that you built and the essential variables.",
      "parameters": {"type": "object", "required": ["plan"], "properties": {"plan": PLAN_SCHEMA}}},
-    {"name": "plan_status", "description": "Return a bounded summary of a run: its state, the plan and the current intent, a pending question or "
-                                           "confirmation, the handles, the last results, and what you can do next. With wait_seconds, the call "
-                                           "waits until the run needs you, ends, or the time is over. Use it: each call adds to your context.",
+    {"name": "plan_status", "description": "Return a bounded summary of a run: its state, the variables, what each object shows now, a pending wake or "
+                                           "confirmation, and what you can do next. With wait_seconds, the call waits until the run needs you, "
+                                           "ends, or the time is over. Use it: each call adds to your context.",
      "parameters": {"type": "object", "required": ["run"], "properties": {
          "run": _RUN, "wait_seconds": {"type": "number", "minimum": 0, "default": 0,
                                        "description": "Wait this long for the run. Stay below the tool-call timeout of your client."}}}},
-    {"name": "plan_answer", "description": "Answer a pending question of a run: a value that a sub-agent could not find. The value must match the schema in the question.",
+    {"name": "plan_answer", "description": "Answer a wake of a run: write back the new version of what is broken. Only what you name changes.",
      "parameters": {"type": "object", "required": ["run", "question", "value"], "properties": {
-         "run": _RUN, "question": {"type": "string", "description": "The id of the pending question."},
-         "value": {"description": "The value of the field."}}}},
+         "run": _RUN, "question": {"type": "string", "description": "The id of the pending wake."},
+         "value": ANSWER_SCHEMA}}},
     {"name": "plan_confirm", "description": "Decide on a pending action of a run: approve it, deny it, or pass it to the human. "
                                             "Pass it to the human when you cannot judge it from the request.",
      "parameters": {"type": "object", "required": ["run", "request", "decision"], "properties": {
