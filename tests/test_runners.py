@@ -216,14 +216,17 @@ def test_the_version_of_the_main_agent_stays_when_a_runner_ends_after_it(cfg, ev
 
     h = harness(cfg, runners={"local": Runner(slow)})
     source = table(h, events)
-    views = source.invoke("dataset.filter", {"where": [{"column": "event_type", "op": "eq", "value": "view"}]})
-    run = h.submit({"objects": [{**thing("purchases", purchases(source)), "runners": ["local"]}, thing("views", views)], "variables": [SLEEP]})["run"]
-    shows(h, run, "views", lambda o: o.get("output"))
-    rename(events)   # each object breaks. The first one goes to its runner, and the second one to the main agent
+    large = source.invoke("dataset.filter", {"where": [{"column": "amount", "op": "gt", "value": 100}]})
+    run = h.submit({"objects": [{**thing("purchases", purchases(source)), "runners": ["local"]}, thing("large", large)], "variables": [SLEEP]})["run"]
+    shows(h, run, "large", lambda o: o.get("output"))
+    # The objects break one after the other, so that no look can see the two breaks in a different order.
+    rename(events)   # the first object breaks, and it goes to its runner
+    shows(h, run, "purchases", lambda o: "in_repair" in o)
+    rename(events, "amount", "price")   # the second object breaks, and it goes to the main agent
     woke = finish(h, run, until=("woke",))
-    assert (woke["pending"]["id"], woke["pending"]["object"], woke["objects"][0]["in_repair"]) == ("wake_2", "views", "wake_1")
+    assert (woke["pending"]["id"], woke["pending"]["object"], woke["objects"][0]["in_repair"]) == ("wake_2", "large", "wake_1")
     mine = purchases(source, "kind")
-    h.answer(run, "wake_2", {"objects": [thing("purchases", mine), thing("views", mine)]})   # the main agent writes the two objects
+    h.answer(run, "wake_2", {"objects": [thing("purchases", mine), thing("large", mine)]})   # the main agent writes the two objects
     shows(h, run, "purchases", lambda o: o["written"] == "wake_2" and o.get("output"))
     go.set()
     time.sleep(1)
