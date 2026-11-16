@@ -42,6 +42,14 @@ class Entry:
     operation: dict           # {"capability": ..., "input": {...}}
     written: str              # what wrote this version of the object: "plan", or the id of a wake
     action: dict | None       # the descriptor of the capability, when the operation is an action
+    variables: list = field(default_factory=list)   # the check of this object: sentences about its output
+    runners: list = field(default_factory=list)     # who answers for this object, in order. After the last one: the main agent
+    holder: str = "main"         # the runner whose principal holds the action, and so runs it
+    bound: int = 0               # the place of the current runner in `runners`
+    trial: bool = False          # a runner changed the object, and no look judged the change yet
+    repair: str | None = None    # the id of the wake that a model runner of the object works on now
+    changes: int = 0             # the changes of the output after the first output
+    first_at: float | None = None   # when this version showed its first output
     version: str | None = None   # the version of the handle when the operation last started
     job: object = None           # the job handle, while the operation runs
     started: float = 0.0
@@ -54,19 +62,32 @@ class Entry:
     def id(self) -> str:
         return self.handle.id
 
+    @property
+    def runner(self) -> str:
+        """The current runner: the agent that repairs the object at a wake, or that confirms its action."""
+        return self.runners[self.bound] if self.bound < len(self.runners) else "main"
+
     def settled(self) -> bool:
         """The operation ran one time or more, and it does not run now."""
         return self.job is None and (self.runs > 0 or self.error is not None)
 
     def summary(self, now: float) -> dict:
         out = {"name": self.name, "handle": self.id, "type": self.handle.info["type"], "operation": self.operation, "written": self.written}
+        if self.variables:
+            out["variables"] = self.variables
+        if self.runners:
+            out["runner"] = self.runner
+        if self.repair is not None:
+            out["in_repair"] = self.repair
         if self.error is not None:
             out["error"] = self.error
         elif self.output is not None:
             out["output"] = self.output
         if self.job is not None:
             out["running_s"] = round(now - self.started, 1)
-        return {**out, "runs": self.runs, "changed_s": round(now - self.changed_at, 1)}
+        if self.runs and self.action is None:   # a quiet output with a new run shows that the source is live (docs/DECISIONS.md, D46)
+            out["ran_s"] = round(now - self.started, 1)
+        return {**out, "runs": self.runs, "changes": self.changes, "changed_s": round(now - self.changed_at, 1)}
 
 
 @dataclass
@@ -87,6 +108,10 @@ class State:
         now = self.clock.elapsed()
         self.gap, self.changed_at, entry.changed_at = max(self.gap, now - self.changed_at), now, now
         self.fresh, self.quiet = True, 0.0
+        if entry.first_at is None:
+            entry.first_at = now
+        else:
+            entry.changes += 1
 
     def limits(self) -> dict:
         return {"elapsed_s": round(self.clock.elapsed(), 1), "wall_seconds": self.wall_seconds, "tokens": self.tokens,

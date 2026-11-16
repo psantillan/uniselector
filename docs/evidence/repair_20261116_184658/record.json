@@ -1,0 +1,54 @@
+{
+ "runner": {
+  "url": "http://local-model:18020/v1/chat/completions",
+  "model": "qwen3.8-27b",
+  "wake_tokens": 2000000,
+  "key_env": "LOCAL_MODEL_API_KEY",
+  "body": {
+   "chat_template_kwargs": {
+    "enable_thinking": false
+   }
+  }
+ },
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "truth": {
+  "rows": 135
+ },
+ "state": "running",
+ "why": "the objects run, and no look found a variable outside its limits",
+ "object": {
+  "name": "paid",
+  "handle": "hdl_01M7JTYEFPHCCV5Q9V95B8JD1Q",
+  "type": "dataset",
+  "operation": {
+   "capability": "dataset.count"
+  },
+  "written": "wake_1",
+  "variables": [
+   "It shows the count of the paid orders: a number that is more than 0."
+  ],
+  "runner": "runner",
+  "output": "{\"rows\": 135}",
+  "ran_s": 0.5,
+  "runs": 1,
+  "changes": 0,
+  "changed_s": 0.4
+ },
+ "right": true,
+ "seconds": 14.0,
+ "counts": {
+  "looks": 5,
+  "wakes": 1,
+  "runner_wakes": 1,
+  "rebinds": 0,
+  "operations": 3,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "limits": {
+  "elapsed_s": 14.5,
+  "wall_seconds": 600,
+  "tokens": 16247,
+  "budget_tokens": 4000000
+ }
+}

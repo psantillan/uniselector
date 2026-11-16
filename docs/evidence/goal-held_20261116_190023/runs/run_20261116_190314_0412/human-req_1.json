@@ -1,0 +1,1 @@
+{"decision": "approve", "result": {"operation_id": "op_01M7JVWH08V1A0SQZZ1N6GXBBE", "status": "completed", "metadata": {"bytes_transferred": 33, "source_version": "62", "execution_time_ms": 0.593}, "output": {"heater": false, "from_seq": 63}}}

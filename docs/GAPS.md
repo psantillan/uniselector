@@ -183,3 +183,36 @@ when the first response is there.
 Proposal for DataHandles: a resource states how it changes: a version, a poll interval, or "no
 signal", so that a caller can choose when to read again.
 
+
+## G16. A principal cannot read the descriptor of a capability that it does not hold
+
+This is G4, seen from the main agent. When only the human's principal holds an action
+(`docs/DECISIONS.md`, D44), `handle_describe` gives the main agent no name, no input schema and no
+effects for it.
+
+Effect: the main agent must learn the name and the input of the action from the user. `prepare`
+cannot check the input against a schema, and it cannot check that the capability is an action. The
+request for a confirmation has no description of the action.
+
+Workaround: an object with `runners: ["human"]` on a capability that the main agent does not hold
+is accepted with no schema check. The runtime checks the input when the human's principal runs the
+graph, and a fault shows as the error of the object.
+
+Proposal for DataHandles: `describe` lists each capability of a handle with a mark for the ones
+that the caller does not hold. The descriptor is not a secret: it is what a caller needs to ask
+for a grant.
+
+## G17. A failed run of a graph uses up the approval, and an approval has no principal
+
+Measured on DataHandles v0.4.0: an approval of a graph node holds for one `graph.run`. When that
+run fails (the principal that runs it does not hold the capability), the approval is gone. An
+approval does not record which principal gave it, and any holder of `graph.run` can use it.
+
+Effect: when the human approves and the wrong principal runs the graph, the human must approve
+again. The orchestrator must know which principal holds the action before it runs the graph.
+
+Workaround: `Entry.holder` records the principal that holds the action, and that principal runs
+the graph (D44). One request has one approval and one run.
+
+Proposal for DataHandles: a failed run keeps the approval when the action did not start, and the
+approval records its principal.

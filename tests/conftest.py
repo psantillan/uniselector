@@ -1,4 +1,4 @@
-"""Shared parts of the tests: a runtime in a temporary directory, and a detector that follows a rule."""
+"""Shared parts of the tests: a runtime in a temporary directory, a detector that follows a rule, and a runner that follows a function."""
 import random
 import time
 
@@ -7,6 +7,7 @@ import pytest
 from uniselector.config import Config
 from uniselector.decide import NO_ERROR, Distribution
 from uniselector.run import ENDED, Harness
+from uniselector.runner import Outcome
 
 
 class Scripted:
@@ -19,6 +20,21 @@ class Scripted:
         self.seen.append((state, statements))
         true = [not any("error" in o for o in state["objects"]) if s == NO_ERROR else self.rule(state, s) for s in statements]
         return Distribution([0.9 if t else 0.1 for t in true], self.tokens, 0.0)
+
+
+class Runner:
+    """A model runner with no model. A function of the test gives the repair for a question, or None to give up."""
+
+    def __init__(self, repair, tokens: int = 1000):
+        self.repair, self.tokens, self.seen, self.faults = repair, tokens, [], []
+
+    def __call__(self, question: dict, submit, spend, seconds: float) -> Outcome:
+        self.seen.append(question)
+        spend(self.tokens)
+        value = self.repair(question)
+        fault = "the runner gave up" if value is None else submit(value)
+        self.faults.append(fault)
+        return Outcome([{"tool": "repair", "arguments": value, "result": fault or "accepted"}], fault or "repair")
 
 
 @pytest.fixture
@@ -37,8 +53,8 @@ def events(tmp_path):
     return path
 
 
-def harness(cfg, rule=None, **kw) -> Harness:
-    return Harness(cfg, decide=Scripted(rule, **kw))
+def harness(cfg, rule=None, runners=None, **kw) -> Harness:
+    return Harness(cfg, decide=Scripted(rule, **kw), runners=runners)
 
 
 def finish(h: Harness, run: str, until=ENDED, seconds: float = 30) -> dict:

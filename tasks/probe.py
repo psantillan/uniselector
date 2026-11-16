@@ -20,6 +20,9 @@ RECENT = "The output of the object `latest` changed in the last 10 seconds."
 STATUSES = "Each status in the object `statuses` is one of: paid, pending, refunded."
 COLD = "The newest temperature is below 26."
 RUNS = "The script of the object `job` has not finished."
+LIVE = "About the object `highest`: Its operation ran in the last 15 seconds."
+# The check of an object, in the form that a look gives it.
+THREE = "About the object `totals`: It shows one row for each of the regions north, south and east, with a number in total."
 NO_COLUMN = {"code": "ADAPTER_ERROR", "message": 'BinderException: Binder Error: Referenced column "amount" not found in FROM clause!\n'
                                                  'Candidate bindings: "amount_usd"'}
 
@@ -29,8 +32,8 @@ def obj(name: str, capability: str, input: dict | None = None, **shows) -> dict:
             "written": "plan", **shows}
 
 
-def state(*objects: dict) -> dict:
-    return {"objects": list(objects), "limits": LIMITS}
+def state(*objects: dict, **limits) -> dict:
+    return {"objects": list(objects), "limits": {**LIMITS, **limits}}
 
 
 def cases() -> list:
@@ -60,6 +63,14 @@ def cases() -> list:
         ("a job ended", state(obj("job", "script.run", runs=1, changed_s=0.1,
                                   output='{"exit_code": 0, "seconds": 150.2, "output": "round 30\\nchecksum 9f2c11aa03b4d7e1\\n"}')),
          {NO_ERROR: 1, RUNS: 0}),
+        ("a quiet object whose source is live", state(obj("highest", "dataset.aggregate", output='{"max": 28.9}', ran_s=2.1, runs=14, changes=3,
+                                                      changed_s=31.4)), {NO_ERROR: 1, LIVE: 1}),
+        ("a quiet object whose source stopped", state(obj("highest", "dataset.aggregate", output='{"max": 28.9}', ran_s=31.4, runs=14, changes=3,
+                                                      changed_s=47.0)), {NO_ERROR: 1, LIVE: 0}),
+        ("the check of an object holds", state(rows, totals), {NO_ERROR: 1, THREE: 1}),
+        ("the check of an object does not hold",
+         state(rows, obj("totals", "dataset.head", {"limit": 10}, runs=7, changed_s=1.2, output='{"columns": ["region", "total"], "rows": [["north", null]]}')),
+         {NO_ERROR: 1, THREE: 0}),
     ]
 
 

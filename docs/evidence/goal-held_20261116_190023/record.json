@@ -1,0 +1,77 @@
+{
+ "task": "goal-held",
+ "direct": false,
+ "what": "A stream with a goal to watch for. The heater is an action.",
+ "at": "20261116_190023",
+ "commit": "d6c8512+",
+ "prompt": "A room is registered in DataHandles as `room`. Heat it: switch the heater on, wait until the temperature is 26 or more, then switch the heater off. Give the temperature of the last reading that you saw.",
+ "truth": "the heater goes on, then off after a reading of 26 or more",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 5000000,
+  "wall_seconds": 1800
+ },
+ "runners": {},
+ "seconds": 199.2,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 8478,
+ "context_peak": 15556,
+ "context_added": 7078,
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 1,
+  "plan_submit": 2,
+  "plan_status": 5,
+  "plan_answer": 2
+ },
+ "turns": 12,
+ "agent_seconds": 197.4,
+ "answer": "26.253",
+ "agent_error": false,
+ "right": true,
+ "facts": {
+  "heater_on_seq": 4,
+  "heater_off_after_seq": 62,
+  "temperature_then": 26.253
+ },
+ "runs": [
+  {
+   "t": 1794855789.373,
+   "event": "end",
+   "run": "run_20261116_190035_1998",
+   "outcome": "failed",
+   "why": "HTTPError: HTTP Error 429: Too Many Requests",
+   "tokens": 31707,
+   "cost": 0.000634,
+   "seconds": 153.8,
+   "looks": 51,
+   "wakes": 0,
+   "runner_wakes": 0,
+   "rebinds": 0,
+   "operations": 53,
+   "confirmations": 1,
+   "human_requests": 1
+  },
+  {
+   "t": 1794855820.127,
+   "event": "end",
+   "run": "run_20261116_190314_0412",
+   "outcome": "done",
+   "why": "the main agent ended the run",
+   "tokens": 3095,
+   "cost": 6.2e-05,
+   "seconds": 18.1,
+   "looks": 6,
+   "wakes": 2,
+   "runner_wakes": 0,
+   "rebinds": 0,
+   "operations": 9,
+   "confirmations": 1,
+   "human_requests": 1
+  }
+ ],
+ "human_stand_in": [
+  "run_20261116_190035_1998 req_1",
+  "run_20261116_190314_0412 req_1"
+ ]
+}

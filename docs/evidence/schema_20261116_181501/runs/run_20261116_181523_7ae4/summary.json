@@ -1,0 +1,131 @@
+{
+ "run": "run_20261116_181523_7ae4",
+ "state": "limit",
+ "why": "the token budget is spent: 401411 of 400000",
+ "plan": {
+  "variables": [
+   "The totals object works and shows one total for each region, with no error.",
+   "The rowcount object shows no rows until the feed has 600 rows. Then it shows one row with n of 600."
+  ]
+ },
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7JSYD6BXS8Q1PJ2MMFSTJ45",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "written": "wake_3",
+   "variables": [
+    "The output has one row for each region, with the columns region and total.",
+    "The total values are numbers that are not negative."
+   ],
+   "runner": "main",
+   "runs": 0,
+   "changes": 0,
+   "changed_s": 832.5
+  },
+  {
+   "name": "rowcount",
+   "handle": "hdl_01M7JSQMV2211RP964NKAHKH2R",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 1
+    }
+   },
+   "written": "wake_2",
+   "variables": [
+    "The output has no rows while the feed has less than 600 rows. It has one row with n of 600 when the feed ends."
+   ],
+   "runner": "main",
+   "output": "{\"columns\": [\"n\"], \"rows\": [[600]], \"truncated\": false}",
+   "ran_s": 212.8,
+   "runs": 1,
+   "changes": 0,
+   "changed_s": 212.7
+  }
+ ],
+ "pending": null,
+ "last_wake": {
+  "id": "wake_3",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "No object shows an error.",
+    "probability": 0.001
+   },
+   {
+    "variable": "The totals object works and shows one total for each region, with no error.",
+    "probability": 0.0
+   },
+   {
+    "variable": "The rowcount object shows no rows until the feed has 600 rows. Then it shows one row with n of 600.",
+    "probability": 0.322
+   },
+   {
+    "variable": "About the object `totals`: The output has one row for each region, with the columns region and total.",
+    "probability": 0.001
+   },
+   {
+    "variable": "About the object `totals`: The total values are numbers that are not negative.",
+    "probability": 0.006
+   },
+   {
+    "variable": "About the object `rowcount`: The output has no rows while the feed has less than 600 rows. It has one row with n of 600 when the feed ends.",
+    "probability": 0.327
+   }
+  ],
+  "object": "totals",
+  "tried": [
+   {
+    "runner": "local",
+    "result": "the runner reached the token limit of one wake with no repair: 63713 tokens"
+   },
+   {
+    "runner": "top",
+    "result": "the runner reached the token limit of one wake with no repair: 132273 tokens"
+   }
+  ],
+  "by": "main",
+  "answer": {
+   "objects": [
+    {
+     "name": "totals",
+     "handle": "hdl_01M7JSYD6BXS8Q1PJ2MMFSTJ45",
+     "operation": {
+      "capability": "dataset.head",
+      "input": {
+       "n": 50
+      }
+     }
+    }
+   ],
+   "end": true
+  }
+ },
+ "lineage": "/tmp/scratch/worlds/schema_20261116_181501/runs/run_20261116_181523_7ae4/lineage.json",
+ "logs": "/tmp/scratch/worlds/schema_20261116_181501/runs/run_20261116_181523_7ae4",
+ "limits": {
+  "elapsed_s": 832.5,
+  "wall_seconds": 1800,
+  "tokens": 401411,
+  "budget_tokens": 400000,
+  "projected_tokens": 401411
+ },
+ "counts": {
+  "looks": 4,
+  "wakes": 3,
+  "runner_wakes": 4,
+  "rebinds": 4,
+  "operations": 8,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "A hard limit stopped the run. The user decides the limits. The handles of the objects stay usable."
+}

@@ -1,0 +1,59 @@
+{
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7JX59A2X249E8TZH1VV8Q8A",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "The output has one row for each region, with the columns region, total and n.",
+    "The total of each region is a number, not an error."
+   ]
+  },
+  {
+   "name": "row_count",
+   "handle": "hdl_01M7JX59XHX72X4T56FHS1VT81",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 1
+    }
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "The output shows one number named rows, not an error."
+   ]
+  },
+  {
+   "name": "schema",
+   "handle": "hdl_01M7JX4WHD7ZJ0NQM0DXRZX35D",
+   "operation": {
+    "capability": "dataset.schema",
+    "input": {}
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "The columns are id, region, status and amount."
+   ]
+  }
+ ],
+ "variables": [
+  "The row count of row_count is less than 600.",
+  "The columns of the feed are id, region, status and amount.",
+  "The totals object shows a total for each region without an error."
+ ]
+}

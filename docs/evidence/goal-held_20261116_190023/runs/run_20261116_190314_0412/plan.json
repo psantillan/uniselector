@@ -1,0 +1,19 @@
+{
+ "objects": [
+  {
+   "name": "latest",
+   "handle": "hdl_01M7JVPPWSN1QRS0W5VPKJB6WE",
+   "operation": {
+    "capability": "room.latest",
+    "input": {}
+   },
+   "variables": [
+    "The temperature is less than 26."
+   ]
+  }
+ ],
+ "variables": [
+  "The temperature in latest is less than 26."
+ ],
+ "notes": "The heater is already on. When the temperature is 26 or more, switch the heater off with a human-runner object."
+}

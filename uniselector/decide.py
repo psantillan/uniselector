@@ -4,18 +4,24 @@ A decision model reads a state and typed questions, and it gives probabilities. 
 Here it is the detector of the outer loop: it judges if each essential variable is inside its
 limits. `Decider` sends one look as one call to a Decisions API, with one `noul` question for each
 statement. Another decision model can replace it: it must be a callable with the same arguments
-and the same result.
+and the same result. It raises `Busy` when it made no look now and can make one later.
 """
 import json
+import urllib.error
 import urllib.request
 from dataclasses import dataclass
 
 RULES = (
     "The state shows objects that run with no supervision. Each object is a handle to data and one operation that reads a small value "
-    "from it. The state shows the newest output of each operation, or its error. Judge the statement from the state only. "
+    "from it. The state shows the newest output of each operation, or its error. An operation runs again when its data changes. "
+    "Judge the statement from the state only. "
     "Is the statement true now?")
 # The essential variable of each run. The harness does not judge an error: it can be a fault of one read or a break of the structure.
 NO_ERROR = "No object shows an error."
+
+
+class Busy(Exception):
+    """The decision model made no look now, and it can make one later: the API has too many requests, or it has a fault."""
 
 
 @dataclass
@@ -40,7 +46,8 @@ def _object_lines(o: dict) -> list[str]:
         lines.append("  no output yet")
     if "running_s" in o:
         lines.append(f"  the operation runs now, for {o['running_s']} s")
-    lines.append(f"  runs: {o['runs']}. last change of the output: {o['changed_s']} s ago.")
+    ran = f", the last one started {o['ran_s']} s ago" if "ran_s" in o else ""
+    lines.append(f"  runs: {o['runs']}{ran}. last change of the output: {o['changed_s']} s ago.")
     return lines
 
 
@@ -66,7 +73,12 @@ class Decider:
         request = urllib.request.Request(self.url, json.dumps(body).encode(), {
             "Content-Type": "application/json", "Authorization": f"Bearer {self.key}", "User-Agent": "uniselector"})
         left = state["limits"]["wall_seconds"] - state["limits"]["elapsed_s"]   # a call cannot take longer than the run has
-        with urllib.request.urlopen(request, timeout=max(left, 1)) as response:
-            reply = json.load(response)
+        try:
+            with urllib.request.urlopen(request, timeout=max(left, 1)) as response:
+                reply = json.load(response)
+        except urllib.error.HTTPError as e:
+            if e.code == 429 or e.code >= 500:   # the request was right, and the API did not serve it
+                raise Busy(f"HTTP {e.code}: {e.reason}") from e
+            raise
         # A refusal has no probability. The statement then gets 0: the model does not hold it to be true.
         return Distribution([reply["answers"][name].get("noul", 0.0) for name in names], reply["usage"]["input_tokens"], reply["usage"]["cost"])

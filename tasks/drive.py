@@ -7,7 +7,10 @@ and the four Uniselector tools. It builds the objects and writes the variables i
 changes the world while the main agent sleeps: a column gets a new name, a sensor stops. It records
 the largest context of the main agent, the tool calls, the runs, and whether the answer is right.
 
-TASK is one of: schema, shift, silent, goal, goal-human, code, api.
+TASK is one of: schema, shift, silent, goal, goal-human, goal-pass, goal-held, code, api.
+
+`--runners` gives the configuration two model runners, `local` and `top`, and tells the main agent
+to name them in its objects. `--budget-tokens` sets a lower budget than the default.
 """
 import argparse
 import csv
@@ -23,8 +26,10 @@ import threading
 import time
 from pathlib import Path
 
+from uniselector.gate import is_action
+
 from .slow_api import REPORT
-from .world import BIN, World, free_port
+from .world import BIN, KEY_ENV, World, free_port
 
 HERE = Path(__file__).resolve().parent
 HOW = ("Use Uniselector for each part of this work that waits or watches: do not wait or watch yourself. Reply with the answer only.")
@@ -34,8 +39,20 @@ DIRECT = "Do this work yourself with the DataHandles tools: find the handles wit
 ALONE = ("The heater needs my approval for each switch. Do not switch it yourself: give each switch to the run as an object, and pass its "
          "request to me. I cannot reply to you in this session. When a request is with me, I see the notice and I decide at my terminal. "
          "Follow the run with plan_status and wait_seconds until I decide.")
+# One decision goes to the human, and the next one stays with the main agent.
+PASS = ("Do not switch the heater yourself: give each switch to the run as an object. To switch the heater on is my decision: pass that "
+        "request to me. You can approve the request to switch it off yourself. I cannot reply to you in this session. When a request is "
+        "with me, I see the notice and I decide at my terminal. Follow the run with plan_status and wait_seconds until I decide.")
+# The main agent cannot read the descriptor of a capability that it does not hold (docs/GAPS.md, G16), so the prompt gives the input.
+HELD = ('Only my principal holds the capability that switches the heater: `room.heater`, with the input {"on": true} or {"on": false}. '
+        'You cannot invoke it. Give each switch to the run as an object with the runners ["human"]. I cannot reply to you in this session. '
+        "When a request is with me, I see the notice and I decide at my terminal. Follow the run with plan_status and wait_seconds until I decide.")
+BY_HUMAN = {"goal-human": ALONE, "goal-pass": PASS, "goal-held": HELD}
+RUNNERS = ('The configuration has the model runners `local` and `top`. Give an object that a model can repair the runners ["local", "top"] '
+           "and a check of its own (`variables` of the object), so that its repair does not need you.")
 # ASSUMED: the hard limits of the task runs. The user decides the hard limits; these are the values of uniselector.example.toml.
-BUDGET_TOKENS, WALL_SECONDS = 400_000, 1800
+# The budget is 5 wakes of the runner `top` at its limit: about 0.75 USD at 0.15 USD for each million input tokens.
+BUDGET_TOKENS, WALL_SECONDS = 5_000_000, 1800
 # ASSUMED: 40 minutes. The longest time that the driver gives the main agent for one task.
 AGENT_SECONDS = 2400
 # The first operation of the main agent in its event stream. The name of the tool is also in the first event, in the list of the tools.
@@ -139,7 +156,11 @@ def silent(world: World, a) -> dict:
 
 def goal(world: World, a) -> dict:
     """A stream with a goal to watch for. The heater is an action."""
-    room = world.planner.register("room", adapter="room", source={"interval_ms": a.interval_ms})
+    if a.task == "goal-held":   # the human's principal makes the room, and it keeps the action
+        room = world.human().register("room", adapter="room", source={"interval_ms": a.interval_ms})
+        room.grant("planner", [c["name"] for c in room.describe()["capabilities"] if not is_action(c)])
+    else:
+        room = world.planner.register("room", adapter="room", source={"interval_ms": a.interval_ms})
 
     def check(text: str) -> bool:
         readings, made = [], room.invoke("room.latest")["seq"] + 1
@@ -183,7 +204,8 @@ def code(world: World, a) -> dict:
             "truth": value.hex()[:16], "check": lambda text: value.hex()[:16] in text}
 
 
-TASKS = {"schema": schema, "shift": shift, "silent": silent, "goal": goal, "goal-human": goal, "code": code, "api": api}
+TASKS = {"schema": schema, "shift": shift, "silent": silent, "goal": goal, "goal-human": goal, "goal-pass": goal, "goal-held": goal,
+         "code": code, "api": api}
 
 
 def change_the_world(world: World, task: dict, direct: bool, stop: threading.Event, t0: float) -> None:
@@ -251,16 +273,31 @@ def main() -> None:
     p.add_argument("--interval-ms", type=int, default=3000, help="the time between two readings of the room or a sensor, or two steps of a feed")
     p.add_argument("--temperature", type=float, default=26, help="goal: the temperature to wait for")
     p.add_argument("--direct", action="store_true", help="the baseline: the main agent does the task itself, without Uniselector")
+    p.add_argument("--budget-tokens", type=int, default=BUDGET_TOKENS, help="the token budget of the configuration")
+    p.add_argument("--runners", action="store_true", help="configure the model runners `local` and `top`")
+    p.add_argument("--local-url", default="http://127.0.0.1:8000/v1/chat/completions", help="the chat completions API of the runner `local`")
+    p.add_argument("--local-model", help="the model of the runner `local`")
+    p.add_argument("--local-key-env", help="the environment variable with the API key of the runner `local`")
+    p.add_argument("--local-body", type=json.loads, help="more keys for each request of the runner `local`, as JSON")
+    p.add_argument("--top-model", help="the model of the runner `top`, on the chat completions API of OpenRouter")
+    # ASSUMED: each request sends the whole conversation again. `local`: 30 requests in a context that grows to 100,000 tokens.
+    # `top`: about 0.15 USD for one wake at 0.15 USD for each million input tokens.
+    p.add_argument("--wake-tokens", type=int, nargs=2, default=[2_000_000, 1_000_000], metavar=("LOCAL", "TOP"),
+                   help="the most that one wake of each runner can spend")
     a = p.parse_args()
     stamp = time.strftime("%Y%m%d_%H%M%S")
-    world = World(Path(a.work) / f"{a.task}_{stamp}", a.decision_model, BUDGET_TOKENS, WALL_SECONDS,
-                  human_only=["room.heater"] if a.task == "goal-human" else [])
+    runners = {"local": {"url": a.local_url, "model": a.local_model, "wake_tokens": a.wake_tokens[0],
+                         **({"key_env": a.local_key_env} if a.local_key_env else {}), **({"body": a.local_body} if a.local_body else {})},
+               "top": {"url": "https://openrouter.ai/api/v1/chat/completions", "model": a.top_model, "wake_tokens": a.wake_tokens[1],
+                       "key_env": KEY_ENV}} if a.runners else {}
+    world = World(Path(a.work) / f"{a.task}_{stamp}", a.decision_model, a.budget_tokens, WALL_SECONDS,
+                  human_only=["room.heater"] if a.task == "goal-human" else [], runners=runners)
     stop, confirmed = threading.Event(), []
     try:
         task = TASKS[a.task](world, a)
-        if a.task == "goal-human":
+        if a.task in BY_HUMAN:
             threading.Thread(target=stand_in_for_the_human, args=(world, stop, confirmed), daemon=True).start()
-        how, servers = HOW + (f" {ALONE}" if a.task == "goal-human" else ""), world.dir / "mcp.json"
+        how, servers = " ".join([HOW, *([BY_HUMAN[a.task]] if a.task in BY_HUMAN else []), *([RUNNERS] if a.runners else [])]), world.dir / "mcp.json"
         if a.direct:   # the baseline has no Uniselector server: the main agent cannot hand the work off
             how, servers = DIRECT, world.dir / "mcp-direct.json"
             servers.write_text(json.dumps({"mcpServers": {"datahandles": json.loads((world.dir / "mcp.json").read_text())["mcpServers"]["datahandles"]}}))
@@ -276,7 +313,7 @@ def main() -> None:
             except subprocess.TimeoutExpired:
                 pass
         record = {"task": a.task, "direct": a.direct, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
-                  "decision_model": a.decision_model, "limits": {"budget_tokens": BUDGET_TOKENS, "wall_seconds": WALL_SECONDS},
+                  "decision_model": a.decision_model, "limits": {"budget_tokens": a.budget_tokens, "wall_seconds": WALL_SECONDS}, "runners": runners,
                   "seconds": round(time.time() - t0, 1), **measure(world.dir / "agent-stream.jsonl")}
         record["right"] = bool(record["answer"]) and bool(task["check"](record["answer"]))
         record["facts"] = world.facts

@@ -1,0 +1,43 @@
+{
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7JTZN3RWYDWYTVTATFQ4FM8",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "The output has one row for each region, with the columns region and total.",
+    "The output shows no error about a missing column."
+   ]
+  },
+  {
+   "name": "row_count",
+   "handle": "hdl_01M7JTZ86WPN85QFMSMCZDZS2E",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "The count is a number and shows no error.",
+    "The count is less than 600 while the feed still gets rows."
+   ]
+  }
+ ],
+ "variables": [
+  "The row count is less than 600, or the totals object shows the final totals for 600 rows.",
+  "The totals object shows no error. If a column gets a new name, the totals object is repaired to use the new name."
+ ],
+ "notes": "Source: orders (hdl_01M7JTZ86WPN85QFMSMCZDZS2E). Totals = sum of amount by region where status = paid. A column can get a new name without notice: then rebuild the filter and the aggregate with the new name. The feed ends at 600 rows."
+}

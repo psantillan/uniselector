@@ -1,0 +1,99 @@
+{
+ "run": "run_20261116_190358_3aa3",
+ "state": "done",
+ "why": "the main agent ended the run",
+ "plan": {
+  "variables": [
+   "The heater is off."
+  ]
+ },
+ "objects": [
+  {
+   "name": "heater_on",
+   "handle": "hdl_01M7JVWSTJDZVB5HRKMPV2CFN7",
+   "type": "room",
+   "operation": {
+    "capability": "room.heater",
+    "input": {
+     "on": true
+    }
+   },
+   "written": "plan",
+   "runner": "human",
+   "output": "{\"heater\": true, \"from_seq\": 5}",
+   "runs": 1,
+   "changes": 0,
+   "changed_s": 174.2
+  },
+  {
+   "name": "temp",
+   "handle": "hdl_01M7JVWSTJDZVB5HRKMPV2CFN7",
+   "type": "room",
+   "operation": {
+    "capability": "room.latest",
+    "input": {}
+   },
+   "written": "wake_1",
+   "variables": [
+    "The heater is off."
+   ],
+   "runner": "main",
+   "output": "{\"seq\": 68, \"t_ms\": 204000, \"heater\": false, \"temperature\": 26.283}",
+   "ran_s": 0.1,
+   "runs": 2,
+   "changes": 1,
+   "changed_s": 0.0
+  },
+  {
+   "name": "heater_off",
+   "handle": "hdl_01M7JVWSTJDZVB5HRKMPV2CFN7",
+   "type": "room",
+   "operation": {
+    "capability": "room.heater",
+    "input": {
+     "on": false
+    }
+   },
+   "written": "wake_1",
+   "runner": "main",
+   "output": "{\"heater\": false, \"from_seq\": 67}",
+   "runs": 1,
+   "changes": 0,
+   "changed_s": 1.9
+  }
+ ],
+ "pending": null,
+ "last_wake": {
+  "id": "wake_2",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "About the object `temp`: The heater is off.",
+    "probability": 0.002
+   }
+  ],
+  "object": "temp",
+  "by": "main",
+  "answer": {
+   "end": true
+  }
+ },
+ "lineage": "/tmp/scratch/worlds/goal-pass_20261116_190342/runs/run_20261116_190358_3aa3/lineage.json",
+ "logs": "/tmp/scratch/worlds/goal-pass_20261116_190342/runs/run_20261116_190358_3aa3",
+ "limits": {
+  "elapsed_s": 174.3,
+  "wall_seconds": 1800,
+  "tokens": 31155,
+  "budget_tokens": 5000000
+ },
+ "counts": {
+  "looks": 59,
+  "wakes": 2,
+  "runner_wakes": 0,
+  "rebinds": 1,
+  "operations": 62,
+  "confirmations": 2,
+  "human_requests": 1
+ },
+ "next": "The run ended at your word. Read the handles of the objects with the DataHandles tools."
+}

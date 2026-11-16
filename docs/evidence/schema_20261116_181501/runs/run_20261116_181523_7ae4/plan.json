@@ -1,0 +1,42 @@
+{
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7JS4357W053ZQQEVQ4XC255",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "The output has one row for each region, with the columns region and total.",
+    "The total values are numbers that are not negative."
+   ]
+  },
+  {
+   "name": "rowcount",
+   "handle": "hdl_01M7JS3N2NFY8N3818G9EBJRT0",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "The output is a number of rows that is 600 or less.",
+    "The call works and gives no error about a missing column."
+   ]
+  }
+ ],
+ "variables": [
+  "The totals object works and shows one total for each region, with no error.",
+  "The rowcount object shows 600 rows when the feed ends. Until then, it is less than 600 and it grows."
+ ]
+}

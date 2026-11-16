@@ -1,0 +1,8 @@
+$ uniselector-confirm /tmp/scratch/worlds/goal-held_20261116_190023/runs/run_20261116_190035_1998 req_1 approve --url http://127.0.0.1:39019
+room.heater on room with input {"on": true}
+approve: recorded
+
+$ uniselector-confirm /tmp/scratch/worlds/goal-held_20261116_190023/runs/run_20261116_190314_0412 req_1 approve --url http://127.0.0.1:39019
+room.heater on room with input {"on": false}
+approve: recorded
+

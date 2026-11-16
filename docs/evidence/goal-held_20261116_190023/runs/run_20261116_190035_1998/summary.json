@@ -1,0 +1,68 @@
+{
+ "run": "run_20261116_190035_1998",
+ "state": "failed",
+ "why": "HTTPError: HTTP Error 429: Too Many Requests",
+ "plan": {
+  "variables": [
+   "The temperature in latest is less than 26.",
+   "The heater is on while the temperature is less than 26."
+  ]
+ },
+ "objects": [
+  {
+   "name": "heater_on",
+   "handle": "hdl_01M7JVPPWSN1QRS0W5VPKJB6WE",
+   "type": "room",
+   "operation": {
+    "capability": "room.heater",
+    "input": {
+     "on": true
+    }
+   },
+   "written": "plan",
+   "runner": "human",
+   "output": "{\"heater\": true, \"from_seq\": 4}",
+   "runs": 1,
+   "changes": 0,
+   "changed_s": 153.3
+  },
+  {
+   "name": "latest",
+   "handle": "hdl_01M7JVPPWSN1QRS0W5VPKJB6WE",
+   "type": "room",
+   "operation": {
+    "capability": "room.latest",
+    "input": {}
+   },
+   "written": "plan",
+   "variables": [
+    "The temperature is less than 26."
+   ],
+   "output": "{\"seq\": 54, \"t_ms\": 162000, \"heater\": true, \"temperature\": 25.587}",
+   "ran_s": 0.3,
+   "runs": 52,
+   "changes": 50,
+   "changed_s": 0.2
+  }
+ ],
+ "pending": null,
+ "last_wake": null,
+ "lineage": "/tmp/scratch/worlds/goal-held_20261116_190023/runs/run_20261116_190035_1998/lineage.json",
+ "logs": "/tmp/scratch/worlds/goal-held_20261116_190023/runs/run_20261116_190035_1998",
+ "limits": {
+  "elapsed_s": 153.8,
+  "wall_seconds": 1800,
+  "tokens": 31707,
+  "budget_tokens": 5000000
+ },
+ "counts": {
+  "looks": 51,
+  "wakes": 0,
+  "runner_wakes": 0,
+  "rebinds": 0,
+  "operations": 53,
+  "confirmations": 1,
+  "human_requests": 1
+ },
+ "next": "The harness failed. The reason is in `why`."
+}

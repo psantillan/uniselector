@@ -1,0 +1,109 @@
+{
+ "run": "run_20261116_192556_404d",
+ "state": "done",
+ "why": "the main agent ended the run",
+ "plan": {
+  "variables": [
+   "The row count of row_count is less than 600.",
+   "The totals object shows a total for each region without an error.",
+   "The schema object shows the amount column as amount_usd."
+  ]
+ },
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7JXMTMH5DCY31S445HS8AC5",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "written": "wake_3",
+   "variables": [
+    "The output has one row for each region, with the columns region, total and n.",
+    "The total of each region is a number, not an error."
+   ],
+   "runner": "local",
+   "output": "{\"columns\": [\"region\", \"total\", \"n\"], \"rows\": [[\"north\", 10483.22, 61], [\"east\", 15677.18, 74], [\"south\", 15527.259999999998, 77], [\"west\", 14504.719999999996, 72]], \"truncated\": false}",
+   "ran_s": 2.0,
+   "runs": 1,
+   "changes": 0,
+   "changed_s": 1.9
+  },
+  {
+   "name": "row_count",
+   "handle": "hdl_01M7JX59XHX72X4T56FHS1VT81",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 1
+    }
+   },
+   "written": "plan",
+   "variables": [
+    "The output shows one number named rows, not an error."
+   ],
+   "runner": "local",
+   "output": "{\"columns\": [\"rows\"], \"rows\": [[600]], \"truncated\": false}",
+   "ran_s": 434.0,
+   "runs": 21,
+   "changes": 20,
+   "changed_s": 433.9
+  },
+  {
+   "name": "schema",
+   "handle": "hdl_01M7JX4WHD7ZJ0NQM0DXRZX35D",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.schema",
+    "input": {}
+   },
+   "written": "wake_3",
+   "variables": [
+    "The output lists the columns of the feed, and it is not an error."
+   ],
+   "runner": "local",
+   "output": "{\"columns\": [{\"name\": \"id\", \"type\": \"BIGINT\"}, {\"name\": \"region\", \"type\": \"VARCHAR\"}, {\"name\": \"status\", \"type\": \"VARCHAR\"}, {\"name\": \"amount_usd\", \"type\": \"DOUBLE\"}]}",
+   "ran_s": 2.0,
+   "runs": 1,
+   "changes": 0,
+   "changed_s": 1.9
+  }
+ ],
+ "pending": null,
+ "last_wake": {
+  "id": "wake_4",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "The row count of row_count is less than 600.",
+    "probability": 0.011
+   }
+  ],
+  "by": "main",
+  "answer": {
+   "end": true
+  }
+ },
+ "lineage": "/tmp/scratch/worlds/schema_20261116_192536/runs/run_20261116_192556_404d/lineage.json",
+ "logs": "/tmp/scratch/worlds/schema_20261116_192536/runs/run_20261116_192556_404d",
+ "limits": {
+  "elapsed_s": 496.2,
+  "wall_seconds": 1800,
+  "tokens": 553684,
+  "budget_tokens": 5000000
+ },
+ "counts": {
+  "looks": 29,
+  "wakes": 4,
+  "runner_wakes": 3,
+  "rebinds": 3,
+  "operations": 66,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The run ended at your word. Read the handles of the objects with the DataHandles tools."
+}

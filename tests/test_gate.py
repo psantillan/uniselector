@@ -3,6 +3,8 @@
 The brief gives this shape: the orchestrator holds `graph.run` and not `graph.approve`. The first
 test shows that this shape does not gate an action (docs/GAPS.md, G1 and G2). The second test shows
 the shape that Uniselector uses: the orchestrator's principal never holds an action capability.
+The third test shows the shape for an action that the main agent must not run: only the human's
+principal holds it.
 """
 import pytest
 from datahandles import HandleError
@@ -66,3 +68,28 @@ def test_the_orchestrator_cannot_run_an_action_that_it_does_not_hold(world):
     done = gate.run(graph_id)
     assert (done["status"], done["output"]["heater"]) == ("completed", True)
     assert gate.run(graph_id)["metadata"].get("reused") is True
+
+
+def test_an_action_that_only_the_human_holds_runs_only_as_the_human(tmp_path):
+    """The shape that closes the direct path of the main agent (docs/FAILURES.md, F52): the human's principal owns the resource."""
+    human = connect(str(tmp_path / "state"), "human")
+    planner, orchestrator = Client(human.runtime, "planner"), Client(human.runtime, "uniselector")
+    room = human.register("room", adapter="room", source={"interval_ms": 50})
+    room.grant("planner", [c["name"] for c in room.describe()["capabilities"] if c["name"] != "room.heater"])
+    gate = Gate(planner, "uniselector", "human", human)
+    assert gate.delegate(room.id) == []   # the planner holds no action, so it has none to hand off
+    for client in (planner, orchestrator):
+        assert "room.heater" not in [c["name"] for c in client.resolve(room.id).describe()["capabilities"]]
+        with pytest.raises(HandleError) as denied:
+            client.resolve(room.id).invoke("room.heater", ON)
+        assert denied.value.code == "CAPABILITY_DENIED"
+    # The planner can state the action as a graph, and it can approve its own graph. The graph still does not run as the planner.
+    graph_id = gate.open("g", room.id, "room.heater", ON)
+    gate.approve(graph_id)
+    node = gate.run(graph_id)
+    assert (node["status"], node["error"]["code"]) == ("failed", "CAPABILITY_DENIED") and room.observe()["heater"] is False
+    # The run that failed used the approval: one approval, one run. The human's principal holds the action, so it runs the graph.
+    assert gate.run(graph_id, by_human=True)["status"] == "waiting" and room.observe()["heater"] is False
+    gate.approve(graph_id, by_human=True)
+    done = gate.run(graph_id, by_human=True)
+    assert (done["status"], done["output"]["heater"]) == ("completed", True)

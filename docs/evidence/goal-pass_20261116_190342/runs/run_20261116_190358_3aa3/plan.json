@@ -1,0 +1,34 @@
+{
+ "objects": [
+  {
+   "name": "heater_on",
+   "handle": "hdl_01M7JVWSTJDZVB5HRKMPV2CFN7",
+   "operation": {
+    "capability": "room.heater",
+    "input": {
+     "on": true
+    }
+   },
+   "runners": [
+    "human"
+   ]
+  },
+  {
+   "name": "temp",
+   "handle": "hdl_01M7JVWSTJDZVB5HRKMPV2CFN7",
+   "operation": {
+    "capability": "room.latest",
+    "input": {}
+   },
+   "variables": [
+    "The temperature is less than 26."
+   ],
+   "runners": [
+    "main"
+   ]
+  }
+ ],
+ "variables": [
+  "The temperature is less than 26."
+ ]
+}

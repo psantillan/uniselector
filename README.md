@@ -7,6 +7,9 @@ while it can sleep. The objects then run with no model. A decision model judges 
 each essential variable inside its limits? When one is not, Uniselector wakes the agent with the
 reason and the objects. The agent replaces the object that is broken, and it sleeps again.
 
+An object can name the runners that repair it, in order: a local model, a larger model, the agent.
+Then a wake goes to the runner of the object first, and the agent sleeps through the repair.
+
 It is an implementation of W. Ross Ashby's ultrastable system (*Design for a Brain*, 2nd ed. 1960,
 chapter 7; *An Introduction to Cybernetics*, 1956). The name is the Homeostat's uniselector: the
 stepping switch that chose a new configuration when a unit's essential variable left its limits.
@@ -20,8 +23,8 @@ stepping switch that chose a new configuration when a unit's essential variable 
 | First loop | An object reads its handle again when the handle has a new version |
 | Essential variables | The two hard limits, and the sentences that the main agent wrote |
 | Second loop | The decision model looks at what the objects show, and judges each sentence |
-| Step-function | A wake: the main agent replaces the object that is broken, and nothing else |
-| Uniselector | The main agent at a wake: it selects the next configuration |
+| Step-function | A wake: the runner of the object that is broken replaces it, and nothing else |
+| Uniselector | The runner at a wake: it selects the next configuration. Each object has its own, as each unit of the Homeostat has |
 | The good regulator is a model of the system | The state: each object, its operation, its newest output |
 
 A plan is the objects, the variables, optional notes, and optional lower limits:
@@ -38,6 +41,34 @@ The decision model looks when the output of an object changes. While nothing cha
 after a silence, and the silence doubles after each look. One look is one request: the state, and
 one yes-or-no question for each variable. A variable is outside its limits when the probability of
 "yes" is below 0.5 (`docs/DECISIONS.md`, D31 and D32).
+
+### An object carries its runners
+
+An object can have a check of its own (`variables`) and an ordered list of `runners`:
+
+    {"name": "totals", "handle": "h_...", "operation": {"capability": "dataset.head", "input": {"n": 20}},
+     "variables": ["It shows one row for each region, with a number in total."],
+     "runners": ["local", "top"]}
+
+- A runner is `main` (the main agent), `human` (for an action only), or a model runner that the
+  configuration names: a chat model with the DataHandles tools.
+- When the check of an object is not true, or the object shows an error, the wake goes to the
+  current runner of that object. The runner reads the object and its sources, and it writes one
+  new version behind the same name.
+- A model runner works beside the loop: each other object runs, and the decision model looks.
+- A runner that finds no break gives the wake to the main agent (`to_main`): the check of an
+  object says only that the object works.
+- A variable of the plan has no object. Its wake goes to the main agent at once, also while a
+  runner works.
+- The next look judges the repair. When the repair did not hold, or the runner gave none, the
+  object binds the next runner of its list for one wake. After the last one, the wake comes to
+  the main agent, with what each runner tried. When a repair holds, the object binds its first
+  runner again.
+- A confirmation is the same binding: the runners of an action are `["main", "human"]`, or
+  `["human"]` for a capability that only the human can confirm.
+
+No second model routes a wake. The decision check that exists already says which object is not
+adequate (`docs/DECISIONS.md`, D40 to D44 and D49 to D52).
 
 The harness enforces two things, because they must hold when a model is wrong:
 
@@ -70,9 +101,14 @@ The MCP server has four tools:
 A human decides with `uniselector-confirm`. `docs/HOOKS.md` has the hook that shows a pending
 request to the user of Claude Code or Codex.
 
-### The two models
+### The models
 
 - **The main agent** is the MCP client. Its model is a setting of that client, not of Uniselector.
+- **A model runner** is a `[runners.NAME]` table of the configuration: `url` (a chat completions
+  API in the OpenAI form), `model`, `wake_tokens` (the most that one wake can spend), and
+  optionally `key_env` and `body` (more keys for each request). An object names it in `runners`.
+  Before you name a local model, read the context that its server gives it
+  (`docs/FAILURES.md`, F54).
 - **The decision model** is in the `[decision]` section of the configuration: `decision_url`,
   `decision_model`, and `decision_key_env` (the name of the environment variable that has the API
   key; the key is in no file). A decision model is a model of its own class: it reads a state and
@@ -145,15 +181,64 @@ watches the feed itself. Each row is one run.
   goal task alone, with the same prompt and the same room: 183.3 s, 86 turns, context 5,796 to
   22,010, $0.323 (`stream-direct_20261116_003123`).
 
+### Model runners
+
+Each row is one run of the schema task with the 60 s feed, on 2026-11-16 (UTC). The main agent
+could give an object the runners `local` and `top`. `local` was `qwen3.8-27b` behind vLLM on a
+machine of the local network, with 245,760 tokens of context. `top` was
+`deepseek/deepseek-v4.1-flash-1017` on OpenRouter. The token budget was 5,000,000. One wake could
+spend 2,000,000 tokens (`local`) or 1,000,000 (`top`). The cost of the run is the cost of the
+decision model and of `top`.
+
+| Code | Answer | Session time | Turns of the main agent | Main agent context, first turn to peak | Cost of the main agent | Outcome of the run | Looks | Wakes | Starts of a model runner | Run tokens | Cost of the run |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| D50 | right | 768.3 s | 16 | 8,471 to 16,014 | $0.0934 | `done` after 734.1 s | 29 | 2 | 3 | 778,229 | $0.134062 |
+| D51 | right | 533.8 s | 18 | 8,531 to 18,409 | $0.1130 | `done` after 496.2 s | 29 | 4 | 3 | 553,684 | $0.090073 |
+| D52 | right | 101.2 s | 19 | 8,611 to 20,456 | $0.1320 | `done` after 56.1 s | 19 | 4 | 1 | 50,636 | $0.000479 |
+
+- The first column names the newest decision of `docs/DECISIONS.md` that the code of the run had.
+- In the first two runs, the column got its new name, and `local` repaired the object `totals`
+  while the main agent slept. The repair took 15.3 s and 27,991 tokens in the first run, and 45.8 s
+  and 78,746 tokens in the second one. Each repair held, and its totals were right.
+- The first two sessions took 9 to 13 times as long as the feed. With no model runner, the same
+  task took 83.1 s (the first table). The cause was not the repair of `totals`. The main agent
+  gave a model runner a check that no repair could make true: the goal of the plan (F57), and a
+  check for a change of the data (F60). `local` gave no repair that held. `top` then read for
+  580 s and 430 s, spent 676,367 and 414,109 tokens, and gave no result (F57, F61). The main
+  agent waited for `top` (F62).
+- In the third run, a variable of the plan woke the main agent while a runner worked (D52). The
+  goal woke the main agent 0.4 s after its object showed the last rows, and the session took
+  101.2 s.
+- In the third run, the repair of `local` was wrong: it took 18.3 s and 26,706 tokens, and it left
+  out the filter on `status`. The check of the object was true for the wrong totals, so the repair
+  held (F64). At the next wake, the main agent saw that a runner wrote the object, read it, and
+  built it again. So the model runner saved the main agent no work in that run: the main agent
+  cost $0.1320, and $0.0929 in the run with no model runner.
+- The evidence, in the order of the table: `schema_20261116_184734`, `schema_20261116_192536`,
+  `schema_20261116_195950`.
+  `schema_20261116_181501` is the first run with model runners. It used a local model with 4,096
+  tokens of context and a budget of 400,000 tokens, and it ended at the budget (F53 to F56).
+
+`tasks/repair.py` wakes one runner for one broken object, with no main agent: an object counts
+the paid orders of a feed, and the column `status` gets the name `state`. Each row is one run.
+
+| Runner | New version of the object | Calls | Tokens | Time |
+| --- | --- | --- | --- | --- |
+| `qwen3.8-27b`, vLLM, 245,760 tokens of context | right | 7 | 13,992 | 10.1 s |
+| `ornith-1.5:9b`, Ollama | right | 7 | 19,242 | 58.3 s |
+
+The evidence: `repair_20261116_184658` and `repair_20261116_181108`.
+
 ### Detector check
 
-`tasks/probe.py` gives the decision model 12 small states and 24 sentences with a known answer: a
+`tasks/probe.py` gives the decision model 16 small states and 32 statements with a known answer: a
 schema error, a row count over a limit, a new status value, a sensor that stopped, a goal that is
-met, a job that ended, and the same states with no fault. The model was right on 24 of 24. It gave 0.9884 to 0.9995 to each
-true sentence and 0.0004 to 0.0438 to each sentence that was not true. The check cost 4,244 tokens
-($0.000084). The evidence: `docs/evidence/probe_20261116`. The states are small and the author of
-the detector wrote them, so the check shows that the threshold separates the two cases. It is not
-a measure of accuracy.
+met, a job that ended, a quiet object, a check of one object, and the same states with no fault. The model was
+right on 32 of 32. It gave 0.9956 to 0.9995 to each true statement and 0.0003 to 0.0493 to each
+statement that was not true. The check cost 6,006 tokens ($0.000119). The evidence:
+`docs/evidence/probe_20261116_v4`. The states are small and the author of the detector wrote
+them, so the check shows that the threshold separates the two cases. It is not a measure of
+accuracy.
 
 ### What the rows do not show
 
@@ -161,17 +246,27 @@ a measure of accuracy.
   gave 54 to 58 looks in the three stream runs, and all but one or two of the looks in each run
   found nothing. At the 387 tokens for each look of the goal run, the budget of 400,000 tokens ends such a run
   after about 50 minutes (F49). An object whose output changes only when the work needs attention
-  removes that cost. No run measured it.
+  removes that cost. No run measured it. In one run, the Decisions API refused look 52 with HTTP
+  429 (F58). Such a look now stays due, and no run met a busy API after that change.
+- A model runner can replace an object that works (F60). In two wakes, the runner `top` spent
+  1,090,476 tokens and gave no result (F57, F61). No limit of a wake changed: the token budget
+  and the wall time are the limits.
+- After a repair that does not hold, the next runner gets the version of that repair, not the
+  version that the main agent wrote (`docs/DECISIONS.md`, D52).
+- A repair that the check of its object accepts can be wrong: a check rejects only what it states
+  (F64). One of the three repairs of the totals by `local` was wrong in this way.
 - One wake had no fault: the main agent wrote a variable about columns that its object did not
   show (F47).
 - The runs used the code before one change: a long output kept only its first part then. It keeps
   its first and its last part now. A new value in the middle of a long output still does not
   reach the decision model (F50).
 - In the goal task with no human-only capability, the main agent switched the heater itself. The
-  gate is in the path of the orchestrator only (F52).
+  gate is in the path of the orchestrator only (F52). When only the human's principal holds the
+  action, the protocol refuses that call: in `goal-held_20261116_190023` the human approved and
+  ran each switch.
 - In the api task, the main agent gave its answer at the wake and did not end the run (F51).
 - No run made the main agent compact its context, so no run tested a wake into a fresh context.
-- `docs/FAILURES.md` has 52 entries. Each one has its evidence and says if it is open.
+- `docs/FAILURES.md` has 64 entries. Each one has its evidence and says if it is open.
 
 ## Documents
 

@@ -1,0 +1,24 @@
+[limits]
+budget_tokens = 400000
+wall_seconds = 1800
+
+[runtime]
+target = "http://127.0.0.1:33333"
+runs_dir = "/tmp/scratch/worlds/schema_20261116_181501/runs"
+
+[decision]
+decision_model = "perplexity/pplx-decider-v1.2"
+
+[actions]
+human_only = []
+
+[runners.local]
+url = "http://local-model:11400/v1/chat/completions"
+model = "ornith-1.5:9b"
+wake_tokens = 60000
+
+[runners.top]
+url = "https://openrouter.ai/api/v1/chat/completions"
+model = "deepseek/deepseek-v4.1-flash-1017"
+wake_tokens = 120000
+key_env = "OPENROUTER_API_KEY"

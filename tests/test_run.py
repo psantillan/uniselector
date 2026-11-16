@@ -10,9 +10,12 @@ from pathlib import Path
 
 import pytest
 
-from conftest import finish, harness, shows, spent
+from conftest import Scripted, finish, harness, shows, spent
 from uniselector import confirm
-from uniselector.decide import NO_ERROR
+from datahandles.sdk import connect
+
+from uniselector.decide import NO_ERROR, Busy
+from uniselector.run import ENDED, Harness
 
 SLEEP = "The count is less than 1000."
 
@@ -146,7 +149,8 @@ def test_a_slow_operation_does_not_stop_the_other_objects_and_the_wall_time_stop
     h = harness(cfg)
     slow = h.clients["planner"].register("slow", adapter="script", source={"path": str(script)})
     t0 = time.time()
-    run = h.submit({"objects": [thing("job", slow, "script.run"), thing("all", table(h, events))], "variables": [SLEEP]})["run"]
+    objects = [{**thing("job", slow, "script.run"), "variables": ["The job gave a total."]}, {**thing("all", table(h, events)), "variables": ["The count is a number."]}]
+    run = h.submit({"objects": objects, "variables": [SLEEP]})["run"]
     shows(h, run, "all", lambda o: o["runs"] == 1)
     append(events, 2)
     assert shows(h, run, "all", lambda o: o["runs"] == 2)["output"] == json.dumps({"rows": 62})
@@ -155,6 +159,9 @@ def test_a_slow_operation_does_not_stop_the_other_objects_and_the_wall_time_stop
     # The decision model saw that the operation ran, and for how long.
     seen = [o for state, _ in h.decide.seen for o in state["objects"] if o["name"] == "job"]
     assert seen and all("running_s" in o and "output" not in o for o in seen)
+    # The check of an object is a question only after the object showed something: the job did not, so no look judged it.
+    asked = {statement for _, statements in h.decide.seen for statement in statements}
+    assert "About the object `all`: The count is a number." in asked and not [statement for statement in asked if "`job`" in statement]
 
 
 def test_a_silent_feed_gets_a_look_at_times_that_double(cfg, events):
@@ -167,6 +174,58 @@ def test_a_silent_feed_gets_a_look_at_times_that_double(cfg, events):
     # Look k is due after a silence of 2 ticks times 2 ** k. A slow machine makes a look late, never early.
     assert all(s >= 2 * cfg.wait_seconds * 2 ** k - 0.05 for k, s in enumerate(silent)), silent
     assert summary["pending"]["outside"][0]["variable"] == "The feed got a new row in the last second."
+
+
+def test_a_busy_decision_model_makes_no_look_and_the_look_stays_due(cfg, events):
+    h = harness(cfg)
+    script, calls = h.decide, []
+
+    def busy(state, statements):   # the API refuses the first two requests
+        calls.append(len(statements))
+        if len(calls) <= 2:
+            raise Busy("HTTP 429: Too Many Requests")
+        return script(state, statements)
+
+    h.decide = busy
+    run = h.submit({"objects": [thing("all", table(h, events))], "variables": [SLEEP]})["run"]
+    summary = spent(h, run, 100)
+    assert (summary["state"], summary["counts"]["looks"], summary["limits"]["tokens"]) == ("running", 1, 100)
+    log = lines(summary, "events")
+    assert [e["why"] for e in log if e["event"] == "no_look"] == ["HTTP 429: Too Many Requests"] * 2
+    assert [look["reason"] for look in lines(summary, "decisions")] == ["change"] and summary["objects"][0]["output"] == json.dumps({"rows": 60})
+
+
+def test_a_look_at_a_silence_stays_due_when_the_decision_model_is_busy(cfg, events):
+    h = harness(cfg, lambda state, statement: state["objects"][0]["changed_s"] < 1.0)
+    script, refused = h.decide, []
+
+    def busy(state, statements):   # the API refuses one request: the look that is due after a silence of 0.8 s
+        if not refused and state["objects"][0]["changed_s"] >= 0.75:
+            refused.append(state["objects"][0]["changed_s"])
+            raise Busy("HTTP 503: Service Unavailable")
+        return script(state, statements)
+
+    h.decide = busy
+    run = h.submit({"objects": [thing("all", table(h, events))], "variables": ["The feed got a new row in the last second."]})["run"]
+    summary = finish(h, run, until=("woke",))
+    silent = [look["state"]["objects"][0]["changed_s"] for look in lines(summary, "decisions")[1:]]
+    # The look comes at the next tick. It does not wait for the silence of 1.6 s, which is the time of the look after it.
+    assert len(refused) == 1 and [s for s in silent if s >= 0.75][0] < 1.5, silent
+
+
+def test_a_quiet_object_shows_that_its_source_is_live(cfg, events):
+    """The output of the object does not change, so no look comes from a change. The time of its last run shows that the feed stopped."""
+    h = harness(cfg, lambda state, statement: state["objects"][0].get("ran_s", 0.0) < 1.0)
+    large = table(h, events).invoke("dataset.filter", {"where": [{"column": "amount", "op": "gt", "value": 10_000}]})
+    run = h.submit({"objects": [thing("large", large)], "variables": ["The feed got a new row in the last second."]})["run"]
+    for _ in range(15):   # a new row of no interest at each tick
+        append(events, 1)
+        time.sleep(cfg.wait_seconds)
+    live = h.status(run)
+    assert live["state"] == "running" and live["counts"]["operations"] >= 8 and live["counts"]["looks"] <= 5, live["counts"]
+    summary = finish(h, run, until=("woke",), seconds=10)   # the feed stopped
+    shown = lines(summary, "decisions")[-1]["state"]["objects"][0]
+    assert shown["ran_s"] >= 1.0 and shown["changes"] == 0 and shown["output"] == json.dumps({"rows": 0})
 
 
 def room(h):
@@ -208,31 +267,138 @@ def test_a_denied_action_does_not_run_and_the_denial_wakes_the_main_agent(cfg):
     summary = finish(h, run, until=("woke",))
     assert target.observe()["heater"] is False
     assert summary["objects"][0]["error"]["code"] == "DENIED" and summary["pending"]["outside"][0]["variable"] == NO_ERROR
-    h.answer(run, "wake_1", {"remove": ["heater"], "end": True})
+    # A denial is no trial of a repair: each next request on the object is with the main agent again.
+    for wake, request in (("wake_1", "req_2"), ("wake_2", "req_3")):
+        h.answer(run, wake, {"objects": [thing("heater", target, "room.heater", on=True)]})
+        summary = finish(h, run, until=("waiting_confirm", "waiting_human"))
+        assert (summary["state"], summary["pending"]["id"]) == ("waiting_confirm", request) and binds(summary) == []
+        h.confirm(run, request, "deny")
+        finish(h, run, until=("woke",))
+    h.answer(run, "wake_3", {"remove": ["heater"], "end": True})
     summary = finish(h, run)
     assert summary["state"] == "done" and [o["name"] for o in summary["objects"]] == ["reading"]
 
 
-def test_a_human_only_action_needs_the_human(cfg, monkeypatch, capsys):
+def by_human(monkeypatch, summary, request, decision="approve"):
+    monkeypatch.setattr(sys, "argv", ["uniselector-confirm", summary["logs"], request, decision])
+    confirm.main()
+
+
+def binds(summary):
+    return [(e["object"], e["from"], e["to"]) for e in lines(summary, "events") if e["event"] == "rebind"]
+
+
+def test_a_human_only_action_starts_with_the_human(cfg, monkeypatch, capsys):
     cfg.human_only = ["room.heater"]
     h = harness(cfg)
     target, plan = heat(h)
     run = h.submit(plan)["run"]
-    request = finish(h, run, until=("waiting_confirm",))["pending"]
-    assert request["human_only"] is True
+    summary = finish(h, run, until=("waiting_human",))   # the runner of the object is the human: the request does not stop at the main agent
+    request = summary["pending"]
+    assert (request["human_only"], request["with"], summary["objects"][0]["runner"]) == (True, "human", "human")
+    assert request["command"] == f"uniselector-confirm {summary['logs']} req_1 approve"
     out = h.confirm(run, request["id"], "approve")   # the main agent cannot approve it
     assert out["state"] == "waiting_human" and "human" in out["note"]
-    summary = h.status(run)
-    assert summary["state"] == "waiting_human" and summary["pending"]["command"] == f"uniselector-confirm {summary['logs']} req_1 approve"
     last = lines(summary, "events")[-1]   # the log shows where the request is
-    assert last["event"] == "waiting_human" and last["pending"]["command"] == summary["pending"]["command"]
+    assert last["event"] == "waiting_human" and last["pending"]["command"] == request["command"]
     time.sleep(0.7)
     assert target.observe()["heater"] is False
-    monkeypatch.setattr(sys, "argv", ["uniselector-confirm", summary["logs"], request["id"], "approve"])
-    confirm.main()
+    by_human(monkeypatch, summary, request["id"])
     assert "room.heater on room" in capsys.readouterr().out
     shows(h, run, "heater", lambda o: o["runs"] == 1)
-    assert target.observe()["heater"] is True and h.status(run)["counts"]["human_requests"] == 1
+    summary = h.status(run)
+    assert target.observe()["heater"] is True and summary["counts"]["human_requests"] == 1 and binds(summary) == []
+
+
+def test_a_denial_by_the_human_wakes_the_main_agent(cfg, monkeypatch):
+    cfg.human_only = ["room.heater"]
+    h = harness(cfg)
+    target, plan = heat(h)
+    run = h.submit(plan)["run"]
+    summary = finish(h, run, until=("waiting_human",))
+    by_human(monkeypatch, summary, summary["pending"]["id"], "deny")
+    summary = finish(h, run, until=("woke", *ENDED))   # the human confirms actions. The human repairs nothing
+    assert (summary["state"], summary["pending"]["object"], summary["objects"][0]["error"]["code"]) == ("woke", "heater", "DENIED")
+
+
+def test_the_main_agent_binds_the_human_for_one_decision(cfg, monkeypatch):
+    h = harness(cfg)
+    target, plan = heat(h)
+    run = h.submit(plan)["run"]
+    request = finish(h, run, until=("waiting_confirm",))["pending"]
+    assert (request["with"], request["human_only"]) == ("main agent", False)
+    assert h.confirm(run, request["id"], "human")["state"] == "waiting_human"
+    summary = h.status(run)
+    assert (summary["pending"]["with"], summary["objects"][0]["runner"]) == ("human", "human") and binds(summary) == [("heater", "main", "human")]
+    by_human(monkeypatch, summary, request["id"])
+    shows(h, run, "heater", lambda o: o["runs"] == 1)
+    assert target.observe()["heater"] is True
+    # The next decision on the same object is with the main agent again: the human had it for one decision.
+    summary = h.status(run)
+    assert binds(summary) == [("heater", "main", "human"), ("heater", "human", "main")] and summary["objects"][0]["runner"] == "main"
+
+
+def test_the_human_runs_an_action_that_only_they_hold_with_a_token_that_the_run_does_not_have(cfg, tmp_path, monkeypatch):
+    """A DataHandles HTTP server, as in a real session. The process of the run has the tokens of the main agent and of the orchestrator."""
+    tokens = {role: f"token-of-{role}" for role in (cfg.planner, cfg.orchestrator, cfg.human)}
+    (tmp_path / "tokens.json").write_text(json.dumps({token: {"principal": role, "create": True} for role, token in tokens.items()}))
+    with socket.socket() as free:
+        free.bind(("127.0.0.1", 0))
+        port = free.getsockname()[1]
+    server = subprocess.Popen([sys.executable, "-m", "datahandles.protocols.http", "--state", str(tmp_path / "state"), "--tokens",
+                               str(tmp_path / "tokens.json"), "--port", str(port)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    cfg.target = f"http://127.0.0.1:{port}"
+    try:
+        end = time.time() + 20
+        while True:
+            try:
+                human = connect(cfg.target, cfg.human, token=tokens[cfg.human])
+                target = human.register("room", adapter="room", source={"interval_ms": 20})
+                break
+            except OSError:
+                assert time.time() < end
+                time.sleep(0.2)
+        target.grant(cfg.planner, [c["name"] for c in target.describe()["capabilities"] if c["name"] != "room.heater"])
+        h = Harness(cfg, clients={"planner": connect(cfg.target, cfg.planner, token=tokens[cfg.planner]),
+                                  "orchestrator": connect(cfg.target, cfg.orchestrator, token=tokens[cfg.orchestrator])}, decide=Scripted())
+        switch = {name: {**thing(name, target, "room.heater", on=name == "on"), "runners": ["human"]} for name in ("on", "off")}
+        run = h.submit({"objects": [switch["on"], switch["off"]], "variables": ["The room is cold."]})["run"]
+        summary = finish(h, run, until=("waiting_human",))
+        assert summary["pending"]["holder"] == "human" and summary["pending"]["command"].endswith(f"req_1 approve --url {cfg.target}")
+        monkeypatch.setenv("UNISELECTOR_HUMAN_TOKEN", tokens[cfg.human])
+        monkeypatch.setattr(sys, "argv", ["uniselector-confirm", summary["logs"], "req_1", "approve", "--url", cfg.target])
+        confirm.main()   # the command approves the graph and runs it, as the human's principal
+        shown = shows(h, run, "on", lambda o: o["runs"] == 1)
+        assert json.loads(shown["output"])["heater"] is True and target.observe()["heater"] is True
+        # With no `--url`, nothing approved the second switch in DataHandles, and the process of the run cannot run it.
+        finish(h, run, until=("waiting_human",))
+        by_human(monkeypatch, summary, "req_2")
+        assert shows(h, run, "off", lambda o: o["runs"] == 1)["error"]["code"] == "NOT_APPROVED" and target.observe()["heater"] is True
+        h.close()
+    finally:
+        server.terminate()
+        server.wait(10)
+
+
+def test_an_action_that_only_the_human_holds_runs_with_the_human(cfg, monkeypatch):
+    """The main agent's principal does not hold the switch, so it cannot go around the gate (docs/FAILURES.md, F52)."""
+    h = harness(cfg)
+    target = h.clients["human"].register("room", adapter="room", source={"interval_ms": 20})
+    target.grant(cfg.planner, [c["name"] for c in target.describe()["capabilities"] if c["name"] != "room.heater"])
+    theirs = h.clients["planner"].resolve(target.id)
+    with pytest.raises(Exception, match="CAPABILITY_DENIED"):
+        theirs.invoke("room.heater", {"on": True})
+    heater = thing("heater", theirs, "room.heater", on=True)
+    with pytest.raises(ValueError, match="only the human holds"):   # the plan must say who holds the action
+        h.submit({"objects": [heater], "variables": ["The room is cold."]})
+    run = h.submit({"objects": [{**heater, "runners": ["human"]}, thing("reading", theirs, "room.latest")], "variables": ["The room is cold."]})["run"]
+    summary = finish(h, run, until=("waiting_human",))
+    request = summary["pending"]
+    assert (request["holder"], request["human_only"], request["capability"], request["input"]) == ("human", True, "room.heater", {"on": True})
+    assert h.confirm(run, request["id"], "approve")["state"] == "waiting_human" and target.observe()["heater"] is False
+    by_human(monkeypatch, summary, request["id"])
+    shown = shows(h, run, "heater", lambda o: o["runs"] == 1)
+    assert json.loads(shown["output"])["heater"] is True and target.observe()["heater"] is True
 
 
 def test_a_run_ends_when_its_process_ends(cfg, events):

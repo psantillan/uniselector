@@ -2,7 +2,8 @@
 
 A plan is the objects that the main agent built, and the essential variables. An object is a handle
 and one operation that reads a bounded value from it. An essential variable is a sentence that is
-true while the main agent can sleep.
+true while the main agent can sleep. An object can carry variables of its own, and the names of its
+runners: a runner is the agent that answers for the object when the object needs one.
 """
 from jsonschema import Draft202012Validator
 
@@ -15,6 +16,13 @@ OBJECT_SCHEMA = {
         "operation": {"type": "object", "additionalProperties": False, "required": ["capability"],
                       "description": "One operation on the handle that gives a small value. The run does it again after each change of the handle.",
                       "properties": {"capability": {"type": "string", "minLength": 1}, "input": {"type": "object"}}},
+        "variables": {"type": "array", "items": {"type": "string", "minLength": 1},
+                      "description": "Optional. The check of this object: sentences about its output that are true while it works. When one "
+                                     "is not true, the wake goes to the runner of this object."},
+        "runners": {"type": "array", "items": {"type": "string", "minLength": 1},
+                    "description": "Optional. Who answers for this object, in order. The first runner repairs the object at a wake, or "
+                                   "confirms its action. When its repair does not hold, the next runner gets one wake. After the last one, "
+                                   "the wake comes to you. `main` is you. `human` is the user, for an action only."},
     },
 }
 _VARIABLES = {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1},
@@ -37,7 +45,8 @@ ANSWER_SCHEMA = {
     "type": "object", "additionalProperties": False, "minProperties": 1,
     "properties": {
         "objects": {"type": "array", "items": OBJECT_SCHEMA,
-                    "description": "The new versions. An object with a name of the run replaces that object. Each other object stays as it is."},
+                    "description": "The new versions. An object with a name of the run replaces that object, and it keeps the variables and the "
+                                   "runners of that object when it does not state them. Each other object stays as it is."},
         "remove": {"type": "array", "items": {"type": "string"}, "description": "The names of the objects that the run must drop."},
         "variables": {**_VARIABLES, "description": "A new list of essential variables, when the old list is not correct now."},
         "end": {"const": True, "description": "End the run after the objects of this answer ran one time."},

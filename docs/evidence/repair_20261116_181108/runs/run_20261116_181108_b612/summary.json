@@ -1,0 +1,82 @@
+{
+ "run": "run_20261116_181108_b612",
+ "state": "left",
+ "why": "the MCP server of the main agent ended before the run did",
+ "plan": {
+  "variables": [
+   "The object `paid` shows a count of rows."
+  ]
+ },
+ "objects": [
+  {
+   "name": "paid",
+   "handle": "hdl_01M7JRY4Y1MP6BDNJ423D68PP8",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   },
+   "written": "wake_1",
+   "variables": [
+    "It shows the count of the paid orders: a number that is more than 0."
+   ],
+   "runner": "runner",
+   "output": "{\"rows\": 135}",
+   "runs": 1,
+   "changes": 0,
+   "changed_s": 0.2
+  }
+ ],
+ "pending": null,
+ "last_wake": {
+  "id": "wake_1",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "No object shows an error.",
+    "probability": 0.0
+   },
+   {
+    "variable": "The object `paid` shows a count of rows.",
+    "probability": 0.027
+   },
+   {
+    "variable": "About the object `paid`: It shows the count of the paid orders: a number that is more than 0.",
+    "probability": 0.001
+   }
+  ],
+  "object": "paid",
+  "by": "runner",
+  "answer": {
+   "objects": [
+    {
+     "name": "paid",
+     "handle": "hdl_01M7JRY4Y1MP6BDNJ423D68PP8",
+     "operation": {
+      "capability": "dataset.count",
+      "input": {}
+     }
+    }
+   ]
+  }
+ },
+ "lineage": "/tmp/scratch/worlds/repair_20261116_181108/runs/run_20261116_181108_b612/lineage.json",
+ "logs": "/tmp/scratch/worlds/repair_20261116_181108/runs/run_20261116_181108_b612",
+ "limits": {
+  "elapsed_s": 61.0,
+  "wall_seconds": 600,
+  "tokens": 20269,
+  "budget_tokens": 120000,
+  "projected_tokens": 20269
+ },
+ "counts": {
+  "looks": 3,
+  "wakes": 1,
+  "runner_wakes": 1,
+  "rebinds": 0,
+  "operations": 3,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The process of the run ended before the run did. The handles of the objects stay usable. Call plan_submit to watch them again."
+}

@@ -1,0 +1,74 @@
+{
+ "id": "gr_run_20261116_181108_b612",
+ "nodes": [
+  {
+   "id": "hdl_01M7JRWGZYN9RJSV5R3MSW5W78",
+   "kind": "resource",
+   "reference": "hdl_01M7JRWGZYN9RJSV5R3MSW5W78"
+  },
+  {
+   "id": "op_01M7JRWH0JA1RABP1YF08P3APW",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "status",
+       "op": "eq",
+       "value": "paid"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7JRWH0QZDQWHY7NQYGW1RRM",
+   "kind": "derived",
+   "reference": "hdl_01M7JRWH0QZDQWHY7NQYGW1RRM"
+  },
+  {
+   "id": "op_01M7JRY4XWGDN09N3BSGRAMZZ4",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "state",
+       "op": "eq",
+       "value": "paid"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7JRY4Y1MP6BDNJ423D68PP8",
+   "kind": "derived",
+   "reference": "hdl_01M7JRY4Y1MP6BDNJ423D68PP8"
+  }
+ ],
+ "edges": [
+  {
+   "from": "hdl_01M7JRWGZYN9RJSV5R3MSW5W78",
+   "to": "op_01M7JRWH0JA1RABP1YF08P3APW"
+  },
+  {
+   "from": "op_01M7JRWH0JA1RABP1YF08P3APW",
+   "to": "hdl_01M7JRWH0QZDQWHY7NQYGW1RRM"
+  },
+  {
+   "from": "hdl_01M7JRWGZYN9RJSV5R3MSW5W78",
+   "to": "op_01M7JRY4XWGDN09N3BSGRAMZZ4"
+  },
+  {
+   "from": "op_01M7JRY4XWGDN09N3BSGRAMZZ4",
+   "to": "hdl_01M7JRY4Y1MP6BDNJ423D68PP8"
+  }
+ ],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}

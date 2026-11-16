@@ -1,0 +1,13 @@
+[limits]
+budget_tokens = 5000000
+wall_seconds = 1800
+
+[runtime]
+target = "http://127.0.0.1:39019"
+runs_dir = "/tmp/scratch/worlds/goal-held_20261116_190023/runs"
+
+[decision]
+decision_model = "perplexity/pplx-decider-v1.2"
+
+[actions]
+human_only = []

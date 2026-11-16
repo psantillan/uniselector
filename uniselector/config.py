@@ -14,7 +14,7 @@ from datahandles.sdk import Client, connect
 @dataclass
 class Config:
     # The hard limits. A plan can ask for lower limits, never for higher ones.
-    budget_tokens: int    # model tokens (input + output) of the decision model and the sub-agents
+    budget_tokens: int    # model tokens of the decision model (input) and of the model runners (input + output)
     wall_seconds: float   # seconds that the run works; the clock stops while the run waits for the main agent or the human
 
     # Where the DataHandles runtime is: a state directory (a runtime in this process) or an http(s) URL.
@@ -39,6 +39,9 @@ class Config:
     wait_seconds: float = 2.0   # the time of one tick: the run observes each object one time (D35)
     value_chars: int = 600      # the size of one output in the state and in a summary (D36)
 
+    # The model runners: one `[runners.NAME]` table for each (D43). An object names its runners. The main agent and the human need no table.
+    runners: dict = field(default_factory=dict)
+
 
 def load(path) -> Config:
     data = tomllib.loads(Path(path).read_text())
@@ -46,11 +49,17 @@ def load(path) -> Config:
     missing = [k for k in ("budget_tokens", "wall_seconds") if k not in limits]
     if missing:
         raise ValueError(f"{path}: [limits] must state {' and '.join(missing)}. The user decides the hard limits.")
+    runners = data.pop("runners", {})
+    for name, runner in runners.items():
+        # `wake_tokens` has no default: it is a limit of the spend, so the user states it.
+        if name in ("main", "human") or not {"url", "model", "wake_tokens"} <= set(runner) <= {"url", "model", "wake_tokens", "key_env", "body"}:
+            raise ValueError(f"{path}: [runners.{name}] must state url, model and wake_tokens, and it can state key_env and body. "
+                             "The names main and human are taken.")
     flat = {**limits, **{k: v for section in data.values() for k, v in section.items()}}
     unknown = sorted(set(flat) - {f.name for f in fields(Config)})
     if unknown:
         raise ValueError(f"{path}: unknown settings {unknown}")
-    return Config(**flat)
+    return Config(**flat, runners=runners)
 
 
 def clients(cfg: Config) -> dict:

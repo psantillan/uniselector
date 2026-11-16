@@ -25,10 +25,17 @@ INSTRUCTIONS = (
     "Uniselector watches objects that you built, so that you do not monitor. Do not read data again and again to see if something "
     "changed. Build the thing that monitors, then leave. First build each object with the DataHandles tools: a handle (for example a "
     "filter and an aggregate on a dataset) and one operation on it that gives a small value: the run keeps only the first and the last "
-    "part of a long output. A handle that you derive reads the newest data of its source at each read. Then state the essential variables: sentences that are true while you can sleep. Call "
+    "part of a long output. Each look of the decision model costs tokens, and a look comes at each change of an output: prefer an "
+    "object whose output changes only when the work needs attention. An object shows when its operation last ran (`ran_s`), so a "
+    "variable can state that a quiet object still gets new data. A handle that you derive reads the newest data of its source at each read. Then state the essential variables: sentences that are true while you can sleep. Call "
     "plan_submit, then plan_status with wait_seconds. The objects run without you, and a decision model judges the variables. It "
     "wakes you when one is not true. The summary then has the reason and the objects. Build a new version of only the object that is "
-    "broken, write it back with plan_answer, and sleep again.")
+    "broken, write it back with plan_answer, and sleep again. An object can carry a check of its own (`variables`) and the runners "
+    "that answer for it, in order (`runners`): a wake about the object goes to its runner first, and to you after the last one. "
+    "The check of an object says only that the object works. A sentence that tells you that the work is done, or that needs your "
+    "decision, is a variable of the plan: it has no object, and its wake comes to you at once, also while a runner repairs an object. "
+    "So do not state the check of an object again as a variable of the plan. A model runner can replace the handle and the operation "
+    "of an object. It cannot change the data. A check that only a change of the data can make true again is a variable of the plan.")
 
 _RUN = {"type": "string", "description": "The run id from plan_submit."}
 TOOLS = [
@@ -70,6 +77,12 @@ def dispatch(harness: Harness, name: str, arguments: dict) -> dict:
         return {"error": {"code": "INVALID_INPUT", "message": str(e)}}
 
 
+def instructions(harness: Harness) -> str:
+    """The instructions, with the names of the runners that an object can name."""
+    names = ", ".join(f"`{name}`" for name in sorted(harness.runners))
+    return f"{INSTRUCTIONS} The runners of this configuration: `main` (you){', ' + names if names else ''}, and `human` (for an action only)."
+
+
 def server(harness: Harness) -> Server:
     tools = [types.Tool(name=t["name"], description=t["description"], input_schema=t["parameters"]) for t in TOOLS]
 
@@ -81,7 +94,7 @@ def server(harness: Harness) -> Server:
         return types.CallToolResult(content=[types.TextContent(type="text", text=json.dumps(out, default=str))],
                                     structured_content=json.loads(json.dumps(out, default=str)), is_error="error" in out)
 
-    return Server("uniselector", instructions=INSTRUCTIONS, on_list_tools=list_tools, on_call_tool=call_tool)
+    return Server("uniselector", instructions=instructions(harness), on_list_tools=list_tools, on_call_tool=call_tool)
 
 
 def main() -> None:

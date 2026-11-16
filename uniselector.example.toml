@@ -2,7 +2,7 @@
 
 # The hard limits. The user decides them. They have no default.
 [limits]
-budget_tokens = 400000   # input tokens of the decision model, for one run
+budget_tokens = 5000000  # tokens of the decision model (input) and of the model runners (input + output), for one run
 wall_seconds = 1800      # seconds that one run works. The clock stops while the run waits for the main agent or the human
 
 # Where the DataHandles runtime is: a state directory, or the URL of a DataHandles HTTP server.
@@ -23,3 +23,26 @@ decision_key_env = "OPENROUTER_API_KEY"
 # Capabilities that only the human can confirm. The main agent cannot approve them.
 [actions]
 human_only = []
+
+# Model runners: chat models that an object can name in its `runners`. A model runner repairs an
+# object at a wake, with the DataHandles tools, as the orchestrator's principal. `url` is a chat
+# completions API in the OpenAI form. `wake_tokens` is the most that one wake of this runner can
+# spend: each request sends the whole conversation again, so a wake of 30 requests in a context of
+# 100,000 tokens can spend 2,000,000 tokens. `key_env` names the environment variable with the API
+# key, when the API needs one. `body` has more keys for each request, when the server of the model
+# needs them. The names `main` (the main agent) and `human` need no table.
+#
+# Before you name a local model, read the context that its server gives it. A server can give less
+# than the model has: Ollama gives 4,096 tokens when no one sets `num_ctx`.
+#
+# [runners.local]
+# url = "http://127.0.0.1:8000/v1/chat/completions"
+# model = "a-local-model"
+# wake_tokens = 2000000
+# body = { chat_template_kwargs = { enable_thinking = false } }
+#
+# [runners.top]
+# url = "https://openrouter.ai/api/v1/chat/completions"
+# model = "a-large-model"
+# wake_tokens = 1000000
+# key_env = "OPENROUTER_API_KEY"

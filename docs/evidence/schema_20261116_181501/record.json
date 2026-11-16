@@ -1,0 +1,88 @@
+{
+ "task": "schema",
+ "direct": false,
+ "what": "A live data pipeline with a schema break: the column `amount` gets the name `amount_usd`.",
+ "at": "20261116_181501",
+ "commit": "d6c8512+",
+ "prompt": "A feed of orders is registered in DataHandles as `orders`. It gets new rows for the next minutes, and it ends at 600 rows. Keep a live total of `amount` for each region, over the orders whose `status` is `paid`. The team that owns the feed can give a column a new name without notice. When that happens, repair your work. When the feed has 600 rows, give the total of each region.",
+ "truth": "the total of each region over the paid orders of the final feed (record: facts.truth)",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 400000,
+  "wall_seconds": 1800
+ },
+ "runners": {
+  "local": {
+   "url": "http://local-model:11400/v1/chat/completions",
+   "model": "ornith-1.5:9b",
+   "wake_tokens": 60000
+  },
+  "top": {
+   "url": "https://openrouter.ai/api/v1/chat/completions",
+   "model": "deepseek/deepseek-v4.1-flash-1017",
+   "wake_tokens": 120000,
+   "key_env": "OPENROUTER_API_KEY"
+  }
+ },
+ "seconds": 887.3,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 8471,
+ "context_peak": 19516,
+ "context_added": 11045,
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 3,
+  "handle_invoke": 6,
+  "plan_submit": 1,
+  "plan_status": 5,
+  "plan_answer": 3
+ },
+ "turns": 20,
+ "agent_seconds": 885.5,
+ "answer": "The feed has 600 rows. These are the totals of `amount_usd` for paid orders, by region:\n\n| Region | Total |\n|---|---|\n| north | 10483.22 |\n| east | 15677.18 |\n| south | 15527.26 |\n| west | 14504.72 |\n\nThe feed owners renamed `amount` to `amount_usd` during the run. I rebuilt the totals on the new name and read them after the feed reached 600 rows.",
+ "agent_error": false,
+ "right": true,
+ "facts": {
+  "changes": [
+   {
+    "what": "the schedule started",
+    "agent_s": 21.5
+   },
+   {
+    "what": "schema",
+    "agent_s": 39.5
+   },
+   {
+    "what": "the feed ended",
+    "agent_s": 81.5
+   }
+  ],
+  "rows": 600,
+  "truth": {
+   "north": 10483.22,
+   "south": 15527.26,
+   "east": 15677.18,
+   "west": 14504.72
+  }
+ },
+ "runs": [
+  {
+   "t": 1794853785.172,
+   "event": "end",
+   "run": "run_20261116_181523_7ae4",
+   "outcome": "limit",
+   "why": "the token budget is spent: 401411 of 400000",
+   "tokens": 401411,
+   "cost": 0.017333,
+   "seconds": 832.5,
+   "looks": 4,
+   "wakes": 3,
+   "runner_wakes": 4,
+   "rebinds": 4,
+   "operations": 8,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

@@ -716,3 +716,433 @@ test failed for 16 of them. The one that lives removes the wall-time test of `Ru
 `Run._bounded` enforces the same limit at the next `observe` or the next look, so the run stops at
 the same tick. The two checks are kept: `_check` gives the plain message.
 
+
+## D40. An object carries its runners
+
+The ruling of 2026-11-16 (the third one): "Extend that same object so it can carry the identity of
+its current runner and, if useful, a short ordered list of alternative runners. When the existing
+decision check reports that the current binding is inadequate, the same reconfiguration path that
+already repairs objects simply rebinds the next runner (or wakes the generative agent if the list
+is exhausted). No second decision model, no new router, no parallel escalation graph."
+
+A **runner** is the agent that answers for an object when a variable about that object is outside
+its limits. An object now has five parts: its name, its handle, its operation, its `variables`
+(the check of the object, D41) and its `runners` (a list of names, in order). The names are:
+
+- `main`: the main agent.
+- `human`: only for an action (D44).
+- a model runner: a `[runners.NAME]` table of the configuration (D43).
+
+An object with no `runners` has the main agent as its runner. This is the design before the ruling.
+A new version of an object keeps the variables, the runners and the current binding of its name.
+
+The run has one path for a wake, `Run._wake`. It gives the wake to the current runner of the
+object. Each runner answers in one form (`ANSWER_SCHEMA`), and `Harness.prepare` checks each answer
+the same way. The binding (`Entry.bound`) is an index into the list of the object. `Run._rebind`
+is the only code that changes it, and each change is one `rebind` event in `events.jsonl`.
+
+A model runner can write one thing: a new handle and a new operation for its own object. It cannot
+change the variables, remove an object, end the run or write an action. Those need a decision about
+what the user wants, so they stay with the main agent.
+
+This changes D37. The order of escalation is not a set of levels in the harness. It is the list
+inside each object, and the main agent wrote that list.
+
+## D41. The check of an object, and the owner of a statement
+
+An object can have `variables` of its own: sentences that are true while the object does its
+work. A look asks them in the same request as the variables of the plan, in the form
+"About the object `NAME`: SENTENCE". A look asks them only after the current version of the object
+showed its first output or error.
+
+A statement that is outside its limits has **owners**: the objects that it is about.
+
+| Statement | Owners |
+| --- | --- |
+| A variable of an object | That object |
+| "No object shows an error." | Each object that shows an error |
+| A variable of the plan | None |
+
+The wake goes to the runner of the first owner, in the order of the plan. With no owner, it goes to
+the main agent.
+
+Reason: the decision check that exists already says which object is inadequate. No second model
+call routes the wake. A variable of the plan is about the work as a whole (a goal that is met, a
+rule about more than one object), and only the main agent knows what the user wants there.
+
+Limit: when two objects are owners in one look, only the first one gets a wake. The second one is
+still outside at the next look, and it gets its wake then.
+
+## D42. The trial of a repair
+
+After an answer to a wake, the object of the wake is on trial. The next look that sees an output
+or an error of the new version judges the repair:
+
+- The object is an owner of a statement that is outside: the repair did not hold. The object
+  binds its next runner, and that runner gets the wake.
+- If not: the repair held. The object binds its first runner again.
+
+A runner that gives no repair is also a binding that is not adequate. That is: the runner gives up,
+its model fails, it reaches `wake_tokens`, or it reaches the limits of the run. The same wake goes
+to the next runner, and `pending.tried` has each runner that gave no repair, with the reason. After
+the last runner of the list, the wake goes to the main agent.
+
+So an object with the runners `["local", "top"]` goes: `local` repairs. If its repair does not
+hold, `top` repairs one time. If that holds, the object is with `local` again. The handle of the
+object and its check do not change in that sequence. Only the binding changes.
+
+Reason: this is the Homeostat's rule. The uniselector steps when the essential variable is still
+outside its limits after a trial, and it rests when the variable is inside. A trial must last long
+enough to show its result (*Design for a Brain*, chapter 7), so the judgment waits for the first output
+of the new version. No number decides how many times a runner can try: one trial for each binding.
+
+Limit: a repair that holds at its first look and fails at a later one starts again at the first
+runner. The run has no memory of which runner made which version, other than the logs.
+
+## D43. A model runner
+
+A model runner is a chat model behind a chat completions API in the OpenAI form, with tool calls.
+The configuration names each one:
+
+    [runners.local]
+    url = "http://127.0.0.1:8000/v1/chat/completions"
+    model = "a-local-model"
+    wake_tokens = 2000000
+
+`key_env` names the environment variable with the API key, when the API needs one. D50 has the
+origin of the number, and the key `body`.
+
+- At a wake, the runner gets one message: its object with what it shows now, `sources` (each
+  handle that the handle of the object was made from), the statements that are not true now, the
+  names of the other objects, the limits, the notes of the plan, and `tried`. It gets no history.
+- It has five tools: `handle_find`, `handle_describe` and `handle_invoke` (the tools of the
+  DataHandles tool surface), `repair` (a handle and an operation) and `give_up` (a reason).
+- `repair` goes through the same check as an answer of the main agent. A value that is not valid
+  returns to the runner as the result of the tool, and the runner can try again.
+- It works as the orchestrator's principal. That principal holds no action (D1), so the runtime
+  refuses an action from a model runner. `Gate.delegate(handle, sources=True)` gives the
+  orchestrator each capability that is not an action on the handle of the object and on each of
+  its sources, at the time when the main agent names a model runner for the object.
+- Its tokens (input and output) count against the hard budget of the run. `wake_tokens` is the
+  most that one wake of this runner can spend. It has no default: it is a limit of the spend, so
+  the user states it.
+- `runners.jsonl` has one line for each wake of a model runner: the question, each tool call with
+  its result, the repair, the tokens, the cost and the time.
+
+This brings back the sub-agent of the brief, which D37 removed. Its interface is the one that the
+brief gave: a question in; a value, or "this needs the planner", out. Its question is now "repair
+this object". The brief gave the sub-agent a principal of its own with read grants. It works as
+the orchestrator's principal here, because that principal has those grants already and a fourth
+principal needs a fourth token. So a model runner can invoke a capability that writes and is not
+an action, the same as the first loop can.
+
+D50 changes how a wake ends, and it removes the bound on one result of a tool.
+
+## D44. A confirmation is the same binding
+
+An object whose operation is an action has the runners `["main", "human"]`. A capability in
+`human_only`, or an object that states `runners: ["human"]`, has `["human"]`.
+
+- The request goes to the current runner: `waiting_confirm` for the main agent, `waiting_human`
+  for the human.
+- `plan_confirm(run, request, "human")` binds the next runner of the object for this one decision.
+- After the decision, the object binds its first runner again. The next request of the same object
+  starts with the main agent.
+
+This is the gate of D1 with no new path: `human_only` and "pass to the human" were two special
+cases in `Run._action`, and they are now the list of the object.
+
+**The holder of the action runs the graph.** F52 showed that a main agent whose principal holds
+the action can invoke it with no request. The protocol gives one arrangement that stops this: the
+human's principal registers the resource and grants the main agent each capability that is not an
+action. Measured on DataHandles v0.4.0:
+
+1. The planner and the orchestrator then get `CAPABILITY_DENIED` on the action.
+2. The planner can grant onward what it holds, so `Gate.delegate` still works.
+3. A graph runs with the capabilities of the principal that calls `graph.run`. So the human's
+   principal must run the graph, not only approve it.
+4. A derived handle of the orchestrator resolves for the planner.
+
+An object for such an action states `runners: ["human"]`. `uniselector-confirm ... approve --url
+URL` then approves the graph and runs it as the human's principal, and it writes the result for
+the run. With no `--url`, nothing approves the graph, and the object shows `NOT_APPROVED`. The main
+agent cannot read the descriptor of that capability, so the plan has no schema check for its input
+(`docs/GAPS.md`, G16).
+
+## D45. The spend is an essential variable
+
+D48 removed this variable. The text below is the record of what was built.
+
+The hard budget stays a hard limit. In addition, a look can ask one more statement: "The projected
+tokens are not more than the token budget."
+
+- `projected_tokens` = the tokens so far + (the mean tokens of one look) x (the rate of changes) x
+  (the seconds that are left of the wall time).
+- The rate of changes of one object is `(n - sqrt(n)) / t`: `n` changes of its output in the `t`
+  seconds since its first output. The rate of the run is the sum over the objects, and it is one
+  for each tick at most.
+- A look asks the statement only when a look at each tick, for all of the wall time that is left,
+  passes the budget. With the limits of `uniselector.example.toml` and 387 tokens for one look, it
+  does not: 387 x 900 ticks is 348,300 tokens.
+- The owner of the statement is the object with the highest rate. Its runner gets the wake. The
+  repair is a version of the object whose output changes only when the work needs attention.
+
+Reason: F49. Each number in the projection is a measurement of this run. No model writes a limit.
+The decision model compares two numbers of the state, in the same request as each other variable.
+
+`n - sqrt(n)` is ASSUMED: a count of `n` events has a standard deviation of about `sqrt(n)`, so
+this is one standard deviation below the count. One change gives a rate of zero, so a run with one
+change cannot wake for its spend.
+
+## D46. An object shows when its operation last ran
+
+The repair for F49 is an object whose output changes only when the work needs attention: a
+highest value, a count of the rows that break a rule. Such an object is quiet while its source is
+live, and it is also quiet when its source stopped. The output alone does not tell the two apart.
+
+The first loop runs the operation of an object again when its handle has a new version (D35). So
+the time of the last run is a measurement of the source. An object now shows it: `ran_s`, the
+seconds since the last run of its operation started. The state of a look has the line
+"runs: 14, the last one started 2.1 s ago. last change of the output: 31.4 s ago." A variable can
+then state "Its operation ran in the last 15 seconds."
+
+An action has no `ran_s`: its operation runs one time, after a confirmation.
+
+Reason: the measurement exists already, and no model makes it. Without it, a main agent that
+watches for a stop must build an object that changes at each reading, and that is F49 again.
+
+Limit: with no change of an output, the looks come after a silence that doubles (D32). A look
+that finds the stop can then come later than the time that the variable states, by the length of
+the silence so far at most.
+
+## D47. The mutation check of the runner code
+
+The tests were checked with 27 mutations of the code of D40 to D45, in `run.py`, `state.py`,
+`runner.py`, `gate.py`, `plan.py` and `config.py`. A test failed for 24 of them. The three that
+lived, and the test that now stops each one:
+
+| Mutation | Test |
+| --- | --- |
+| An action goes on trial after its answer | `test_a_denied_action_does_not_run_and_the_denial_wakes_the_main_agent` |
+| A runner name that the configuration does not have gets no park with the main agent | `test_a_denial_by_the_human_wakes_the_main_agent` |
+| `State.projected` gives a number when a look at each tick stays in the budget | `test_a_look_asks_about_the_spend_only_when_a_look_at_each_tick_passes_the_budget` |
+
+A test now fails for each of the 27. D48 removed the code of the third row and its test.
+
+**The second check.** The code of D48 to D51 was checked with 31 mutations in `run.py`,
+`runner.py`, `state.py`, `config.py` and `decide.py`. A test failed for 26 of them. The five that
+lived, and the test that now stops each one:
+
+| Mutation | Test |
+| --- | --- |
+| A look asks the check of an object while its runner works | `test_a_variable_with_no_object_wakes_the_main_agent_while_a_runner_works_and_waits_after_the_answer` (its name after D52) |
+| An object stays `in_repair` after its runner ended | `test_the_wake_comes_to_the_main_agent_after_the_last_runner` |
+| The log of a runner does not count its tokens | `test_a_runner_that_raises_gave_no_repair_and_the_next_runner_gets_the_wake` |
+| The harness does not give `body` to a model runner | `test_the_configuration_names_each_model_runner` |
+| One request of a model runner gets 1 ms, not the time that the run has left | `test_a_model_runner_reads_with_the_tools_and_writes_one_repair` |
+
+A test now fails for each of the 31.
+
+**The third check.** D52 removed one mutation with the rule that it changed, and its code and the
+two small fixes of D51 got 7 more: 37 mutations. A test failed for 36 of them. The one that lived:
+the run kept the statements of an answer of the main agent also when no runner worked, so a
+statement that was still not true never woke the main agent again. The last lines of
+`test_a_variable_with_no_object_wakes_the_main_agent_while_a_runner_works_and_waits_after_the_answer`
+stop it now. A test fails for each of the 37.
+
+## D48. The spend is not a variable. The hard budget is the limit
+
+D45 is removed: the statement about the projected tokens, the projection, and the rate of changes
+of an object. The token budget stays a hard limit, as the brief states it.
+
+Reason: the first task run with the variable gave a wrong wake (`docs/FAILURES.md`, F53). The
+projection took the rate of the first 4 s of a run and held it for the 1,796 s that were left. A
+new object shows its first outputs in those seconds, so the rate was high, and the feed of that
+task was 60 s long. The wake then went to a model runner, and that runner cannot repair a spend:
+which output of an object the user can do without is a question about intent, and intent is with
+the main agent.
+
+The brief has the rule that D45 broke: "Do not add per-node checkers, expected durations, expected
+row counts or other numeric limits written by a model." The harness wrote the projection, not a
+model, but it was the same thing: a guess about the future as a limit of the present.
+
+What stays for F49: the tool text tells the main agent to prefer an object whose output changes
+only when the work needs attention, and an object shows when its operation last ran (D46).
+
+Removed code: `IN_BUDGET`, `State.projected`, `Entry.rate`, and the fields `tick`, `looks` and
+`look_tokens` of `State`.
+
+## D49. A model runner works beside the loop
+
+A wake of a model runner does not stop the run. The run starts the runner, and the loop goes on:
+each other object runs its operation again, and the decision model looks at each change.
+
+Reason: Ashby's Homeostat has four units, and each unit has a uniselector of its own. While one
+unit steps through its uniselector, the other three units go on. In the first task run with
+runners, one wake of a model runner took 517 s, and in that time no object ran and no look was
+made (`docs/FAILURES.md`, F55).
+
+- `Run._start` starts the runner in a thread of its own. `Run._collect` takes its answer at the
+  start of a tick. The object shows `in_repair` with the id of the wake until then.
+- A look does not ask the check of an object that is in repair: its runner knows that it is
+  broken.
+- A wake goes to the first owner that is not in repair. When each owner is in repair, or when a
+  statement has no owner and a runner works, the look writes the event `held` and no wake. The
+  repair in progress can be the cause. The look after the repair asks the statement again.
+- With no repair from a runner, the same wake goes to the next runner of the object, as before
+  (D42). A runner that raises an exception gave no repair.
+- The main agent can write an object while the runner of that object works: a wake about a second
+  object came to it. Then the version of the main agent stays, and the run drops what the runner
+  gives (the event `dropped`). The log keeps what the runner did.
+- A runner reports each request to the run (`spend`), and it gets the tokens that the run has
+  left. So the hard budget holds while a runner works: a runner stops at the request that passes
+  the budget. After the end of a run it gets 0, and the run takes no repair.
+- A wake of the main agent, and a request to the human, still park the run and stop its clock
+  (D33). A runner that works at that time goes on, and the run takes its answer after the park.
+
+Limit: a variable of the plan that leaves its limits while a runner works waits for the end of
+that wake. The decision model cannot say if the object in repair is the cause. A wake of the main
+agent at each break would remove what the binding is for.
+
+D52 replaces this limit and the rule for a statement with no owner. A task run measured the wait:
+432 s (`docs/FAILURES.md`, F62).
+
+## D50. One wake of a model runner is one turn of an agent
+
+This changes D43 in four places.
+
+**How a wake ends.** The model calls `repair` and the run takes the value; or the model calls
+`give_up`; or the model answers with no call of a tool. The last one is new: before, the runner
+sent "Use a tool." and went on. In the first task run with runners, a local model answered 14
+times with no call and no text in each of two wakes (F54). An answer with no call is the end of
+the turn of an agent, and it is a result: this binding is not adequate, and the next runner of
+the object gets the wake with the text.
+
+A wake ends also at a limit: `wake_tokens`, the tokens that the run has left, or the wall time
+that the run has left.
+
+**The form of a runner.** `runner(question, submit, spend, seconds) -> Outcome(calls, reason)`.
+D51 adds `main` to the outcome.
+`submit(value)` gives the repair to the run and returns the fault of the value, or None.
+`spend(tokens, cost)` reports one request and returns the tokens that the run has left.
+
+**No bound on one result of a tool.** `result_chars` is removed. DataHandles bounds each value
+(64 KiB), so a result goes to the model in full, and the log has it in full.
+
+**`wake_tokens` counts what the API counts.** Each request sends the whole conversation again. So
+the sum of the tokens of a wake grows with the square of the count of the requests. In F56 the
+largest result of a tool was 10,236 characters, and a wake of 18 requests still spent 137,145
+tokens. The values of the example configuration and of the task runs are ASSUMED:
+
+| Runner | `wake_tokens` | Origin |
+| --- | --- | --- |
+| `local` | 2,000,000 | 30 requests in a conversation that grows to 100,000 tokens. The local model of the task runs serves 245,760 tokens of context, and its tokens have no price |
+| `top` | 1,000,000 | 0.15 USD for one wake at most, at 0.15 USD for each million input tokens |
+| The run (`budget_tokens`) | 5,000,000 | 5 wakes of `top` at its limit: 0.75 USD at most |
+
+**`body`.** A `[runners.NAME]` table can state `body`: more keys for each request. The server of
+a model can need them. The local model of the task runs is `qwen3.8-27b` behind vLLM, and it gets
+`body = { chat_template_kwargs = { enable_thinking = false } }`: with thinking on, this model can
+spend all the tokens of one answer on thinking and give no content.
+
+**Read the context that a server gives a model.** The first local model ran behind Ollama, and
+Ollama gives a model 4,096 tokens of context when no one sets `num_ctx`. The mean request of its
+first wake counted 3,541 tokens, and 14 of its 18 answers were empty (F54). The same wake path
+with a model that has its full context gave a right repair in 10.1 s
+(`docs/evidence/repair_20261116_184658`).
+
+## D51. A runner can give a wake to the main agent, and a busy decision model makes no look
+
+Two faults of the task runs with the larger limits blocked useful runs (`docs/FAILURES.md`, F57
+and F58). Each change is in an object that exists. No path is new.
+
+**`to_main`.** A model runner has a third tool that ends a wake: `to_main(reason)`. The outcome is
+`Outcome(calls, reason, main=True)`.
+
+| The runner ends with | It says | Who gets the wake next |
+| --- | --- | --- |
+| `repair` | "This is the new version." | No one. The repair is on trial until the next look (D42) |
+| `give_up`, an answer with no call, or a limit | "I did not find the repair." | The next runner of the list |
+| `to_main` | "The object has no break", or "the repair needs a decision about what the user wants." | The main agent |
+
+After `to_main`, the object binds the end of its list for this wake. A larger model cannot repair
+an object that has no break, so the wake does not go to it. The wake has `tried` with the reason
+of the runner, as each wake after the last runner has (D40).
+
+Reason: F57. The runner `local` found in 88 s that the object worked, and it had no way to say
+so. The wake went to `top`, and `top` spent 676,367 tokens and 580 s on an object with no break.
+This is the `needs_planner` of the brief: "It finds facts. It does not decide what the user
+meant."
+
+**The check of an object says only that the object works.** A statement that tells the main agent
+that the work is done, or that needs its decision, is a variable of the plan. A variable of the
+plan has no object, so its wake goes to the main agent (D41). The tool text of the MCP server says
+this now. The harness does not enforce it: no code can tell a statement about a goal from a
+statement about a break. `to_main` is the path for a plan that has it wrong.
+
+**`Busy`.** A decider raises `Busy` when it made no look now and it can make one later. `Decider`
+raises it for HTTP 429 and for HTTP 500 and above. The run then writes the event `no_look`. It
+counts no look and it spends no tokens. The look stays due, and the next tick asks again. Each
+object goes on in that time. A look after a silence doubles the silent time of the next look
+(D32). When the decision model is busy, the run puts that time back, so the look is not lost.
+
+Each other fault of the decision model ends the run as `failed`, as before: a wrong key (HTTP
+401) or a reply with a wrong form does not get better at the next tick.
+
+The run has no count of the requests that failed, and no time between them that grows. The tick
+(2 s) is the time between two requests, and the wall time is the limit. A number for either one
+is a guess, and no run showed a need for it.
+
+Reason: F58. One HTTP 429 at look 51 ended a run whose objects worked.
+
+**A change of the binding that changes nothing is not a rebind.** An object with the runners
+`["main"]` has the runner `main` at each place of its list. `_rebind` writes an event and counts a
+rebind only when the name of the runner changes (F59).
+
+## D52. A variable of the plan does not wait for a runner
+
+A statement with no object wakes the main agent at the look that finds it outside its limits. It
+does so also while a model runner works on an object.
+
+Reason: in the Homeostat, the essential variable of a unit moves the uniselector of that unit
+only. A variable of the plan has no object (D41), so no model runner answers for it. The main
+agent is its only runner. D49 held such a statement while a runner worked, because the repair in
+progress can be the cause. A task run measured that rule: the feed ended after 60 s, the goal of
+the plan was not true from 62.3 s, and the main agent got the wake at 494.2 s, when the runner
+`top` stopped with no repair (F62). A wake of the main agent must not wait for the slowest
+runner.
+
+| At a look, a statement is outside its limits | What the run does |
+| --- | --- |
+| It has an owner that is not in repair | The wake goes to the runner of that object (D40). A model runner works beside the loop (D49), and the same look goes on |
+| Each owner is in repair | Nothing. The runner has the object |
+| It has no owner, and the main agent did not answer a wake with it | A wake of the main agent, with no object. The summary shows `in_repair` for each object that is with a runner |
+| It has no owner, the main agent answered a wake with it, and a runner still works | The event `held`. The main agent knows the statement |
+
+- One look can give two wakes: one to the model runner of an object, and one to the main agent.
+- The main agent can answer `objects: []`. This says: "Let the runner work." The run keeps the
+  statements of that wake (`Run.told`), and a look holds them while a runner works.
+- The end of each wake of a runner empties `Run.told`: the result of a repair is new. A statement
+  that is still not true at the next look wakes the main agent again.
+- A hold has no time limit. The main agent chose it with the summary in hand, and the end of a
+  wake of a runner ends it.
+
+Cost: a plan that states the check of an object again as a variable of the plan wakes the main
+agent one time at each break of that object. The tool text of the MCP server now says not to do
+this. D49 gave this cost as the reason for the hold. The measured hold cost more: 432 s of a run
+whose work was complete.
+
+**A model runner cannot change the data.** The tool text says this too: a model runner can replace
+the handle and the operation of an object, so a check that only a change of the data can make true
+again is a variable of the plan. Reason: F60. As in D51, no code enforces it.
+
+Live check: `schema_20261116_195950`. One look gave an object to `local` and woke the main agent.
+The main agent answered one wake with `objects: []`, and 3 looks held its statements. The goal woke
+the main agent 0.4 s after its object showed the last rows. The session took 101.2 s, and 533.8 s before this rule.
+The run showed the cost that this decision names (`docs/FAILURES.md`, F63), and a repair that held
+with wrong totals (F64).
+
+Not built: after a repair that does not hold, the object keeps the version of that repair, and the
+next runner gets a new wake with no `tried`. The next runner does not see the version that the
+main agent wrote (F60). The change belongs in the object (the object keeps its version from before
+a trial), and no run showed yet that it removes the cost of F61.

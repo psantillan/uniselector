@@ -1,0 +1,15 @@
+{
+ "id": "gr_run_20261116_190035_1998",
+ "nodes": [
+  {
+   "id": "hdl_01M7JVPPWSN1QRS0W5VPKJB6WE",
+   "kind": "resource",
+   "reference": "hdl_01M7JVPPWSN1QRS0W5VPKJB6WE"
+  }
+ ],
+ "edges": [],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}

@@ -796,6 +796,8 @@ the first `plan_submit` call: the main agent wrote JSON that did not parse
   `silent_20261116_164259` (54) and `goal-human_20261116_164819` (58). Each look of these runs
   has the reason `change`. `code_20261116_165137` and `api_20261116_165326` have 5 looks with the
   reason `silence` in 90 s: at 4, 8, 16, 32 and 64 s.
+- A variable about the spend was built for this entry and removed again: it gave a wrong wake
+  (F53, and `docs/DECISIONS.md`, D48). What stays is a tool text and one field (D46).
 - Open. The money is small. The hard budget is the limit: at 387 tokens for each look and one
   change each 3 s, a budget of 400,000 tokens ends a run after about 1,030 looks, which is about
   50 minutes. A main agent can build an object whose output changes only when the work needs
@@ -827,7 +829,7 @@ the first `plan_submit` call: the main agent wrote JSON that did not parse
 - Evidence: `api_20261116_165326`, `events.jsonl` (the last events are `woke` and `end`, with no
   `answer`), and `record.json` (`"outcome": "left"`). In `code_20261116_165137` the main agent
   did answer with `end: true`.
-- Open. The answer of the task was right. The log of the run says `left`, not `done`, so a review
+- Open, with no change in version 0.3. The answer of the task was right. The log of the run says `left`, not `done`, so a review
   of the logs cannot tell this from a main agent that failed. A run on an `api` handle that goes
   on after the wake also sends the request again at each tick (`docs/GAPS.md`, G15).
 
@@ -848,4 +850,269 @@ the first `plan_submit` call: the main agent wrote JSON that did not parse
   `confirmations` 0); `goal-human_20261116_164819`, the two `confirmation` events with
   `"by": "human"`.
 - Open in DataHandles (G1).
+- Changed after this entry: the human's principal can hold the action alone (`docs/DECISIONS.md`,
+  D44). Then the protocol refuses a direct invoke by the main agent. In
+  `goal-held_20261116_190023` the main agent made no `handle_invoke` call, and the human approved
+  and ran each switch (`record.json`, `tool_calls`; the `confirmation` events of the two runs).
+  With no such arrangement the gap is open: in `goal-pass_20261116_190342` the main agent's
+  principal held the heater. It made no direct invoke in that run (`plan_confirm` 1, `handle_invoke`
+  0), and nothing but its prompt stopped one.
 
+## The first task run with model runners
+
+One task run on 2026-11-16 (UTC): `schema_20261116_181501`, with the runners `local`
+(`ornith-1.5:9b` behind Ollama) and `top` (`deepseek/deepseek-v4.1-flash-1017`), a budget of
+400,000 tokens, and `wake_tokens` of 60,000 and 120,000. In its run directory
+`runs/run_20261116_181523_7ae4`, "D 3" means line 3 of `decisions.jsonl`, "E 11" means line 11 of
+`events.jsonl`, and "R 1" means line 1 of `runners.jsonl`.
+
+The run ended with the outcome `limit`: "the token budget is spent: 401411 of 400000" (D 5),
+after 832.5 s of run time, 4 looks, 3 wakes and 4 wakes of a model runner. No runner gave a
+repair. The answer of the main agent was right: after each wake came back to it, it built the
+totals on the new column itself (`record.json`).
+
+### F53. The spend variable woke a runner 4 s after the start
+
+- Part: look.
+- What happened: at the third look, 4.1 s into the run, the state had `projected_tokens` 589,352
+  against a budget of 400,000. The run had spent 2,239 tokens. The statement about the projected
+  tokens was the only one outside its limits. Its owner was the object `rowcount`, and the wake
+  went to the runner `local`. The feed of the task was 60 s long.
+- Evidence: D 3 (`"outside": ["The projected tokens are not more than the token budget."]`, and
+  the limits of the state); R 1 (`"wake": "wake_2"`, `"object": "rowcount"`).
+- Changed: the variable is removed (`docs/DECISIONS.md`, D48).
+
+### F54. A local model with 4,096 tokens of context made no call of a tool
+
+- Part: runner.
+- What happened: the runner `local` got two wakes. In the first one it made 18 requests, and 14
+  of the answers had no call of a tool and no text. It spent 63,742 tokens in 516.9 s and gave no
+  repair. The second wake was the same: 20 requests, 14 with no call, 63,713 tokens, 185.1 s.
+  The server gave the model 4,096 tokens of context: the default of Ollama. The mean request of
+  the first wake counted 3,541 tokens, so the conversation was at that limit. The same model
+  repaired a smaller object in one wake four minutes before the task run
+  (`repair_20261116_181108`: 7 calls, 19,242 tokens, 58.3 s; a mean of 2,749 tokens for each
+  request). The log does not have the text that the server cut, so the cause is not proved.
+- Evidence: R 1 and R 3 (`calls` with `"tool": null`, `tokens`, `ms`).
+- Changed: an answer with no call ends the wake, and the next runner gets it (D50). The local
+  runner of the task runs is now a model whose server gives it 245,760 tokens. Not changed: the
+  harness does not read the context of a server. The example configuration tells the user to
+  read it.
+
+### F55. A wake of a model runner stopped the run
+
+- Part: wake.
+- What happened: the run waited for the runner. Look 3 was at 4.1 s and look 4 was at 619.8 s. In
+  that time no object ran its operation again, and the decision model saw nothing. The schema of
+  the feed broke in that time, and no look found it until the two runners had ended.
+- Evidence: D 3 and D 4 (`elapsed_s`); E 11 and E 13 (`ms`: 516,862 and 98,177).
+- Changed: a model runner works beside the loop (D49).
+
+### F56. The runner `top` reached its token limit two times, with no repair
+
+- Part: runner.
+- What happened: the runner `top` read the object, its sources and the logs: 18 calls in the
+  first wake, 27 in the second one. Each call was a fair step. It reached `wake_tokens` (120,000)
+  after 137,145 and 132,273 tokens. The largest result of a tool was 10,236 characters
+  (`log.audit`). The limit counted each request, and each request sends the whole conversation
+  again, so 18 requests were the whole wake.
+- Evidence: R 2 and R 4 (`reason`, `tokens`, `calls`).
+- Changed: the limits are larger, and each one has its origin (D50). Open: a runner that reads
+  much before it writes still pays for the whole conversation at each request. The first wake of
+  `top` with the new limit is F57.
+
+## Task runs with a local model that has its full context
+
+Three task runs on 2026-11-16 (UTC), after D48 to D50. The runner `local` was `qwen3.8-27b` behind
+vLLM, with 245,760 tokens of context. The runner `top` was `deepseek/deepseek-v4.1-flash-1017`.
+The budget was 5,000,000 tokens, and `wake_tokens` was 2,000,000 and 1,000,000. "D", "E" and "R"
+name lines of the logs of a run, as above.
+
+| Task | Answer | Session time | Turns of the main agent | Outcome of the run | Looks | Wakes | Wakes of a model runner | Confirmations | Run tokens | Cost of the run |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| schema, 60 s feed, with model runners | right | 768.3 s | 16 | `done` after 734.1 s | 29 | 2 | 3 | 0 | 778,229 | $0.134062 |
+| goal, only the human holds the heater | right | 199.2 s | 12 | `failed` after 153.8 s, then a second run: `done` after 18.1 s | 51 and 6 | 0 and 2 | 0 | 1 and 1, each one by the human | 31,707 and 3,095 | $0.000634 and $0.000062 |
+| goal, the main agent passes one decision to the human | right | 210.0 s | 14 | `done` after 174.3 s | 59 | 2 | 0 | 2: one by the human, one by the main agent | 31,155 | $0.000623 |
+
+The evidence, in the order of the table: `schema_20261116_184734`, `goal-held_20261116_190023`,
+`goal-pass_20261116_190342`.
+
+**What worked.** In the schema run the column got its new name, and the look at 20.5 s found the
+error of the object `totals` (E 17). The runner `local` read the object and its source with 11
+calls, and it wrote the repair in 15.3 s for 27,991 tokens (R 1, E 28). The repair held. The main
+agent slept through it: it got no wake about the schema. In that time the other objects ran, and
+5 looks held a statement for the result of the repair (the `held` events).
+
+### F57. A goal went to the model runners as a check of an object
+
+- Part: plan, runner.
+- What happened: the main agent gave the object `row_count` the check "The count is less than 600
+  while the feed still gets rows." and the runners `["local", "top"]`. The prompt of the driver
+  told it to give each object the runners. The feed ended at 600 rows, so the check was not true,
+  and the object had no break. The wake went to `local` at 62.6 s. `local` found that the object
+  works, and it stopped with a text after 88.5 s and 43,614 tokens. It had no tool to say more.
+  The wake went to `top`. `top` made 36 calls in 580.5 s, spent 676,367 tokens ($0.133457), and
+  stopped with no repair and no text. The main agent got the wake at 734.1 s. The feed was 60 s
+  long.
+- These are two items of the watch list of the brief: a sub-agent that answered a question about
+  intent, and a sub-agent whose exploration cost more than the question was worth. The larger
+  limits of D50 made the cost possible: with the limit before D50, `top` stopped after 120,000
+  tokens.
+- Evidence: `schema_20261116_184734`, run `run_20261116_184758_f7f1`: E 50 to E 56, and R 2 and
+  R 3.
+- Changed: a runner can give the wake to the main agent with `to_main`; the tool text says that
+  the check of an object is about the object only; the prompt of the driver does not tell the
+  main agent to give each object the runners (`docs/DECISIONS.md`, D51).
+- Live check: `schema_20261116_192536`. The main agent wrote the goal as a variable of the plan
+  ("The row count of row_count is less than 600."), so this failure did not occur again. The run
+  showed three more failures: F60, F61 and F62.
+
+### F58. One HTTP 429 of the Decisions API ended a run
+
+- Part: look.
+- What happened: the run made a look at each change of the temperature: 51 looks in 153.8 s. The
+  API answered request 52 with HTTP 429, "Too Many Requests". The harness took it as a fault of
+  its own, and the run ended with the outcome `failed`. Each object worked at that time, and the
+  heater was on. The main agent read the reason, and it sent a second plan that ended the work.
+  The log does not show why the API refused the request.
+- Evidence: `goal-held_20261116_190023`, run `run_20261116_190035_1998`: E 57 (the traceback) and
+  E 58 (`"outcome": "failed"`, `"looks": 51`); run `run_20261116_190314_0412`, E 17.
+- Changed: the decision model is busy, and the look stays due (`docs/DECISIONS.md`, D51). Open:
+  the looks at each change are still the cause of the many requests (F49).
+
+### F59. The log shows a rebind from `main` to `main`
+
+- Part: log.
+- What happened: the object `temp` had the runners `["main"]`. Its repair did not hold, and the
+  step to the next place of the list wrote a `rebind` event "from main to main". The run counted
+  1 rebind. Nothing changed.
+- Evidence: `goal-pass_20261116_190342`, run `run_20261116_190358_3aa3`, E 72 and E 76
+  (`"rebinds": 1`).
+- Changed: the step writes an event and counts a rebind only when the name of the runner changes
+  (D51).
+
+## The live check of D51
+
+One task run on 2026-11-16 (UTC), with the code of D51 and the same models and limits as the three
+runs above. Evidence: `schema_20261116_192536`, run `run_20261116_192556_404d`.
+
+| Task | Answer | Session time | Turns of the main agent | Outcome of the run | Looks | Wakes | Wakes of a model runner | Rebinds | Run tokens | Cost of the run | Cost of the main agent |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| schema, 60 s feed, with model runners | right | 533.8 s | 18 | `done` after 496.2 s | 29 | 4 | 3 | 3 | 553,684 | $0.090073 | $0.1130 |
+
+**What worked.** The look at 20.9 s found the error of the object `totals` (E 20). The runner
+`local` read the object and its sources with 10 calls, and it wrote the repair at 68.1 s: an
+aggregate on the filtered handle with the column `amount_usd` (R 2: 78,746 tokens, 45.8 s; E 56).
+The repair held, and the totals of the four regions are the true values. The context of the main
+agent went from 8,531 to 18,409 tokens.
+
+### F60. A runner replaced an object that worked
+
+- Part: plan, runner.
+- What happened: the main agent gave the object `schema` (the operation `dataset.schema` on the
+  feed) the check "The columns are id, region, status and amount." and the runners
+  `["local", "top"]`. The feed got the column `amount_usd` in place of `amount`, so the check was
+  not true. The object worked: it showed the columns, with no error. Only a change of the data
+  could make the check true again. The wake went to `local` (E 22). `local` did not call
+  `to_main`. It replaced the object with the head of an aggregate by region (R 1: 9 calls, 28,894
+  tokens, 39.3 s; E 49). The object `schema` then showed totals, and no columns. The trial did not
+  hold, and the object went to `top` (E 52, E 53). `top` got the version of the failed repair in
+  a new wake with no `tried`, so it did not see the operation that the main agent wrote.
+- This is an item of the watch list of the brief: a sub-agent that guessed instead of exploring.
+- Evidence: E 22, E 47 to E 53, R 1.
+- Changed: the tool text says that a model runner cannot change the data, so a check that only a
+  change of the data can make true again is a variable of the plan (`docs/DECISIONS.md`, D52).
+- Open: a model runner can replace an object that works. After a repair that does not hold, the
+  next runner gets the version of that repair.
+
+### F61. The runner `top` read for 430 s and gave no result
+
+- Part: runner.
+- What happened: `top` got the object `schema` after F60. It made 22 calls in 429.7 s (13
+  `handle_invoke`, 9 `handle_describe`) and spent 414,109 tokens ($0.089434). It read the
+  operation log of the source two times with a limit of 200 rows (`log.own`, `log.audit`). Its
+  last reply had no text and no call of a tool, so the wake ended with no repair (R 3, E 65). This
+  is the second wake of `top` with no result: the first one spent 676,367 tokens (F57). In two
+  wakes, `top` called no tool that ends a wake.
+- This is an item of the watch list of the brief: a sub-agent whose exploration cost more than the
+  question was worth.
+- Evidence: R 3, E 53, E 65.
+- Open. The limits did not change: one wake is one turn of an agent (D50). With D52 the main agent
+  does not wait for the wake, and the end of the run stops the runner at its next request.
+
+### F62. The goal of the plan waited 432 s for a runner of another object
+
+- Part: wake.
+- What happened: the feed ended at 600 rows. The variable of the plan "The row count of row_count
+  is less than 600." was not true from look 21, at 62.3 s (D 21). At that time `top` worked on the
+  object `schema` (F61). A statement with no object waited while a runner worked (D49), so 7 looks
+  held the goal (E 58 to E 64). The main agent got the wake at 494.2 s, when `top` stopped (E 67).
+  The session took 533.8 s for a feed of 60 s. The variable "The columns of the feed are id,
+  region, status and amount." waited from 20.9 s to 494.2 s in the same way (E 24 to E 46). The
+  main agent wrote that variable to learn of a change of the schema.
+- This is an item of the watch list of the brief: no wake when something was wrong.
+- Evidence: D 21, E 24 to E 46, E 58 to E 67, E 76.
+- Changed: a variable of the plan wakes the main agent at once, also while a runner works
+  (`docs/DECISIONS.md`, D52). The tests
+  `test_a_variable_with_no_object_wakes_the_main_agent_while_a_runner_works_and_waits_after_the_answer`
+  and `test_one_look_wakes_the_runner_of_the_object_and_the_main_agent` cover it.
+- Live check: `schema_20261116_195950` (below). The goal woke the main agent at 62.0 s, 0.4 s
+  after the object `row_count` showed 600 rows.
+
+## The live check of D52
+
+One task run on 2026-11-16 (UTC), with the code of D52 and the same models and limits. Evidence:
+`schema_20261116_195950`, run `run_20261116_200008_6843`.
+
+| Task | Answer | Session time | Turns of the main agent | Outcome of the run | Looks | Wakes | Starts of a model runner | Rebinds | Run tokens | Cost of the run | Cost of the main agent |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| schema, 60 s feed, with model runners | right | 101.2 s | 19 | `done` after 56.1 s | 19 | 4 | 1 | 0 | 50,636 | $0.000479 | $0.1320 |
+
+**What worked.** Look 7, at 20.6 s, found the error of the object `region_totals` and the variable
+of the plan about the columns. That one look gave the object to `local` (E 20) and woke the main
+agent (E 21, `wake_2`). The main agent answered after 3.7 s with a new check for the object
+`source_schema`, and `local` went on in that time. The main agent answered the next wake with
+`objects: []`, and 3 looks held its statements until `local` ended (E 27 to E 33). The goal of the
+plan woke the main agent at 62.0 s (E 53). The session took 101.2 s. The session before D52 took
+533.8 s.
+
+### F63. A variable that states the check of an object again gave a wake with nothing new
+
+- Part: plan.
+- What happened: in its answer to `wake_2`, the main agent wrote a new variable of the plan: "The
+  object region_totals shows one row for each region with a numeric total." This is the check of
+  the object `region_totals`, and that object was with `local` at the time. The tool text says
+  not to state the check of an object again as a variable of the plan. The variable was new, so
+  the next look woke the main agent again (`wake_3`, 2.0 s after the answer). The main agent
+  answered with `objects: []` after 3.7 s.
+- This is an item of the watch list of the brief: a wake when nothing was wrong that the main
+  agent did not know.
+- Evidence: E 23, E 26, E 27, D 8.
+- Open. The cost was one wake. D52 names this cost. The code does not read a sentence to find the
+  object that it is about: only the decision model reads sentences.
+
+### F64. A repair held, and its totals were wrong
+
+- Part: runner, plan.
+- What happened: the object `region_totals` showed the total of `amount` for each region, over the
+  orders with the status `paid`. After the new column name, `local` built a new aggregate on the
+  feed, not on the filtered handle. It described the filter capability, and it made no filter (R 1,
+  11 calls, 26,706 tokens, 18.3 s). The new version showed the totals of each order, paid or not:
+  its first output counted 109 orders for north, and the full feed has 61 paid orders for north. The check of the object was "The output has one row for
+  each region with the columns region, total, and n." and "The column total is a number and is not
+  null." The two sentences were true for the wrong totals, so the repair held (D 12). The object
+  showed wrong totals from 39.4 s to 80.3 s. The notes of the plan named the filter, and the runner
+  had the notes.
+- The summary of `wake_4` showed that `wake_1` wrote the object. The main agent read the new
+  version, found that the filter was gone, and built the object again with the filter (E 54,
+  E 55). The answer of the task was right. In its two runs before this one, `local` kept the filter.
+- This is an item of the watch list of the brief: an early choice that makes each later choice
+  consistent and wrong. Here the main agent found it at the next wake.
+- Evidence: R 1 (the `dataset.aggregate` call on the handle of the feed), E 37, E 56, D 12, and
+  the answer in `record.json`.
+- Open. A check rejects only what it states: this check stated the form of the output, and no
+  sentence stated which orders the totals count. The uniselector of the Homeostat also keeps each
+  configuration that holds the essential variables inside their limits. The text of the runner
+  says already: "Change only what is broken: the new version shows the same thing as the old one."
+  `handle_describe` of the filtered handle showed the old column name (`docs/GAPS.md`, G14), so the
+  runner could not see from it that the filter still worked.

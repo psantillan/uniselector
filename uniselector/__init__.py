@@ -1,6 +1,7 @@
 """Uniselector: an Ashby regulator for long-horizon agent work, built on DataHandles.
 
-A main agent hands off a plan: a list of intents. A decision model carries out each intent by
-choosing operations on DataHandles handles. The main agent sees nothing until the work is done,
-an action needs its confirmation, or the decision model gives up.
+A main agent builds objects on DataHandles handles and states the essential variables: sentences
+that are true while it can sleep. The objects run with no model. A decision model judges only if
+each variable is inside its limits. When one is not, the runner of the object that is broken gets
+a wake and replaces that object.
 """

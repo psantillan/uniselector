@@ -1,0 +1,4 @@
+$ uniselector-confirm /tmp/scratch/worlds/goal-pass_20261116_190342/runs/run_20261116_190358_3aa3 req_1 approve --url http://127.0.0.1:44885
+room.heater on room with input {"on": true}
+approve: recorded
+
