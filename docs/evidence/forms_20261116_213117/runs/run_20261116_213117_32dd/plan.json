@@ -1,0 +1,17 @@
+{
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7K4B0GNHB7JCQR7DQ4ZFE7V",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   }
+  }
+ ],
+ "variables": [
+  "The table of the object `totals` has only the statuses paid, pending and refunded."
+ ]
+}

@@ -1,0 +1,66 @@
+{
+ "run": "run_20261116_213117_39b6",
+ "state": "left",
+ "why": "the MCP server of the main agent ended before the run did",
+ "plan": {
+  "variables": [
+   "The table of the object `totals` has only the statuses paid, pending and refunded."
+  ]
+ },
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7K4B0GNHB7JCQR7DQ4ZFE7V",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "written": "plan",
+   "output": "{\"columns\": [\"region\", \"status\", \"total\", \"n\"], \"rows\": [[\"central\", \"paid\", 4365.43, 21], [\"central\", \"pending\", 6152.6, 27], [\"central\", \"refunded\", 5286.9, 27], [\"east\", \"paid\", 3955.0699999999997, 20], [\"east\", \"pending\", 5951.009999999999, 31], [\"east\", \"refunded\", 4728.03, 26], [\"islands\", \"pa ... (cut: 182 of 782 characters) ... 001, 26], [\"north\", \"refunded\", 2921.48, 17], [\"south\", \"paid\", 4697.14, 29], [\"south\", \"pending\", 5006.210000000001, 31], [\"south\", \"refunded\", 4637.200000000001, 24], [\"west\", \"paid\", 3454.86, 19], [\"west\", \"pending\", 2981.7000000000007, 13], [\"west\", \"refunded\", 4412.65, 21]], \"truncated\": false}",
+   "forms": {
+    "summary": null,
+    "embedding": null
+   },
+   "ran_s": 4.0,
+   "runs": 1,
+   "changes": 0,
+   "changed_s": 3.9
+  }
+ ],
+ "pending": {
+  "id": "wake_1",
+  "kind": "wake",
+  "outside": [],
+  "object": "totals",
+  "form": "embedding",
+  "tried": [
+   {
+    "runner": "embedder",
+    "result": "the runner failed: TypeError: list indices must be integers or slices, not str"
+   }
+  ]
+ },
+ "last_wake": null,
+ "lineage": "/tmp/scratch/v04/forms-work/forms_20261116_213117/runs/run_20261116_213117_39b6/lineage.json",
+ "logs": "/tmp/scratch/v04/forms-work/forms_20261116_213117/runs/run_20261116_213117_39b6",
+ "limits": {
+  "elapsed_s": 4.0,
+  "wall_seconds": 600,
+  "tokens": 4362,
+  "budget_tokens": 8000000
+ },
+ "counts": {
+  "looks": 1,
+  "wakes": 1,
+  "runner_wakes": 0,
+  "rebinds": 1,
+  "forms": 0,
+  "operations": 1,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The process of the run ended before the run did. The handles of the objects stay usable. Call plan_submit to watch them again."
+}

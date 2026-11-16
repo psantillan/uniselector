@@ -44,6 +44,12 @@ def _object_lines(o: dict) -> list[str]:
         lines.append(f"  output: {o['output']}")
     else:
         lines.append("  no output yet")
+    for name, form in o.get("forms", {}).items():   # a form of the output, for example a summary (docs/DECISIONS.md, D54)
+        if form is None:
+            lines.append(f"  form `{name}` of the output: no form yet")
+        else:
+            behind = f", {form['changes_behind']} changes behind the output" if form["changes_behind"] else ""
+            lines.append(f"  form `{name}` of the output{behind}: {form['value']}")
     if "running_s" in o:
         lines.append(f"  the operation runs now, for {o['running_s']} s")
     ran = f", the last one started {o['ran_s']} s ago" if "ran_s" in o else ""

@@ -1,0 +1,50 @@
+{
+ "run": "run_20261116_213937_077b",
+ "state": "left",
+ "why": "the MCP server of the main agent ended before the run did",
+ "plan": {
+  "variables": [
+   "The table of the object `totals` has only the statuses paid, pending and refunded."
+  ]
+ },
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7K4T98M6XSG1AG1AZM6Q0TT",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "written": "plan",
+   "output": "{\"columns\": [\"region\", \"status\", \"total\", \"n\"], \"rows\": [[\"central\", \"paid\", 4365.43, 21], [\"central\", \"pending\", 6152.6, 27], [\"central\", \"refunded\", 5286.9, 27], [\"east\", \"paid\", 3955.0699999999997, 20], [\"east\", \"pending\", 5951.009999999999, 31], [\"east\", \"refunded\", 4728.03, 26], [\"islands\", \"pa ... (cut: 215 of 815 characters) ... 001, 26], [\"north\", \"refunded\", 2921.48, 17], [\"south\", \"paid\", 4697.14, 29], [\"south\", \"pending\", 5006.210000000001, 31], [\"south\", \"refunded\", 4637.200000000001, 24], [\"west\", \"paid\", 3454.86, 19], [\"west\", \"pending\", 2981.7000000000007, 13], [\"west\", \"refunded\", 4412.65, 21]], \"truncated\": false}",
+   "ran_s": 10.1,
+   "runs": 2,
+   "changes": 1,
+   "changed_s": 10.0
+  }
+ ],
+ "pending": null,
+ "last_wake": null,
+ "lineage": "/tmp/scratch/v04/forms-work/forms_20261116_213937/runs/run_20261116_213937_077b/lineage.json",
+ "logs": "/tmp/scratch/v04/forms-work/forms_20261116_213937/runs/run_20261116_213937_077b",
+ "limits": {
+  "elapsed_s": 20.1,
+  "wall_seconds": 600,
+  "tokens": 2106,
+  "budget_tokens": 8000000
+ },
+ "counts": {
+  "looks": 3,
+  "wakes": 0,
+  "runner_wakes": 0,
+  "rebinds": 0,
+  "forms": 0,
+  "operations": 2,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The process of the run ended before the run did. The handles of the objects stay usable. Call plan_submit to watch them again."
+}

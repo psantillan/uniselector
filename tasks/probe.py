@@ -13,6 +13,7 @@ import sys
 
 from uniselector.config import Config
 from uniselector.decide import NO_ERROR, Decider, judge
+from uniselector.state import cut
 
 LIMITS = {"elapsed_s": 40.0, "wall_seconds": 1800, "tokens": 3000, "budget_tokens": 400000}
 ROWS = "The object `rows` shows fewer than 600 rows."
@@ -23,6 +24,9 @@ RUNS = "The script of the object `job` has not finished."
 LIVE = "About the object `highest`: Its operation ran in the last 15 seconds."
 # The check of an object, in the form that a look gives it.
 THREE = "About the object `totals`: It shows one row for each of the regions north, south and east, with a number in total."
+# A form of an output, and its check in the form that a look gives it.
+KNOWN = "The table of the object `totals` has only the statuses paid, pending and refunded."
+NAMES = "About the form `summary` of the object `totals`: The summary names one status or more."
 NO_COLUMN = {"code": "ADAPTER_ERROR", "message": 'BinderException: Binder Error: Referenced column "amount" not found in FROM clause!\n'
                                                  'Candidate bindings: "amount_usd"'}
 
@@ -45,6 +49,14 @@ def cases() -> list:
     def room(temperature: float) -> dict:
         return state(obj("reading", "room.latest", runs=41, changed_s=0.2,
                          output=json.dumps({"seq": 41, "t_ms": 123000, "heater": True, "temperature": temperature})))
+
+    def long(summary: str | None, behind: int = 0) -> dict:
+        """A table that is longer than the bound of the state. A status of the region north is in the part that the state does not keep."""
+        table = [[region, status, 1000.5 + 7 * i + j, 20 + i + j] for i, region in enumerate(("central", "east", "islands", "north", "south", "west"))
+                 for j, status in enumerate(("paid", "pending", "refunded"))]
+        return state(obj("totals", "dataset.head", {"n": 50}, runs=2, changes=1, changed_s=3.1,
+                         output=cut({"columns": ["region", "status", "total", "n"], "rows": table}, 600),
+                         forms={"summary": summary and {"value": summary, "changes_behind": behind}}))
 
     return [
         ("each object reads", state(rows, totals), {NO_ERROR: 1, ROWS: 1}),
@@ -71,6 +83,11 @@ def cases() -> list:
         ("the check of an object does not hold",
          state(rows, obj("totals", "dataset.head", {"limit": 10}, runs=7, changed_s=1.2, output='{"columns": ["region", "total"], "rows": [["north", null]]}')),
          {NO_ERROR: 1, THREE: 0}),
+        ("a form of a long output", long("The table has three statuses: paid, pending, and refunded."), {NO_ERROR: 1, KNOWN: 1, NAMES: 1}),
+        ("a form shows a value of the part that the state does not keep",
+         long("The table has four statuses: disputed, paid, pending, and refunded. Only the region north has disputed orders."),
+         {NO_ERROR: 1, KNOWN: 0, NAMES: 1}),
+        ("a form that does not pass its check", long("I could not read the table."), {NO_ERROR: 1, NAMES: 0}),
     ]
 
 

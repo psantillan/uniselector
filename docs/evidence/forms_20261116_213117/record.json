@@ -1,0 +1,79 @@
+{
+ "runner": "qwen3.8-27b",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "table_rows": 19,
+ "table_characters": 748,
+ "new_status": "disputed",
+ "runs": {
+  "plain": {
+   "state": "running",
+   "why": "the objects run, and no look found a variable outside its limits",
+   "pending": null,
+   "counts": {
+    "looks": 8,
+    "wakes": 0,
+    "runner_wakes": 0,
+    "rebinds": 0,
+    "forms": 0,
+    "operations": 2,
+    "confirmations": 0,
+    "human_requests": 0
+   },
+   "limits": {
+    "elapsed_s": 190.2,
+    "wall_seconds": 600,
+    "tokens": 5639,
+    "budget_tokens": 8000000
+   },
+   "looks_after_the_new_status": 1,
+   "new_status_in_the_output_of_the_state": false,
+   "forms_before": null,
+   "forms_after": null
+  },
+  "formed": {
+   "state": "woke",
+   "why": "the object totals has no form `embedding`: each runner of the form was tried, and none gave a good form",
+   "pending": {
+    "id": "wake_1",
+    "kind": "wake",
+    "outside": [],
+    "object": "totals",
+    "form": "embedding",
+    "tried": [
+     {
+      "runner": "embedder",
+      "result": "the runner failed: TypeError: list indices must be integers or slices, not str"
+     }
+    ]
+   },
+   "counts": {
+    "looks": 1,
+    "wakes": 1,
+    "runner_wakes": 0,
+    "rebinds": 1,
+    "forms": 0,
+    "operations": 1,
+    "confirmations": 0,
+    "human_requests": 0
+   },
+   "limits": {
+    "elapsed_s": 4.0,
+    "wall_seconds": 600,
+    "tokens": 4362,
+    "budget_tokens": 8000000
+   },
+   "looks_after_the_new_status": 0,
+   "new_status_in_the_output_of_the_state": false,
+   "forms_before": {
+    "summary": null,
+    "embedding": null
+   },
+   "forms_after": {
+    "summary": null,
+    "embedding": null
+   }
+  }
+ },
+ "seconds_to_the_wake_of_formed": 0.0,
+ "vectors_before_the_new_status": null
+}

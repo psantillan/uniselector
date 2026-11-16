@@ -1,0 +1,83 @@
+{
+ "id": "gr_run_20261116_214114_4c54",
+ "nodes": [
+  {
+   "id": "hdl_01M7K4X711QAWFBYZ1S7PKMP3J",
+   "kind": "resource",
+   "reference": "hdl_01M7K4X711QAWFBYZ1S7PKMP3J"
+  },
+  {
+   "id": "op_01M7K4X71R99NAGZEKBXJSMD23",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.aggregate",
+    "input": {
+     "group_by": [
+      "region",
+      "status"
+     ],
+     "metrics": [
+      {
+       "fn": "sum",
+       "column": "amount",
+       "as": "total"
+      },
+      {
+       "fn": "count",
+       "as": "n"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7K4X71Y7TAE73D8QVPG4J8S",
+   "kind": "derived",
+   "reference": "hdl_01M7K4X71Y7TAE73D8QVPG4J8S"
+  },
+  {
+   "id": "op_01M7K4X72EP4KNAMM9WWBGMZP1",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.sort",
+    "input": {
+     "by": [
+      {
+       "column": "region"
+      },
+      {
+       "column": "status"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7K4X72PE50AY4ABS8HK30NG",
+   "kind": "derived",
+   "reference": "hdl_01M7K4X72PE50AY4ABS8HK30NG"
+  }
+ ],
+ "edges": [
+  {
+   "from": "hdl_01M7K4X711QAWFBYZ1S7PKMP3J",
+   "to": "op_01M7K4X71R99NAGZEKBXJSMD23"
+  },
+  {
+   "from": "op_01M7K4X71R99NAGZEKBXJSMD23",
+   "to": "hdl_01M7K4X71Y7TAE73D8QVPG4J8S"
+  },
+  {
+   "from": "hdl_01M7K4X71Y7TAE73D8QVPG4J8S",
+   "to": "op_01M7K4X72EP4KNAMM9WWBGMZP1"
+  },
+  {
+   "from": "op_01M7K4X72EP4KNAMM9WWBGMZP1",
+   "to": "hdl_01M7K4X72PE50AY4ABS8HK30NG"
+  }
+ ],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}

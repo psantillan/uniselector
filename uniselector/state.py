@@ -35,6 +35,21 @@ class Clock:
 
 
 @dataclass
+class Form:
+    """One form of the output of an object, for example a summary or an embedding, and the runners that can make it."""
+    runners: list               # who makes the form, in order. After the last one: the main agent gets a wake
+    variables: list = field(default_factory=list)   # the check of the form: sentences about its value
+    bound: int = 0              # the place of the current runner in `runners`
+    value: str | None = None    # the form: a bounded value, or the id of a handle that holds it
+    of: int | None = None       # the change of the output that the value is a form of
+    tried: list = field(default_factory=list)   # what each runner gave that was not a good form, for the next runner
+
+    @property
+    def runner(self) -> str:
+        return self.runners[self.bound] if self.bound < len(self.runners) else "main"
+
+
+@dataclass
 class Entry:
     """One object of the run: a handle that the main agent built, and the operation that reads it."""
     name: str
@@ -57,6 +72,7 @@ class Entry:
     output: str | None = None
     error: dict | None = None
     changed_at: float = 0.0
+    forms: dict = field(default_factory=dict)   # for the name of each form of the output: its `Form`
 
     @property
     def id(self) -> str:
@@ -83,6 +99,9 @@ class Entry:
             out["error"] = self.error
         elif self.output is not None:
             out["output"] = self.output
+        if self.forms:   # a form can be behind the output: its runner works beside the loop
+            out["forms"] = {name: None if form.value is None else {"value": form.value, "changes_behind": self.changes - form.of}
+                            for name, form in self.forms.items()}
         if self.job is not None:
             out["running_s"] = round(now - self.started, 1)
         if self.runs and self.action is None:   # a quiet output with a new run shows that the source is live (docs/DECISIONS.md, D46)

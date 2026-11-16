@@ -4,16 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "uniselector"
-version = "0.3.0"
+version = "0.4.0"
 description = "An Ashby regulator for long-horizon agent work, built on DataHandles."
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "Paul Santillan" }]
 requires-python = ">=3.11"
-# DataHandles is pinned to one commit. For local work on both repositories, install the local
+# DataHandles is pinned to one tag. For local work on both repositories, install the local
 # checkout over it:  pip install -e ../datahandles
 dependencies = [
-    "datahandles[duckdb,mcp] @ git+https://github.com/psantillan/datahandles@89b47408e308790c07d172b52a0cfaeb43d734df",
+    "datahandles[duckdb,mcp] @ git+https://github.com/psantillan/datahandles@v0.4.1",
     "jsonschema>=4.18",
 ]
 

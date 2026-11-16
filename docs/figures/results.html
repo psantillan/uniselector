@@ -141,11 +141,11 @@ footer { font-family: var(--mono); font-size: 12.5px; color: var(--muted); borde
   </figure>
   <p>Three looks have a dot below 0.5, and each one is a wake. Wake 1 is a surprise. The main agent wrote a sentence about columns that the object does not show. The detector found that the sentence was not true, and the agent wrote a better one. Wake 2 is the new column name. Wake 3 is the end of the feed.</p>
   <p class="q">Can the detector be trusted?</p>
-  <p>A separate check gave it 32 statements about fixed states. The right answer to each statement was known.</p>
+  <p>A separate check gave it 40 statements about fixed states. The right answer to each statement was known.</p>
   <figure>
-    <div class="bar"><span class="key"><i class="dot"></i>the statement is true (24)</span><span class="key"><i class="ring"></i>the statement is not true (8)</span></div>
+    <div class="bar"><span class="key"><i class="dot"></i>the statement is true (30)</span><span class="key"><i class="ring"></i>the statement is not true (10)</span></div>
     <div class="plot" id="fig-detector"></div>
-    <figcaption>The probability of each statement on a log-odds scale. All 32 are on the right side of 0.5. No statement got a probability between 0.05 and 0.99. The check used 6,006 tokens.</figcaption>
+    <figcaption>The probability of each statement on a log-odds scale. All 40 are on the right side of 0.5. No statement got a probability between 0.07 and 0.91. The check used 8,310 tokens.</figcaption>
   </figure>
 </section>
 <section>
@@ -236,16 +236,16 @@ footer { font-family: var(--mono); font-size: 12.5px; color: var(--muted); borde
     <li>In two wakes the runner <code>top</code> used 1,090,476 tokens and gave no result.</li>
     <li>A runner can replace an object that works. One run shows this.</li>
     <li>Each number on this page is one run. Nothing here is a benchmark.</li>
-    <li>The failure log has 64 entries. Each entry points to the run that shows it.</li>
+    <li>The failure log has 66 entries. Each entry points to the run that shows it.</li>
   </ul>
   <p>What does hold: the split between the two loops. With no model runner, the cost of the main agent stayed flat while the wait grew, and the detector cost less than 1% of the cost of the main agent in each of the eight task runs.</p>
-  <p>The next version makes a runner any callable: a model, a human, or a script that the agent wrote one minute ago. A summary or an embedding of an output becomes the same binding on an object that exists already.</p>
+  <p>A runner is any callable: a model, a human, or a script that the agent wrote one minute ago. A summary or an embedding of an output is the same binding on an object that exists already. One check shows what a summary is for. A table was longer than the state keeps, and a new status came to its middle. With no summary, the detector gave the sentence about the statuses 0.998, and nothing woke. With a summary from the local model, it gave 0.257, and the run woke 8.3 s after the new output.</p>
 </section>
 
 <footer>
   <div>Main agent: Claude Code in headless mode, claude-sonnet-5-5 · Decision model: perplexity/pplx-decider-v1.2</div>
-  <div>Runner local: qwen3.8-27b · Runner top: deepseek-v4.1-flash-1017 · Built on DataHandles 0.4</div>
-  <div>Code state: 43 tests pass · mutation check 37 of 37 · decisions D1 to D52 · failures F1 to F64</div>
+  <div>Runner local: qwen3.8-27b · Runner top: deepseek-v4.1-flash-1017 · Built on DataHandles 0.4.1</div>
+  <div>Code state: 51 tests pass · mutation check 33 of 33 · decisions D1 to D54 · failures F1 to F66</div>
 </footer>
 </div>
 <script>
@@ -343,13 +343,13 @@ const WITH = [[0,7793],[1.4,8004],[3.6,8712],[6.3,9488],[8.4,9797],[11.9,10114],
 </script>
 <script>
 (function detector() {
-  // The 32 statements of the detector check (probe_20261116_v4): the probability that the decision model gave.
-  const yes = [.9956,.9959,.9964,.9975,.9976,.9985,.9988,.999,.9992,.9992,.9992,.9993,.9993,.9993,.9993,.9994,.9994,.9994,.9994,.9994,.9995,.9995,.9995,.9995];
-  const no = [.0003,.0008,.0013,.0015,.0067,.0142,.0429,.0493];
+  // The 40 statements of the detector check (probe_20261116_v5): the probability that the decision model gave.
+  const yes = [.9121,.9955,.9956,.9959,.9964,.9975,.9976,.9985,.9987,.9988,.999,.9992,.9992,.9992,.9992,.9993,.9993,.9993,.9993,.9993,.9993,.9994,.9994,.9994,.9994,.9994,.9995,.9995,.9995,.9995];
+  const no = [.0003,.0008,.0013,.0015,.0067,.0142,.0275,.0429,.0493,.0643];
   const host = $("fig-detector"), W = 880, H = 178, L = 50, R = 830, base = 122;
   const lg = p => Math.log(p / (1 - p)), x = p => L + (R - L) * (lg(p) + 8.6) / 17.2;
-  const svg = S("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Eight statements that are not true have probabilities from 0.0003 to 0.0493. Twenty-four true statements have probabilities from 0.9956 to 0.9995. The range between is empty." }, host);
-  S("rect", { x: x(.0493) + 12, y: 34, width: x(.9956) - x(.0493) - 24, height: base - 34, class: "fp" }, svg);
+  const svg = S("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Ten statements that are not true have probabilities from 0.0003 to 0.0643. Thirty true statements have probabilities from 0.9121 to 0.9995. The range between is empty." }, host);
+  S("rect", { x: x(.0643) + 12, y: 34, width: x(.9121) - x(.0643) - 24, height: base - 34, class: "fp" }, svg);
   T(svg, x(.5) + 14, 70, "no statement in this range", { class: "s m" });
   S("line", { x1: L, x2: R, y1: base, y2: base, class: "ax" }, svg);
   S("line", { x1: x(.5), x2: x(.5), y1: 24, y2: base + 6, class: "ax si dash" }, svg);

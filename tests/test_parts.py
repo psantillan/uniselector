@@ -49,7 +49,9 @@ def test_one_look_is_one_call_to_the_decisions_api_with_one_question_for_each_va
          "usage": {"input_tokens": 321, "output_tokens": 0, "cost": 0.0000064}}, 429, 503, 401])
     state = {"notes": "The feed gets new rows.",
              "objects": [{"name": "purchases", "handle": "hdl_1", "type": "computation", "operation": {"capability": "dataset.count"}, "written": "plan",
-                          "output": '{"rows": 21}', "ran_s": 0.4, "runs": 3, "changed_s": 4.0},
+                          "output": '{"rows": 21}', "ran_s": 0.4, "runs": 3, "changed_s": 4.0,
+                          "forms": {"summary": {"value": "21 purchases", "changes_behind": 0}, "old": {"value": "19", "changes_behind": 2},
+                                    "embedding": None}},
                          {"name": "totals", "handle": "hdl_2", "type": "computation", "operation": {"capability": "dataset.head", "input": {"limit": 5}},
                           "written": "wake_1", "error": {"code": "ADAPTER_ERROR", "message": "no column amount"}, "runs": 2, "changed_s": 0.1},
                          {"name": "job", "handle": "hdl_3", "type": "resource", "operation": {"capability": "script.run"}, "written": "plan",
@@ -69,6 +71,8 @@ def test_one_look_is_one_call_to_the_decisions_api_with_one_question_for_each_va
     assert headers["Authorization"] == "Bearer the-key" and body["model"] == "some/decision-model"
     # The decision model reads what each object shows. The statements are the questions, not a part of the state.
     for text in ("The feed gets new rows.", 'purchases (computation): dataset.count {}', 'output: {"rows": 21}', 'dataset.head {"limit": 5}',
+                 "form `summary` of the output: 21 purchases", "form `old` of the output, 2 changes behind the output: 19",
+                 "form `embedding` of the output: no form yet",
                  "ERROR ADAPTER_ERROR: no column amount", "no output yet", "the operation runs now, for 12.5 s", "runs: 3, the last one started 0.4 s ago. last change of the output: 4.0 s ago.", "time: 14.0 s of 60 s. tokens: 500 of 1000."):
         assert text in body["state"], text
     assert "The count is less than 200." not in body["state"]
@@ -233,4 +237,43 @@ def test_the_configuration_names_each_model_runner(tmp_path, monkeypatch):
                   '[runners.local]\nurl = "u"\nmodel = "m"\nwake_tokens = 1\nkey = "a literal key"\n'):
         path.write_text(head + table)
         with pytest.raises(ValueError, match="must state url, model and wake_tokens"):
+            load(path)
+
+
+def test_a_model_runner_makes_a_form_with_the_same_tools(cfg):
+    h = harness(cfg)
+    reply = {"choices": [{"message": {"role": "assistant", "content": None, "tool_calls": [
+        {"id": "call_0", "type": "function", "function": {"name": "form", "arguments": json.dumps({"value": "three statuses"})}}]}}],
+        "usage": {"total_tokens": 300}}
+    text = {"choices": [{"message": {"role": "assistant", "content": "I cannot read it."}}], "usage": {"total_tokens": 10}}
+    server, seen = stand_in([reply, text])
+    given = []
+    try:
+        runner = ModelRunner(f"http://127.0.0.1:{server.server_port}/v1/chat/completions", "some/chat-model", None, 5000, h.clients["orchestrator"])
+        question = {"object": {"name": "totals"}, "form": "summary", "true_of_a_good_form": ["It names each status."]}
+        out = runner(question, given.append, lambda n, cost=0.0: 1000, 30.0)
+        stopped = runner(question, given.append, lambda n, cost=0.0: 1000, 30.0)
+    finally:
+        server.shutdown()
+        server.server_close()
+    assert (out.reason, given) == ("form", ["three statuses"]) and stopped.reason == "the runner stopped with no form: I cannot read it."
+    body = seen[0][1]
+    # The text of the job changes, and the tool that ends the turn. A runner of a form has no wake to give to the main agent.
+    assert "You make one form of the output" in body["messages"][0]["content"] and "It names each status." in body["messages"][1]["content"]
+    assert [t["function"]["name"] for t in body["tools"]] == ["handle_find", "handle_describe", "handle_invoke", "form", "give_up"]
+
+
+def test_the_configuration_names_a_function_as_a_runner(tmp_path):
+    path, head = tmp_path / "uniselector.toml", "[limits]\nbudget_tokens = 1000\nwall_seconds = 60\n"
+    (tmp_path / "mine.py").write_text("def build(client, word):\n    return lambda question, submit, spend, seconds: submit(word)\n")
+    path.write_text(head + f'plan_callables = true\n[runners.script]\ncall = "{tmp_path / "mine.py"}:build"\nword = "a form"\n')
+    cfg = load(path)
+    assert cfg.plan_callables and cfg.runners["script"] == {"call": f"{tmp_path / 'mine.py'}:build", "word": "a form"}
+    cfg.target, cfg.runs_dir = str(tmp_path / "state"), str(tmp_path / "runs")
+    given = []
+    harness(cfg).runners["script"](None, given.append, None, 0)   # each other key of the table is an argument of the function
+    assert given == ["a form"]
+    for table in ('[runners.script]\nword = "a form"\n', '[runners."a:b"]\ncall = "x:y"\n', '[runners.human]\ncall = "x:y"\n'):
+        path.write_text(head + table)
+        with pytest.raises(ValueError, match="Or it states call"):
             load(path)

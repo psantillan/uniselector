@@ -21,6 +21,11 @@ repair of the bound runner does not hold at the next look, the same wake path bi
 After the last one, the runner is the main agent. An object with no runners is bound to the main
 agent. The confirmation of an action is the same binding: the main agent, then the human.
 
+A form of an output is the same binding. An object can name forms of its output: a summary, an
+embedding. Each form has runners, in order. The first one makes the form after each new output,
+beside the loop. When it gives no form, or the form does not pass its check at a look, the next
+runner makes it one time. The form is a small value in the state, or the id of an ordinary handle.
+
 The harness enforces two things: the hard limits, and the action gate. Each other rule is
 information in the state, and the decision model judges it.
 """
@@ -38,11 +43,11 @@ from datahandles.sdk import Handle
 from . import lineage
 from .config import Config, clients as make_clients
 from .decide import NO_ERROR, Busy, Decider, judge
-from .gate import Gate
+from .gate import Gate, is_action
 from .log import RunLog
 from .plan import ANSWER_SCHEMA, check, limits, violations
-from .runner import ModelRunner, Outcome
-from .state import Entry, State, cut
+from .runner import Outcome, load, make
+from .state import Entry, Form, State, cut
 
 ENDED = ("done", "limit", "failed", "left")
 NEXT = {
@@ -53,7 +58,8 @@ NEXT = {
             "(question: the id in `pending`). Keep the name of the object. Leave each other object as it is. If a variable is not correct now, "
             "give a new list of variables. An object shows when its operation last ran (`ran_s`), so a "
             "variable can state that a quiet object still gets new data. `pending.tried` has each runner of the object that gave no "
-            "repair. An object with `in_repair` is with its runner now: leave it. If only that repair can make the variable true, answer with objects: [] and the wake waits for the runner. If the work of the plan is complete, answer with end: true. Then call plan_status with wait_seconds again.",
+            "repair. With `pending.form`, no variable is outside: no runner made that form of the object. Write the object back with other "
+            "runners for the form or with forms: {}, or answer with objects: [] and the form stays empty for this output. An object with `in_repair` is with its runner now: leave it. If only that repair can make the variable true, answer with objects: [] and the wake waits for the runner. If the work of the plan is complete, answer with end: true. Then call plan_status with wait_seconds again.",
     "waiting_confirm": "The operation of an object is an action. Call plan_confirm with the run, the id of the request, and approve, deny, or human.",
     "waiting_human": "The human must decide. Tell the user to run the command in `pending.command`, or the same command with deny. Then "
                      "call plan_status with wait_seconds again.",
@@ -83,11 +89,12 @@ class Run:
         self.state = State(list(plan["variables"]), plan.get("notes"), budget, wall)
         self.state.entries = {e.name: e for e in entries}
         self.status, self.why, self.pending, self.lineage = "running", "", None, None
-        self.counts = {"looks": 0, "wakes": 0, "runner_wakes": 0, "rebinds": 0, "operations": 0, "confirmations": 0, "human_requests": 0}
+        self.counts = {"looks": 0, "wakes": 0, "runner_wakes": 0, "rebinds": 0, "forms": 0, "operations": 0, "confirmations": 0, "human_requests": 0}
         self.cost, self.last_wake, self.ending = 0.0, None, False
         self.told = set()   # the statements of the wake that the main agent answered while a runner worked (docs/DECISIONS.md, D52)
         self.handles = [e.handle for e in entries]   # each handle that was an object of the run, for the lineage
         self.repairs = {}   # for the name of each object that a model runner works on now: the wake, the thread, and what the runner gave
+        self.forming = {}   # the same for each form that a runner makes now, by the name of the object and the name of the form
         self._lock = threading.Condition()
         self._reply, self._ended = None, False
         self.thread = threading.Thread(target=self._main, name=f"uniselector-{run_id}", daemon=True)
@@ -101,10 +108,11 @@ class Run:
             while True:
                 self._check()
                 self._collect()
+                self._forms()
                 end = self.state.clock.elapsed() + self.cfg.wait_seconds
                 self._settle(self._tick(), end)
                 if self.ending:
-                    if all(e.settled() for e in self.state.entries.values()):
+                    if all(e.settled() for e in self.state.entries.values()) and not self.forming and not self._behind():
                         raise _Stop("done", "the main agent ended the run")
                 else:
                     reason = self._due()
@@ -239,12 +247,16 @@ class Run:
     def _look(self, reason: str) -> None:
         """One pass of the decision model over the state: one probability for each essential variable."""
         view = self.state.view()
-        asked = [(NO_ERROR, None)] + [(v, None) for v in self.state.variables]   # a statement, and the object that it is about
+        # A statement, the object that it is about, and the form of that object that it is about.
+        asked = [(NO_ERROR, None, None)] + [(v, None, None) for v in self.state.variables]
         # The check of an object waits for the first output of its version: a trial must last long enough to show its result. It
         # waits also while the runner of the object works.
-        asked += [(f"About the object `{e.name}`: {v}", e) for e in self.state.entries.values()
+        asked += [(f"About the object `{e.name}`: {v}", e, None) for e in self.state.entries.values()
                   if e.first_at is not None and e.repair is None for v in e.variables]
-        statements = [text for text, _ in asked]
+        # The check of a form waits for a form of the newest output.
+        current = [(e, name) for e in self.state.entries.values() for name, f in e.forms.items() if f.value is not None and f.of == e.changes]
+        asked += [(f"About the form `{name}` of the object `{e.name}`: {v}", e, name) for e, name in current for v in e.forms[name].variables]
+        statements = [text for text, _, _ in asked]
         t0 = time.perf_counter()
         try:
             d = self._bounded(lambda: self.decide(view, statements))
@@ -256,16 +268,20 @@ class Run:
         self.state.fresh = False
         self.counts["looks"] += 1
         self._spend(d.tokens, d.cost)
-        outside, owners, news = [], [], []
-        for i in judge(d, self.cfg.inside):
-            text, entry = asked[i]
+        outside, owners, news, failed, found = [], [], [], {}, judge(d, self.cfg.inside)
+        for i in found:
+            text, entry, form = asked[i]
+            item = {"variable": statements[i], "probability": round(d.probs[i], 3)}
+            if form is not None:   # a form that does not pass is a fault of its binding. It is not a break of the object.
+                failed.setdefault((entry.name, form), []).append(item)
+                continue
             own = [entry.name] if entry is not None else self._owners(text)
             owners += own
-            outside.append({"variable": statements[i], "probability": round(d.probs[i], 3)})
+            outside.append(item)
             if not own and text not in self.told:   # a statement with no object is the main agent's, and the main agent does not know it
                 news.append(text)
         self.log.write("decisions", {"run": self.id, "look": self.counts["looks"], "reason": reason, "state": view, "statements": statements,
-                                     "probs": d.probs, "outside": [o["variable"] for o in outside], "tokens": d.tokens, "cost": d.cost,
+                                     "probs": d.probs, "outside": [statements[i] for i in found], "tokens": d.tokens, "cost": d.cost,
                                      "ms": round((time.perf_counter() - t0) * 1000)})
         for entry in self.state.entries.values():   # the look judges each repair that it can see
             if entry.trial and entry.first_at is not None:
@@ -274,6 +290,15 @@ class Run:
                     self._rebind(entry, entry.bound + 1, "the repair of the runner did not hold")
                 else:
                     self._rebind(entry, 0, "the repair held")
+        for entry, name in current:   # the look judges each form that it can see
+            form, bad = entry.forms[name], failed.get((entry.name, name))
+            if bad:   # the next runner makes the form again, and it reads what this one gave
+                form.tried.append({"runner": form.runner, "result": "the form did not pass its check", "form": form.value, "not_true": bad})
+                form.value = form.of = None
+                self._rebind(entry, form.bound + 1, "the form did not pass its check", name)
+            elif form.variables:
+                form.tried = []
+                self._rebind(entry, 0, "the form passed its check", name)
         if not outside:
             return
         target = next((e for e in self.state.entries.values() if e.name in owners and e.name not in self.repairs), None)
@@ -290,12 +315,14 @@ class Run:
         """The objects that a statement of the run is about. A variable that the main agent wrote for the plan has no object."""
         return [e.name for e in self.state.entries.values() if e.error is not None] if statement == NO_ERROR else []
 
-    def _rebind(self, entry: Entry, bound: int, why: str) -> None:
-        """The step inside an object: bind it to another runner of its list. After the last one, the runner is the main agent."""
-        was, entry.bound = entry.runner, min(bound, len(entry.runners))
-        if entry.runner != was:   # a step that keeps the runner changes nothing
+    def _rebind(self, entry: Entry, bound: int, why: str, form: str | None = None) -> None:
+        """The step inside an object: bind it, or one form of it, to another runner of its list. After the last one, the runner is
+        the main agent."""
+        slot = entry if form is None else entry.forms[form]
+        was, slot.bound = slot.runner, min(bound, len(slot.runners))
+        if slot.runner != was:   # a step that keeps the runner changes nothing
             self.counts["rebinds"] += 1
-            self._event({"event": "rebind", "object": entry.name, "from": was, "to": entry.runner, "why": why})
+            self._event({"event": "rebind", "object": entry.name, **({"form": form} if form else {}), "from": was, "to": slot.runner, "why": why})
 
     def _wake(self, outside: list, target: Entry | None) -> None:
         """The step-function: the runner of the object replaces what is broken. The run takes the new version and goes on."""
@@ -322,16 +349,28 @@ class Run:
         question = {"object": entry.summary(now), "sources": sources, "not_true_now": wake["outside"], "tried": list(wake.get("tried", [])),
                     "other_objects": [e.summary(now) for e in self.state.entries.values() if e is not entry],
                     "limits": self.state.limits(), **({"notes": self.state.notes} if self.state.notes else {})}
-        work = {"wake": wake, "entry": entry, "runner": name, "question": question, "tokens": 0, "cost": 0.0}
+        work = {"wake": wake, "entry": entry, "runner": name, "question": question}
 
         def submit(value) -> str | None:
             if self._ended:
                 return "the run ended"
+            if not isinstance(value, dict):
+                return "a repair is an object with `handle` and `operation`"
             value = {"objects": [{"name": entry.name, **{k: value[k] for k in ("handle", "operation") if k in value}}]}
             try:
                 work["reply"] = self._accept(value, wake["id"], by_model=True)
             except (ValueError, HandleError) as e:   # the fault goes back to the runner
                 return str(e)
+
+        entry.repair = wake["id"]
+        self._event({"event": "repair", "wake": wake["id"], "object": entry.name, "runner": name})
+        self.repairs[entry.name] = work
+        self._beside(work, submit, "reply")
+
+    def _beside(self, work: dict, submit, result: str) -> None:
+        """Start a runner beside the loop, on its own thread. `work[result]` is there after the runner gave what the run took."""
+        name, seconds = work["runner"], max(self.state.wall_seconds - self.state.clock.elapsed(), 0)
+        work |= {"tokens": 0, "cost": 0.0}
 
         def spend(tokens: int, cost: float = 0.0) -> int:
             work["tokens"], work["cost"] = work["tokens"] + tokens, work["cost"] + cost
@@ -340,16 +379,88 @@ class Run:
         def run() -> None:
             t0 = time.perf_counter()
             try:
-                work["out"] = self.runners[name](question, submit, spend, max(self.state.wall_seconds - now, 0))
-            except Exception as e:   # a runner that fails gave no repair: this binding is not adequate
+                out = self.runners[name](work["question"], submit, spend, seconds)
+                # The core knows only the call of a runner. A runner that returns no `Outcome` is a plain function (D53).
+                work["out"] = out if isinstance(out, Outcome) else Outcome(
+                    [], {"reply": "repair", "value": "form"}[result] if result in work else "the runner returned, and the run took nothing from it")
+            except Exception as e:   # a runner that fails gave nothing: this binding is not adequate
                 work["out"] = Outcome([], f"the runner failed: {type(e).__name__}: {e}")
             work["ms"] = round((time.perf_counter() - t0) * 1000)
 
-        entry.repair = wake["id"]
-        self._event({"event": "repair", "wake": wake["id"], "object": entry.name, "runner": name})
         work["thread"] = threading.Thread(target=run, name=f"uniselector-{self.id}-{name}", daemon=True)
-        self.repairs[entry.name] = work
         work["thread"].start()
+
+    # ---- the forms of an output ----------------------------------------------------------------
+
+    def _behind(self) -> list:
+        """Each form that is not a form of the newest output of its object, and that no runner makes now."""
+        return [(e, name) for e in self.state.entries.values() if e.first_at is not None and e.output is not None
+                for name, f in e.forms.items() if f.of != e.changes and (e.name, name) not in self.forming]
+
+    def _forms(self) -> None:
+        """Take each form that a runner made, and start the runner of each form that is behind its output. A runner that gave no
+        form binds the next runner of the form. After the last one, the main agent gets a wake."""
+        for key, work in list(self.forming.items()):
+            if work["thread"].is_alive():
+                continue
+            del self.forming[key]
+            entry, name, out = work["entry"], key[1], work["out"]
+            record = {"run": self.id, "object": entry.name, "form": name, "runner": work["runner"], "reason": out.reason,
+                      "tokens": work["tokens"], "cost": work["cost"], "ms": work["ms"]}
+            self.log.write("runners", {**record, "question": work["question"], "calls": out.calls, "value": work.get("value")})
+            self._event({"event": "form", **record})
+            form = entry.forms[name]
+            if self.state.entries.get(entry.name) is not entry:   # a new version of the object came while the runner worked
+                continue
+            if "value" in work:
+                form.value, form.of = work["value"], work["of"]
+                self.counts["forms"] += 1
+                if "handle" in work:
+                    self.handles.append(work["handle"])
+                self.state.fresh = True   # the state has a new form: the next look does not wait for a new output
+                if not form.variables:   # no check judges this form, so the form is good when a runner gives it
+                    form.tried = []
+                    self._rebind(entry, 0, "the form is made", name)
+            else:
+                form.tried.append({"runner": work["runner"], "result": cut(out.reason, self.cfg.value_chars)})
+                self._rebind(entry, form.bound + 1, "the runner gave no form", name)
+        for entry, name in self._behind():
+            form = entry.forms[name]
+            if form.runner in self.runners:
+                self._form(entry, name)
+                continue
+            # Each runner of the form was tried for this output. The form stays empty until the next output.
+            self.counts["wakes"] += 1
+            wake = {"id": f"wake_{self.counts['wakes']}", "kind": "wake", "outside": [], "object": entry.name, "form": name, "tried": form.tried}
+            self._apply(wake, None, "main", self._park("woke", wake))
+            form.value, form.of, form.tried = None, entry.changes, []
+            self._rebind(entry, 0, "the main agent got the wake", name)
+            return   # the answer can change the objects: the next tick reads them again
+
+    def _form(self, entry: Entry, name: str) -> None:
+        """Start the runner of one form for the output that the object shows now."""
+        form, now = entry.forms[name], self.state.clock.elapsed()
+        question = {"object": entry.summary(now), "form": name, "true_of_a_good_form": form.variables, "tried": list(form.tried),
+                    "limits": self.state.limits(), **({"notes": self.state.notes} if self.state.notes else {})}
+        work = {"entry": entry, "runner": form.runner, "question": question, "of": entry.changes}
+
+        def submit(value) -> str | None:
+            if self._ended:
+                return "the run ended"
+            if value is None:
+                return "the form has no value"
+            if isinstance(value, dict) and set(value) == {"handle"}:   # the form is in a handle: the run keeps only its id
+                try:
+                    work["handle"] = self.orchestrator.resolve(value["handle"])
+                    # The form is for a reader: the main agent's principal gets each capability of the handle that is not an action.
+                    work["handle"].grant(self.cfg.planner, [c["name"] for c in work["handle"].describe()["capabilities"] if not is_action(c)])
+                except HandleError as e:   # the fault goes back to the runner
+                    return str(e)
+            work["value"] = cut(value, self.cfg.value_chars)
+
+        self._event({"event": "forming", "object": entry.name, "form": name, "runner": form.runner, "of": entry.changes})
+        self.forming[(entry.name, name)] = work
+        self._beside(work, submit, "value")
 
     def _collect(self) -> None:
         """Take the answer of each model runner that ended. With no repair, the same wake goes to the next runner of the object."""
@@ -394,7 +505,7 @@ class Run:
         now = self.state.entries.get(target.name) if target is not None else None
         if now is not None and now.action is None:
             now.trial = True   # the next look that sees an output of the object judges the repair
-        if by == "main":   # the main agent knows these statements now. They wait while a runner works.
+        if by == "main" and "form" not in wake:   # the main agent knows these statements now. They wait while a runner works.
             self.told = {o["variable"] for o in wake["outside"]} if self.repairs else set()
         self.last_wake = {**wake, "by": by, "answer": reply["value"]}
         self._event({"event": "answer", "wake": wake["id"], "by": by, "value": reply["value"]})
@@ -540,6 +651,8 @@ class Run:
 def why_text(status: str, why: str, pending: dict | None) -> str:
     if status in ENDED:
         return why
+    if status == "woke" and "form" in pending:
+        return f"the object {pending['object']} has no form `{pending['form']}`: each runner of the form was tried, and none gave a good form"
     if status == "woke":
         return (f"the object {pending['object']}: " if "object" in pending else "") + "outside its limits: " + "; ".join(f"{o['variable']} (probability that it is true: {o['probability']})" for o in pending["outside"])
     if status in ("waiting_confirm", "waiting_human"):
@@ -555,15 +668,23 @@ class Harness:
         self.clients = clients or make_clients(cfg)
         self.gate = Gate(self.clients["planner"], cfg.orchestrator, cfg.human, self.clients.get("human"))
         self.decide = decide or Decider(cfg.decision_url, cfg.decision_model, os.environ[cfg.decision_key_env])
-        # A model runner works as the orchestrator's principal, so the runtime gives it no action.
-        self.runners = runners if runners is not None else {
-            name: ModelRunner(r["url"], r["model"], os.environ[r["key_env"]] if "key_env" in r else None, r["wake_tokens"],
-                              self.clients["orchestrator"], r.get("body")) for name, r in cfg.runners.items()}
+        # A runner works as the orchestrator's principal, so the runtime gives it no action.
+        self.runners = runners if runners is not None else {name: make(r, self.clients["orchestrator"]) for name, r in cfg.runners.items()}
         self.runs = {}
+
+    def _known(self, name: str) -> bool:
+        """Does the runner `name` work beside the loop? A name with a colon is code that the main agent wrote: load it now, so the
+        newest text of the file runs. That code runs in this process, so the user decides in the configuration (D53)."""
+        if ":" in name:
+            if not self.cfg.plan_callables:
+                raise ValueError(f"the runner {name!r} is code, and the configuration does not let a plan name code (plan_callables). "
+                                 "The user decides this.")
+            self.runners[name] = load(name, self.clients["orchestrator"])
+        return name in self.runners
 
     def prepare(self, objects: list, written: str, current: dict | None = None) -> list:
         """Take objects into a run. The main agent can hand off only a handle that it holds, and only an operation that the handle has.
-        `current` has the objects of the run: a new version keeps the variables and the runners of its name."""
+        `current` has the objects of the run: a new version keeps the variables, the runners and the forms of its name."""
         entries = []
         for o in objects:
             old = (current or {}).get(o["name"])
@@ -573,6 +694,14 @@ class Harness:
             capabilities = {c["name"]: c for c in handle.describe()["capabilities"]} | actions
             operation, name = o["operation"], o["operation"]["capability"]
             variables = o.get("variables", old.variables if old is not None else [])
+            if name in actions or name not in capabilities:
+                if o.get("forms"):
+                    raise ValueError(f"the operation of the object {o['name']!r} is an action. An action has no forms")
+                forms = {}
+            elif "forms" in o:
+                forms = {n: Form(list(f["runners"]), list(f.get("variables", []))) for n, f in o["forms"].items()}
+            else:   # a new version makes each form again, from the first runner
+                forms = {n: Form(f.runners, f.variables) for n, f in old.forms.items()} if old is not None else {}
             if name not in capabilities and o.get("runners") == ["human"]:
                 # An action that only the human's principal holds. The runtime checks the input when the human runs it (docs/GAPS.md, G16).
                 entries.append(Entry(o["name"], handle, operation, written, {"description": HELD_BY_HUMAN}, variables, ["human"], "human"))
@@ -591,13 +720,15 @@ class Harness:
                     raise ValueError(f"the operation of the object {o['name']!r} is an action. Its runners are {json.dumps(runners)}")
             else:
                 runners = o.get("runners", old.runners if old is not None and old.action is None else [])
-                unknown = [r for r in runners if r != "main" and r not in self.runners]
+                unknown = [r for r in runners if r != "main" and not self._known(r)]
+                unknown += [r for f in forms.values() for r in f.runners if not self._known(r)]   # a form has no `main` in its list
                 if unknown:
                     raise ValueError(f"the object {o['name']!r} has no runner {unknown[0]!r}. A runner of an object that is not an action is "
-                                     f"`main` or a model runner of the configuration: {', '.join(sorted(self.runners)) or 'it has none'}")
+                                     f"`main`, code of yours (`FILE.py:NAME`), or a runner of the configuration: "
+                                     f"{', '.join(sorted(r for r in self.runners if ':' not in r)) or 'it has none'}")
                 if any(r in self.runners for r in runners):
                     self.gate.delegate(o["handle"], sources=True)
-            entries.append(Entry(o["name"], handle, operation, written, actions.get(name), variables, runners))
+            entries.append(Entry(o["name"], handle, operation, written, actions.get(name), variables, runners, forms=forms))
         return entries
 
     def submit(self, plan: dict) -> dict:

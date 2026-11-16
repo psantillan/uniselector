@@ -39,8 +39,10 @@ class Config:
     wait_seconds: float = 2.0   # the time of one tick: the run observes each object one time (D35)
     value_chars: int = 600      # the size of one output in the state and in a summary (D36)
 
-    # The model runners: one `[runners.NAME]` table for each (D43). An object names its runners. The main agent and the human need no table.
+    # The runners: one `[runners.NAME]` table for each (D43, D53). An object names its runners. The main agent and the human need no table.
     runners: dict = field(default_factory=dict)
+    # Can a plan name a runner in code that the main agent wrote (`FILE.py:NAME`)? That code runs in this process (D53).
+    plan_callables: bool = False
 
 
 def load(path) -> Config:
@@ -51,10 +53,11 @@ def load(path) -> Config:
         raise ValueError(f"{path}: [limits] must state {' and '.join(missing)}. The user decides the hard limits.")
     runners = data.pop("runners", {})
     for name, runner in runners.items():
-        # `wake_tokens` has no default: it is a limit of the spend, so the user states it.
-        if name in ("main", "human") or not {"url", "model", "wake_tokens"} <= set(runner) <= {"url", "model", "wake_tokens", "key_env", "body"}:
-            raise ValueError(f"{path}: [runners.{name}] must state url, model and wake_tokens, and it can state key_env and body. "
-                             "The names main and human are taken.")
+        # `wake_tokens` has no default: it is a limit of the spend, so the user states it. A table with `call` names code of the user.
+        model = {"url", "model", "wake_tokens"} <= set(runner) <= {"url", "model", "wake_tokens", "key_env", "body"}
+        if name in ("main", "human") or ":" in name or not ("call" in runner or model):
+            raise ValueError(f"{path}: [runners.{name}] must state url, model and wake_tokens, and it can state key_env and body. Or it "
+                             "states call. The names main and human are taken, and a name has no colon.")
     flat = {**limits, **{k: v for section in data.values() for k, v in section.items()}}
     unknown = sorted(set(flat) - {f.name for f in fields(Config)})
     if unknown:

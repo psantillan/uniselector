@@ -15,7 +15,10 @@ GOAL = "The work can go on."
 
 
 def rename(events, old="event_type", new="kind"):
-    events.write_text(events.read_text().replace(old, new, 1))
+    """Give a column a new name. The file changes in one step, so a reader never gets a part of it."""
+    new_file = events.with_suffix(".new")
+    new_file.write_text(events.read_text().replace(old, new, 1))
+    new_file.replace(events)
 
 
 def world(cfg, events, runners):
@@ -52,7 +55,7 @@ def test_the_runner_of_an_object_repairs_it_and_the_main_agent_sleeps(cfg, event
     shown = shows(h, run, "purchases", lambda o: o["written"] == "wake_1" and o.get("output") == json.dumps({"rows": rows_of(events)}))
     assert shown["runner"] == "local" and shown["handle"] != first["handle"]
     summary = finish(h, run, until=("running",))
-    assert summary["counts"] | {"looks": 0, "operations": 0} == {"looks": 0, "wakes": 1, "runner_wakes": 1, "rebinds": 0, "operations": 0,
+    assert summary["counts"] | {"looks": 0, "operations": 0} == {"looks": 0, "wakes": 1, "runner_wakes": 1, "rebinds": 0, "forms": 0, "operations": 0,
                                                                   "confirmations": 0, "human_requests": 0}
     assert not [e for e in lines(summary, "events") if e["event"] == "woke"]   # the main agent got nothing
     assert (summary["last_wake"]["by"], summary["last_wake"]["object"]) == ("local", "purchases")
@@ -290,3 +293,48 @@ def test_the_token_budget_holds_while_a_runner_works(cfg, events):
     assert late == ["the run ended"] and h.status(run)["objects"][0]["written"] == "plan"   # the run takes no repair after its end
     # The runner stopped at the request that passed the budget: the spend is over the budget by less than one request and one look.
     assert cfg.budget_tokens <= h.status(run)["limits"]["tokens"] < cfg.budget_tokens + 1100
+
+
+CODE = '''
+def by_kind(client, value="purchase"):
+    """A runner with no model: a filter on the new column name, on the source of the broken object."""
+    def repair(question, submit, spend, seconds):
+        source = client.resolve(question["sources"][-1])
+        new = source.invoke("dataset.filter", {"where": [{"column": "kind", "op": "eq", "value": value}]})
+        # A fault goes back as a text, and the runner corrects its value.
+        if submit("the new filter") == "a repair is an object with `handle` and `operation`":
+            submit({"handle": new.id, "operation": {"capability": "dataset.count"}})
+    return repair
+
+not_a_runner = lambda client: "a text"
+'''
+
+
+def test_a_runner_is_any_function_of_the_users_code_or_of_the_agents_code(cfg, events, tmp_path):
+    code = tmp_path / "fix.py"
+    code.write_text(CODE)
+    cfg.runners = {"script": {"call": f"{code}:by_kind", "value": "purchase"}}   # the user names this function in the configuration
+    h = harness(cfg)
+    source = table(h, events)
+
+    def plan(runner):
+        return {"objects": [{**thing("purchases", purchases(source)), "runners": [runner]}], "variables": [SLEEP]}
+
+    # A plan can name code only when the user lets it: that code runs in the process of the harness.
+    with pytest.raises(ValueError, match="plan_callables"):
+        h.submit(plan(f"{code}:by_kind"))
+    h.cfg.plan_callables = True
+    for name, fault in (("nothing", "did not load: AttributeError"), ("not_a_runner", "must return a function")):
+        with pytest.raises(ValueError, match=fault):
+            h.submit(plan(f"{code}:{name}"))
+    runs = [h.submit(plan(runner))["run"] for runner in ("script", f"{code}:by_kind")]
+    for run in runs:
+        shows(h, run, "purchases", lambda o: o.get("output"))
+    rename(events)
+    for run, runner in zip(runs, ("script", f"{code}:by_kind")):
+        shown = shows(h, run, "purchases", lambda o: o["written"] == "wake_1" and o.get("output") == json.dumps({"rows": rows_of(events)}))
+        summary = finish(h, run, until=("running",))
+        # A function that returns nothing is a runner: the run took its repair, and the main agent got no wake.
+        record = lines(summary, "runners")[0]
+        assert (shown["runner"], record["runner"], record["reason"], record["tokens"]) == (runner, runner, "repair", 0)
+        assert not [e for e in lines(summary, "events") if e["event"] == "woke"]

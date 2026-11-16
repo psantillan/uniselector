@@ -817,6 +817,9 @@ the first `plan_submit` call: the main agent wrote JSON that did not parse
   tool text says so. Open: a new value in the middle of a long output does not reach the decision
   model. The object that fits is small (one row for each status). The main agent built that
   object at the wake.
+- Changed: an object can carry a summary form of its output, and the state shows the form
+  (`docs/DECISIONS.md`, D54). In `forms_20261116_214113`, a new status in the part that the state
+  did not keep gave a wake in the run with the form, and no wake in the run with none.
 
 ### F51. The main agent left a run at a wake
 
@@ -1116,3 +1119,34 @@ plan woke the main agent at 62.0 s (E 53). The session took 101.2 s. The session
   says already: "Change only what is broken: the new version shows the same thing as the old one."
   `handle_describe` of the filtered handle showed the old column name (`docs/GAPS.md`, G14), so the
   runner could not see from it that the filter still worked.
+
+### F65. The decision model did not get the forms
+
+- Part: state.
+- What happened: `tasks/forms.py` gave an object a summary form with the check "The summary names
+  each status that the table has." The runner `local` gave a good summary: "The table has three
+  statuses: paid, pending, and refunded." The look gave the check a probability of 0.116, the run
+  bound the main agent, and the run woke. A second run with the check "The summary names one
+  status or more." gave 0.085 for a summary that named three statuses.
+- The cause: the state had the forms, and the text that the Decisions API reads did not.
+  `decide.render` wrote the output of each object and no form. The decision model judged a
+  sentence about a text that it did not get.
+- Why no test found it: the deciders of the tests read the state as a value. Only the Decisions
+  API reads the text.
+- Evidence: `forms_20261116_213834` and `forms_20261116_213937`: `pending.tried` in `record.json`,
+  and the last look in `decisions.jsonl` of the run with the forms.
+- Fixed: the text has one line for each form now, with the count of the changes that it is behind.
+  `test_one_look_is_one_call_to_the_decisions_api_with_one_question_for_each_variable` states the
+  lines. The detector check has three cases with a form (`probe_20261116_v5`: 40 of 40). The run
+  after the fix: `forms_20261116_214113`.
+
+### F66. A function of the task read the rows by name
+
+- Part: the task driver.
+- What happened: the function runner of the form `embedding` in `tasks/forms.py` read each row of
+  `dataset.head` as a record. The rows are lists, and the names are in `columns`. The function
+  raised a `TypeError`. The run recorded the fault, bound the main agent, and woke one time with
+  `object`, `form` and `tried`. This is the path of D54 for a runner that gives no form.
+- Evidence: `forms_20261116_213117`: `pending` in `record.json`, and events 5 to 7 of the run with
+  the forms.
+- Fixed: the function reads the names from `columns`.

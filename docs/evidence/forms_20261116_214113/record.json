@@ -1,0 +1,90 @@
+{
+ "runner": "qwen3.8-27b",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "table_rows": 19,
+ "table_characters": 748,
+ "new_status": "disputed",
+ "runs": {
+  "plain": {
+   "state": "running",
+   "why": "the objects run, and no look found a variable outside its limits",
+   "pending": null,
+   "counts": {
+    "looks": 3,
+    "wakes": 0,
+    "runner_wakes": 0,
+    "rebinds": 0,
+    "forms": 0,
+    "operations": 2,
+    "confirmations": 0,
+    "human_requests": 0
+   },
+   "limits": {
+    "elapsed_s": 28.6,
+    "wall_seconds": 600,
+    "tokens": 2106,
+    "budget_tokens": 8000000
+   },
+   "looks_after_the_new_status": 1,
+   "new_status_in_the_output_of_the_state": false,
+   "forms_before": null,
+   "forms_after": null
+  },
+  "formed": {
+   "state": "woke",
+   "why": "outside its limits: The table of the object `totals` has only the statuses paid, pending and refunded. (probability that it is true: 0.257)",
+   "pending": {
+    "id": "wake_1",
+    "kind": "wake",
+    "outside": [
+     {
+      "variable": "The table of the object `totals` has only the statuses paid, pending and refunded.",
+      "probability": 0.257
+     }
+    ]
+   },
+   "counts": {
+    "looks": 7,
+    "wakes": 1,
+    "runner_wakes": 0,
+    "rebinds": 0,
+    "forms": 4,
+    "operations": 2,
+    "confirmations": 0,
+    "human_requests": 0
+   },
+   "limits": {
+    "elapsed_s": 18.4,
+    "wall_seconds": 600,
+    "tokens": 13206,
+    "budget_tokens": 8000000
+   },
+   "looks_after_the_new_status": 4,
+   "new_status_in_the_output_of_the_state": false,
+   "forms_before": {
+    "summary": {
+     "value": "Totals by region and status (paid, pending, refunded) across six regions: central, east, islands, north, south, west.",
+     "changes_behind": 0
+    },
+    "embedding": {
+     "value": "{\"handle\": \"hdl_01M7K4X96RD29W7CN97REQXPJY\"}",
+     "changes_behind": 0
+    }
+   },
+   "forms_after": {
+    "summary": {
+     "value": "Totals by region and status across six regions (central, east, islands, north, south, west). Statuses: paid, pending, refunded, and disputed (disputed appears only in north).",
+     "changes_behind": 0
+    },
+    "embedding": {
+     "value": "{\"handle\": \"hdl_01M7K4XJZGVHGJ80885M4F4SGN\"}",
+     "changes_behind": 0
+    }
+   }
+  }
+ },
+ "seconds_to_the_wake_of_formed": 10.5,
+ "vectors_before_the_new_status": {
+  "rows": 18
+ }
+}

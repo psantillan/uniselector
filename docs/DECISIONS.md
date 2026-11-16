@@ -21,6 +21,10 @@ The words used here:
 - **Wake**: the run gives the main agent the variables that are outside their limits, and waits
   for its answer.
 - **Tick**: one pass of the loop over the objects (`wait_seconds`).
+- **The brief**: the text of the author of the project that started the work. It names the theory
+  and the task. It is not in the repository.
+- **Ruling**: a later direction of the author that changed the design. "The user" in an entry is
+  the author.
 
 Words of the first design, in D1 to D28 only: a **decision** was one call of `decide(state,
 options)`; the **walk** was the decisions that chose one operation and filled its input; a
@@ -950,6 +954,12 @@ statement that was still not true never woke the main agent again. The last line
 `test_a_variable_with_no_object_wakes_the_main_agent_while_a_runner_works_and_waits_after_the_answer`
 stop it now. A test fails for each of the 37.
 
+**The fourth check.** The code of D53 and D54 was checked with 33 mutations in `run.py`,
+`runner.py`, `state.py` and `config.py`. A test failed for 32 of them. The one that lived: the run
+took a repair that is not an object, and the runner got no fault text.
+`test_a_runner_is_any_function_of_the_users_code_or_of_the_agents_code` stops it now: its runner
+first submits a text and reads the fault. A test fails for each of the 33.
+
 ## D48. The spend is not a variable. The hard budget is the limit
 
 D45 is removed: the statement about the projected tokens, the projection, and the rate of changes
@@ -1146,3 +1156,135 @@ Not built: after a repair that does not hold, the object keeps the version of th
 next runner gets a new wake with no `tried`. The next runner does not see the version that the
 main agent wrote (F60). The change belongs in the object (the object keeps its version from before
 a trial), and no run showed yet that it removes the cost of F61.
+
+## D53. A runner is any callable
+
+A runner is a function `runner(question, submit, spend, seconds)`. The run does not know what is
+behind it: a model, a script, or code that the main agent wrote one minute ago.
+
+Reason: the Homeostat's uniselector does not know what its positions connect. It steps to the next
+position, and the essential variables show if that position is adequate. The run judges a runner
+the same way: by the next look at the object, never by its kind (D40, D42). So the code of the run
+has one path for each runner, and a model runner (D43, D50) is one such function.
+
+| Argument | What it is |
+| --- | --- |
+| `question` | The wake: the object, what is outside its limits, what each runner before this one tried, the notes, and the limits |
+| `submit(value)` | Gives the result to the run. It returns `None`, or the fault as a text, so the runner can correct the value and call it again |
+| `spend(tokens, cost)` | Counts a spend against the hard budget of the run. It returns the tokens that the run has left |
+| `seconds` | The wall time that the run has left |
+
+**Where a runner comes from.**
+
+- A table `[runners.NAME]` with `url` is a model runner, as before.
+- A table `[runners.NAME]` with `call` names a function of the user's code: `FILE.py:NAME` or
+  `MODULE:NAME`. Uniselector calls `NAME(client, ...)` one time at the start, with the DataHandles
+  client of the orchestrator's principal and each other key of the table as an argument. `NAME`
+  returns the runner.
+- A plan, or an answer to a wake, can name `FILE.py:NAME` in the runners of an object. This is the
+  code of the main agent. The harness loads the file each time an object names it, so the newest
+  text of the file runs. The object keeps the name, so a version of the object states its runner.
+
+**The user decides if a plan can name code** (`plan_callables`, default: false). Reason: that code
+runs in the process of Uniselector. With a state directory as the target, the process holds the
+client of each principal, so the code can do what the human's principal can do. The action gate is
+a rule of the protocol against a fault of the orchestrator (the brief, "Actions"). It is not a
+sandbox for code. The brief gives the user the hard limits and the actions that come to a human,
+and this setting is of the same kind: it decides what can act with no confirmation. A table with
+`call` needs no such setting, because the user wrote the table.
+
+- A fault at the load (no file, no function, an error in the code, a result that is not a
+  function) rejects the plan or the answer with one message. The main agent reads it and corrects
+  the code.
+- A runner that raises gave no repair, as in D49: the next runner of the object gets the wake.
+- A runner can return nothing. Then the run reads what it took: a repair, a form, or "the runner
+  returned, and the run took nothing from it".
+- The name of a runner in a table has no colon, so the two kinds of names cannot be the same.
+- A function that calls a model counts its tokens with `spend`. The run cannot count the work of
+  code that does not call `spend`.
+
+Known limits. The run cannot stop a function that does not return: its thread stays, and the
+object stays `in_repair` until the hard limits end the run. A function works with the principal of
+the orchestrator, as a model runner does (D43), so the runtime gives it no action.
+
+Tests: `test_a_runner_is_any_function_of_the_users_code_or_of_the_agents_code`,
+`test_the_configuration_names_a_function_as_a_runner`.
+
+## D54. A form of an output is the same binding
+
+An object can carry forms of its output: for the name of each form, an ordered list of runners and
+an optional check. A summary, an embedding and a table of keys are forms.
+
+```
+{"name": "totals", "handle": "hdl_...", "operation": {"capability": "dataset.head", "input": {"n": 50}},
+ "forms": {"summary":   {"runners": ["local", "top"], "variables": ["The summary names one status or more."]},
+           "embedding": {"runners": ["embedder"]}}}
+```
+
+Reason: ruling 4 of the user. An optional behavior of an object is a runner that is bound to an
+object that exists already. The core has no engine for it and stores no vectors. This is also the
+first fix for F50: the state keeps the first part and the last part of a long output (D38), so a
+new value in the middle did not reach the decision model. A form is small, and the state shows it
+beside the output.
+
+| Rule | Reason |
+| --- | --- |
+| A form has no object of its own. It is a part of an object, and it uses `Run._rebind`, the runner log and the events of that object | Ruling 3: update the objects, do not add paths |
+| With no `forms`, the object makes no form and no runner starts | Ruling 4: when the binding is absent, the object offers no such behavior |
+| The runner of a form starts at each new output of the object, and it works beside the loop (D49) | A form of an old output is not a model of the object now (Conant and Ashby) |
+| The state shows each form with `changes_behind`: the count of the changes of the output after the output that the form is of | The decision model and the main agent must know how old a form is |
+| The value of a form is a bounded JSON value (D36), or `{"handle": ID}` | The output of a runner stays an ordinary data handle. The run keeps the id only |
+| For a form in a handle, the run gives the main agent's principal each capability of the handle that is not an action, and it adds the handle to the lineage | The form is for a reader. The runner works as the orchestrator's principal, so the main agent cannot read its handle with no grant |
+| The check of a form is sentences, and the decision model judges them at a look while the form is of the newest output | The same check as for an object (D41). A look does not judge a form of an older output: the runner already makes a new one |
+| A form that does not pass its check gives no wake. The run removes the value, records what was not true in `tried`, and binds the next runner | The existing path of a rebind. A form is not the work of the plan, so its fault does not stop the main agent |
+| A runner that gives no form binds the next runner | Same |
+| A form with no check is good when a runner gives it, and the first runner is bound again | With no stated check, nothing can reject the form |
+| After the last runner, the main agent gets one wake with `object`, `form` and `tried`. Then the form stays empty until the next output | The order of escalation of the brief. One wake for each output, so a form that no runner can make does not wake the main agent in a cycle |
+| A form that passes its check binds the first runner again | A later runner works for one output, as for a repair (D42) |
+| A new version of an object keeps the forms of its name, with no values. `forms: {}` removes them | The binding is a part of the object, as `runners` is. A runner that repairs an object does not know its forms |
+| The end of a run waits for a form of the newest output | The last summary shows the forms, and the main agent reads them |
+| An action has no forms | An action runs one time, and its result is in the lineage |
+| A runner list of a form cannot name `main` or `human` | The main agent gets the wake after the last runner. A human does not write a summary at each output |
+
+A model runner makes a form with the same loop and the same reading tools as a repair. It has
+another instruction text and the final tool `form` in place of `repair` and `to_main`.
+
+**Where the vectors are.** Not in Uniselector. An embedding runner is a function of the user (D53).
+It writes its vectors where it chooses, registers a DataHandles handle for them, and gives the id
+to `submit`. The task `tasks/forms.py` has one such function. Its vectors come from a hash of
+words, so the task checks the binding and not an engine.
+
+Known limits.
+
+- Each form that a run takes makes one more look, so forms add to the looks (F49).
+- An object whose output changes at each reading starts the runner of each form again each time.
+  The runner of a slow form can be behind its output all the time (`changes_behind` shows it).
+- The decision model cannot compare a summary with the part of the output that the state cut. A
+  check of a form rejects only what the decision model can see. So the check of a form states what
+  the form shows ("The summary names one status or more."), not a relation to the full output
+  ("The summary names each status that the table has.").
+- A form that waits for its check is in the state already, so the decision model reads it at the
+  same look that judges it.
+
+Tests: `tests/test_forms.py` (5 tests), and
+`test_a_model_runner_makes_a_form_with_the_same_tools` in `tests/test_parts.py`.
+
+**The live check** (`tasks/forms.py`, `forms_20261116_214113`). Two runs watched one table of 18
+rows with the variable "The table of the object `totals` has only the statuses paid, pending and
+refunded." The table had 782 characters, and the state keeps 600. One run had the object with no
+forms. The other run had a summary form (the runner `local`, `qwen3.8-27b`) and an embedding form
+(a function of the task). Then five orders with the status `disputed` came to the region north, in
+the part of the table that the state does not keep.
+
+| | No forms | Two forms |
+| --- | --- | --- |
+| The probability of the variable at the look after the new status | 0.998 | 0.257 |
+| Wakes | 0 | 1, 8.3 s after the new output |
+| Looks | 3 | 7 |
+| Tokens of the decision model | 2,106 | 5,616 |
+| Tokens of the runner `local`, for two summaries | 0 | 7,590 (4.4 s and 5.0 s) |
+
+The new summary said: "Statuses: paid, pending, refunded, and disputed (disputed appears only in
+north)." The function wrote 18 vectors to a file for the first output, in 0.1 s, and the run got
+the handle. Each number is from one run. The first three runs of this task found two faults (F65,
+F66).

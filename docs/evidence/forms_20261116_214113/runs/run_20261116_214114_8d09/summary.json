@@ -1,0 +1,69 @@
+{
+ "run": "run_20261116_214114_8d09",
+ "state": "left",
+ "why": "the MCP server of the main agent ended before the run did",
+ "plan": {
+  "variables": [
+   "The table of the object `totals` has only the statuses paid, pending and refunded."
+  ]
+ },
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7K4X72PE50AY4ABS8HK30NG",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "written": "plan",
+   "output": "{\"columns\": [\"region\", \"status\", \"total\", \"n\"], \"rows\": [[\"central\", \"paid\", 4365.43, 21], [\"central\", \"pending\", 6152.6, 27], [\"central\", \"refunded\", 5286.9, 27], [\"east\", \"paid\", 3955.0699999999997, 20], [\"east\", \"pending\", 5951.009999999999, 31], [\"east\", \"refunded\", 4728.03, 26], [\"islands\", \"pa ... (cut: 215 of 815 characters) ... 001, 26], [\"north\", \"refunded\", 2921.48, 17], [\"south\", \"paid\", 4697.14, 29], [\"south\", \"pending\", 5006.210000000001, 31], [\"south\", \"refunded\", 4637.200000000001, 24], [\"west\", \"paid\", 3454.86, 19], [\"west\", \"pending\", 2981.7000000000007, 13], [\"west\", \"refunded\", 4412.65, 21]], \"truncated\": false}",
+   "forms": {
+    "summary": {
+     "value": "Totals by region and status across six regions (central, east, islands, north, south, west). Statuses: paid, pending, refunded, and disputed (disputed appears only in north).",
+     "changes_behind": 0
+    },
+    "embedding": {
+     "value": "{\"handle\": \"hdl_01M7K4XJZGVHGJ80885M4F4SGN\"}",
+     "changes_behind": 0
+    }
+   },
+   "ran_s": 8.4,
+   "runs": 2,
+   "changes": 1,
+   "changed_s": 8.3
+  }
+ ],
+ "pending": {
+  "id": "wake_1",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "The table of the object `totals` has only the statuses paid, pending and refunded.",
+    "probability": 0.257
+   }
+  ]
+ },
+ "last_wake": null,
+ "lineage": "/tmp/scratch/v04/forms-work/forms_20261116_214113/runs/run_20261116_214114_8d09/lineage.json",
+ "logs": "/tmp/scratch/v04/forms-work/forms_20261116_214113/runs/run_20261116_214114_8d09",
+ "limits": {
+  "elapsed_s": 18.4,
+  "wall_seconds": 600,
+  "tokens": 13206,
+  "budget_tokens": 8000000
+ },
+ "counts": {
+  "looks": 7,
+  "wakes": 1,
+  "runner_wakes": 0,
+  "rebinds": 0,
+  "forms": 4,
+  "operations": 2,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The process of the run ended before the run did. The handles of the objects stay usable. Call plan_submit to watch them again."
+}

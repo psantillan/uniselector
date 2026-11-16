@@ -1,0 +1,32 @@
+{
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7K4X72PE50AY4ABS8HK30NG",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "forms": {
+    "summary": {
+     "runners": [
+      "local"
+     ],
+     "variables": [
+      "The summary names one status or more."
+     ]
+    },
+    "embedding": {
+     "runners": [
+      "embedder"
+     ]
+    }
+   }
+  }
+ ],
+ "variables": [
+  "The table of the object `totals` has only the statuses paid, pending and refunded."
+ ]
+}
