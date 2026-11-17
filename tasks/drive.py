@@ -57,6 +57,8 @@ RUNNERS = ('The configuration has the model runners `local` and `top`. Give an o
 BUDGET_TOKENS, WALL_SECONDS = 5_000_000, 1800
 # ASSUMED: 40 minutes. The longest time that the driver gives the main agent for one task.
 AGENT_SECONDS = 2400
+# The two variables of Claude Code that move the point of a compaction. The main agent gets them from the environment of this process.
+COMPACT_ENV = ("CLAUDE_CODE_AUTO_COMPACT_WINDOW", "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE")
 # The first operation of the main agent in its event stream. The name of the tool is also in the first event, in the list of the tools.
 FIRST_OPERATION = re.compile(r'"type":"tool_use","id":"[^"]*","name":"mcp__datahandles__handle_invoke"')
 REGIONS = ["north", "south", "east", "west"]
@@ -242,7 +244,7 @@ def commit() -> str:
 
 def measure(stream_file: Path) -> dict:
     """Read the event stream of the main agent: its context at each turn, and its tool calls."""
-    contexts, calls, result, model = [], {}, {}, None
+    contexts, calls, result, model, compactions = [], {}, {}, None, []
     for line in stream_file.read_text().splitlines():
         try:
             event = json.loads(line)
@@ -250,6 +252,8 @@ def measure(stream_file: Path) -> dict:
             continue
         if event.get("type") == "system" and event.get("subtype") == "init":
             model = event.get("model")
+        if event.get("type") == "system" and event.get("subtype") == "compact_boundary":   # the main agent compacted its context
+            compactions.append(event.get("compact_metadata") or event.get("compactMetadata") or {})
         if event.get("type") == "assistant":
             usage = event["message"].get("usage", {})
             contexts.append(usage.get("input_tokens", 0) + usage.get("cache_read_input_tokens", 0) + usage.get("cache_creation_input_tokens", 0))
@@ -259,7 +263,7 @@ def measure(stream_file: Path) -> dict:
         if event.get("type") == "result":
             result = event
     return {"agent_model": model, "context_first_turn": contexts[0] if contexts else None, "context_peak": max(contexts, default=None),
-            "context_added": max(contexts) - contexts[0] if contexts else None, "tool_calls": calls,
+            "context_added": max(contexts) - contexts[0] if contexts else None, "compactions": compactions, "tool_calls": calls,
             "turns": result.get("num_turns"), "agent_seconds": round(result.get("duration_ms", 0) / 1000, 1),
             "answer": result.get("result"), "agent_error": result.get("is_error")}
 
@@ -314,7 +318,7 @@ def main() -> None:
                 subprocess.run(command, cwd=world.dir / "agent", stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, timeout=AGENT_SECONDS)
             except subprocess.TimeoutExpired:
                 pass
-        record = {"task": a.task, "direct": a.direct, "clock": a.clock, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
+        record = {"task": a.task, "direct": a.direct, "clock": a.clock, "agent_environment": {k: os.environ[k] for k in COMPACT_ENV if k in os.environ}, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
                   "decision_model": a.decision_model, "limits": {"budget_tokens": a.budget_tokens, "wall_seconds": WALL_SECONDS}, "runners": runners,
                   "seconds": round(time.time() - t0, 1), **measure(world.dir / "agent-stream.jsonl")}
         record["right"] = bool(record["answer"]) and bool(task["check"](record["answer"]))
