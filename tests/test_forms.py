@@ -308,3 +308,53 @@ def test_a_form_of_a_version_that_is_gone_is_not_taken(cfg, events):
     # The form was of the old version, so the run did not take it. The new version shows what the runner spent.
     assert (summary["state"], summary["counts"]["forms"], summary["objects"][0]["forms"]) == ("running", 0, {"summary": None})
     assert summary["objects"][0]["runner_tokens"] == 500
+
+
+def test_a_compaction_runner_works_only_when_the_context_of_the_main_agent_is_near_its_limit(cfg, events, tmp_path):
+    near = "The context of the main agent is below 80% of the tokens at which it compacts by itself."
+    report = tmp_path / "context.json"
+
+    def context(tokens):
+        report.write_text(json.dumps({"tokens": tokens, "compacts_at": 10_000}))
+
+    def idle(question, submit, spend, seconds):   # a runner that says that it compacted, and the context stays as it is
+        idle.seen.append(question)
+        submit("compacted")
+
+    def compact(question, submit, spend, seconds):
+        compact.seen.append(question)
+        context(3_000)
+        submit("the context went from 9000 to 3000 tokens")
+
+    idle.seen, compact.seen = [], []
+    h = harness(cfg, lambda state, statement: near not in statement or state["main_context"]["tokens"] < 8_000, {"idle": idle, "compact": compact})
+    source = table(h, events)
+    plan = {"objects": [{**thing("purchases", purchases(source)), "forms": {"compaction": {"runners": ["idle", "compact"], "variables": [near]}}}],
+            "variables": [SLEEP]}
+    with pytest.raises(ValueError, match="main_context"):   # with no report of the context, no sentence about it can be judged
+        h.submit(plan)
+    cfg.main_context = str(report)
+    context(1_000)
+    run = h.submit(plan)["run"]
+    append(events, 1)
+    looks = looked(h, run, lambda state: state["objects"][0].get("output") == json.dumps({"rows": rows_of(events)}))
+    # The sentence is in each look, and the look has the context. No runner started: the binding is silent.
+    assert all(look["statements"][-1].endswith(near) and look["state"]["main_context"]["tokens"] == 1_000 for look in looks)
+    assert "context of the main agent: 1000 tokens. That is 10% of the 10000 tokens" in render(looks[-1]["state"])
+    assert (idle.seen, compact.seen, h.status(run)["counts"]["forms"]) == ([], [], 0)
+    # The context is near its limit. The first runner gives a form, and the sentence stays false: it leaves. The second one compacts.
+    context(9_000)
+    append(events, 1)
+    looked(h, run, lambda state: state["main_context"]["tokens"] == 3_000)
+    summary = h.status(run)
+    assert (len(idle.seen), len(compact.seen), binds(summary)) == (1, 1, [("compaction", "idle", "compact")])
+    assert compact.seen[0]["tried"][0] | {"not_true": 0} == {"runner": "idle", "result": "the form did not pass its check", "value": "compacted",
+                                                             "not_true": 0}
+    # No wake came, and the run goes on. The look after the compaction read the form, and then the form is gone.
+    assert (summary["state"], summary["counts"]["wakes"], summary["counts"]["forms"]) == ("running", 0, 2)
+    assert [e["event"] for e in lines(summary, "events") if e["event"] in ("forming", "form", "rebind", "held", "woke")] == [
+        "forming", "form", "rebind", "forming", "form"]
+    append(events, 1)
+    looked(h, run, lambda state: state["objects"][0].get("output") == json.dumps({"rows": rows_of(events)}))
+    after = h.status(run)
+    assert (after["objects"][0]["forms"], len(compact.seen), after["counts"]["forms"]) == ({"compaction": None}, 1, 2)

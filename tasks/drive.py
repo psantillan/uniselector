@@ -10,7 +10,9 @@ the largest context of the main agent, the tool calls, the runs, and whether the
 TASK is one of: schema, shift, silent, goal, goal-human, goal-pass, goal-held, code, api.
 
 `--runners` gives the configuration two model runners, `local` and `top`, and tells the main agent
-to name them in its objects. `--budget-tokens` sets a lower budget than the default.
+to name them in its objects. `--budget-tokens` sets a lower budget than the default. `--compaction`
+gives the configuration the runner `compact`, and the driver compacts the main agent when that
+runner asks.
 """
 import argparse
 import csv
@@ -28,6 +30,7 @@ from pathlib import Path
 
 from uniselector.gate import is_action
 
+from .compact import CONTEXT, DONE, READ_SECONDS, REQUEST, put
 from .slow_api import REPORT
 from .world import BIN, KEY_ENV, World, free_port
 
@@ -52,6 +55,17 @@ SLEEP = "To wait between two readings, use the tool `sleep`."
 BY_HUMAN = {"goal-human": ALONE, "goal-pass": PASS, "goal-held": HELD}
 RUNNERS = ('The configuration has the model runners `local` and `top`. Give an object that a model can repair the runners ["local", "top"] '
            "and a check of its own (`variables` of the object), so that its repair does not need you.")
+# The compaction binding: one object carries the form, and the driver compacts the main agent when the runner asks (uniselector_tasks.compact).
+COMPACT = ('The configuration has the runner `compact`. Give one object the form `compaction` with the runners ["compact"] and this check: '
+           '"The context of the main agent is below 85% of the tokens at which it compacts by itself."')
+# The two messages of the driver around a compaction. `/compact` is the command of Claude Code that compacts a session.
+KEEP = ("/compact Keep only this: the task of the user, word for word; the id of the run ({run}); the names of the handles and the "
+        "objects that you made; and what you did after the last wake. The run keeps its own state, and plan_status gives it.")
+GO_ON = ("Your context was compacted while the run {run} worked. The run goes on. Call plan_status with the run and wait_seconds, "
+         "and go on with the task.")
+# MEASURED in two sessions (docs/evidence/compaction): with the percent variable, the main agent compacted at the first request
+# above (window - 20,000) * percent / 100. Claude Code reports the point of a compaction without the percent variable.
+RESERVE = 20_000
 # ASSUMED: the hard limits of the task runs. The user decides the hard limits; these are the values of uniselector.example.toml.
 # The budget is 5 wakes of the runner `top` at its limit: about 0.75 USD at 0.15 USD for each million input tokens.
 BUDGET_TOKENS, WALL_SECONDS = 5_000_000, 1800
@@ -244,7 +258,7 @@ def commit() -> str:
 
 def measure(stream_file: Path) -> dict:
     """Read the event stream of the main agent: its context at each turn, and its tool calls."""
-    contexts, calls, result, model, compactions = [], {}, {}, None, []
+    contexts, calls, results, model, compactions = [], {}, [], None, []
     for line in stream_file.read_text().splitlines():
         try:
             event = json.loads(line)
@@ -260,11 +274,13 @@ def measure(stream_file: Path) -> dict:
             for block in event["message"].get("content", []):
                 if block.get("type") == "tool_use":
                     calls[block["name"].split("__")[-1]] = calls.get(block["name"].split("__")[-1], 0) + 1
-        if event.get("type") == "result":
-            result = event
+        if event.get("type") == "result":   # a session that the driver compacted has one result for each message of the driver
+            results.append(event)
+    result = results[-1] if results else {}
     return {"agent_model": model, "context_first_turn": contexts[0] if contexts else None, "context_peak": max(contexts, default=None),
             "context_added": max(contexts) - contexts[0] if contexts else None, "compactions": compactions, "tool_calls": calls,
-            "turns": result.get("num_turns"), "agent_seconds": round(result.get("duration_ms", 0) / 1000, 1),
+            "turns": sum(r.get("num_turns", 0) for r in results) if results else None,
+            "agent_seconds": round(sum(r.get("duration_ms", 0) for r in results) / 1000, 1),
             "answer": result.get("result"), "agent_error": result.get("is_error")}
 
 
@@ -287,6 +303,73 @@ def public(stream_file: Path) -> str:
     return "\n".join(kept) + "\n"
 
 
+def session(command: list, world: World, out, prompt: str, t0: float) -> None:
+    """A session of the main agent that the driver can compact. The driver holds the input of the main agent, so it does the two
+    things that only that process can do (docs/HOOKS.md). It writes the context of the main agent to the file that the configuration
+    names. And when the runner `compact` asks, it ends the turn of the main agent, sends the command `/compact`, and starts a new turn."""
+    agent = subprocess.Popen(command, cwd=world.dir / "agent", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    lock, s = threading.Lock(), {"sent": 0, "results": 0, "open": True, "tokens": None, "before": None}
+
+    def say(event: dict) -> None:
+        agent.stdin.write(json.dumps(event) + "\n")
+        agent.stdin.flush()
+
+    def user(text: str) -> None:   # each message of the user gets one result event
+        s["sent"] += 1
+        say({"type": "user", "message": {"role": "user", "content": text}, "parent_tool_use_id": None})
+
+    def serve() -> None:
+        while s["open"]:
+            time.sleep(READ_SECONDS)
+            with lock:
+                if s["open"] and s["before"] is None and (world.dir / REQUEST).exists():
+                    (world.dir / REQUEST).unlink()
+                    run = sorted(world.runs.glob("*/plan.json"))[-1].parent.name
+                    s["before"] = s["tokens"]
+                    say({"type": "control_request", "request_id": "interrupt", "request": {"subtype": "interrupt"}})
+                    user(KEEP.format(run=run))
+                    user(GO_ON.format(run=run))
+
+    say({"type": "control_request", "request_id": "get_context_usage", "request": {"subtype": "get_context_usage"}})
+    user(prompt)
+    threading.Thread(target=serve, daemon=True).start()
+    timer, compacts_at = threading.Timer(AGENT_SECONDS, agent.kill), None
+    timer.start()
+    for line in agent.stdout:
+        try:
+            event = json.loads(line)
+        except ValueError:
+            event = {}
+        if event.get("type") == "control_response":   # its body has the settings of the machine. Only two numbers go to the record
+            usage = event["response"].get("response") or {}
+            if "autoCompactThreshold" in usage:
+                percent = os.environ.get(COMPACT_ENV[1])
+                compacts_at = round((usage["maxTokens"] - RESERVE) * float(percent) / 100) if percent else usage["autoCompactThreshold"]
+                world.facts["context"] = {"window": usage["maxTokens"], "compacts_at": compacts_at}
+            continue
+        out.write(line)
+        out.flush()
+        if event.get("type") == "assistant":
+            usage = event["message"].get("usage", {})
+            s["tokens"] = usage.get("input_tokens", 0) + usage.get("cache_read_input_tokens", 0) + usage.get("cache_creation_input_tokens", 0)
+            if compacts_at:
+                put(world.dir / CONTEXT, {"tokens": s["tokens"], "compacts_at": compacts_at})
+            # The new turn started: each message before the last one has its result. Its first request has the context that the
+            # compaction left. The runner gets the two numbers, and the check of the form judges them.
+            if s["before"] is not None and s["results"] == s["sent"] - 1:
+                world.facts.setdefault("compactions", []).append({"agent_s": round(time.time() - t0, 1), "before": s["before"], "after": s["tokens"]})
+                put(world.dir / DONE, {"before": s["before"], "after": s["tokens"]})
+                s["before"] = None
+        if event.get("type") == "result":
+            with lock:
+                s["results"] += 1
+                if s["results"] == s["sent"]:   # each message has its result: the work of the main agent is done
+                    s["open"] = False
+                    agent.stdin.close()
+    timer.cancel()
+    agent.wait()
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description="Run one long task with a real main agent.")
     p.add_argument("task", choices=list(TASKS))
@@ -301,6 +384,7 @@ def main() -> None:
     p.add_argument("--clock", action="store_true", help="with --direct: the main agent also has a `sleep` tool, so it can wait between two readings")
     p.add_argument("--budget-tokens", type=int, default=BUDGET_TOKENS, help="the token budget of the configuration")
     p.add_argument("--runners", action="store_true", help="configure the model runners `local` and `top`")
+    p.add_argument("--compaction", action="store_true", help="configure the runner `compact`: the driver compacts the main agent when it asks")
     p.add_argument("--local-url", default="http://127.0.0.1:8000/v1/chat/completions", help="the chat completions API of the runner `local`")
     p.add_argument("--local-model", help="the model of the runner `local`")
     p.add_argument("--local-key-env", help="the environment variable with the API key of the runner `local`")
@@ -313,20 +397,22 @@ def main() -> None:
                "top": {"url": "https://openrouter.ai/api/v1/chat/completions", "model": a.top_model,
                        "key_env": KEY_ENV}} if a.runners else {}
     world = World(Path(a.work) / f"{a.task}_{stamp}", a.decision_model, a.budget_tokens, WALL_SECONDS,
-                  human_only=["room.heater"] if a.task == "goal-human" else [], runners=runners)
+                  human_only=["room.heater"] if a.task == "goal-human" else [], runners=runners, compaction=a.compaction)
     stop, confirmed = threading.Event(), []
     try:
         task = TASKS[a.task](world, a)
         if a.task in BY_HUMAN:
             threading.Thread(target=stand_in_for_the_human, args=(world, stop, confirmed), daemon=True).start()
-        how, servers = " ".join([HOW, *([BY_HUMAN[a.task]] if a.task in BY_HUMAN else []), *([RUNNERS] if a.runners else [])]), world.dir / "mcp.json"
+        how, servers = " ".join([HOW, *([BY_HUMAN[a.task]] if a.task in BY_HUMAN else []), *([RUNNERS] if a.runners else []),
+                                 *([COMPACT] if a.compaction else [])]), world.dir / "mcp.json"
         if a.direct:   # the baseline has no Uniselector server: the main agent cannot hand the work off
             how, servers = DIRECT, world.dir / "mcp-direct.json"
             tools = {"datahandles": json.loads((world.dir / "mcp.json").read_text())["mcpServers"]["datahandles"]}
             if a.clock:
                 how, tools["clock"] = f"{DIRECT} {SLEEP}", {"command": sys.executable, "args": ["-m", "uniselector_tasks.clock"]}
             servers.write_text(json.dumps({"mcpServers": tools}))
-        command = ["claude", "-p", f"{task['prompt']}\n\n{how}", "--model", a.agent_model, "--tools", "", "--mcp-config", str(servers),
+        prompt = f"{task['prompt']}\n\n{how}"
+        command = ["claude", "-p", *(["--input-format", "stream-json"] if a.compaction else [prompt]), "--model", a.agent_model, "--tools", "", "--mcp-config", str(servers),
                    "--strict-mcp-config", "--settings", str(world.dir / "settings.json"), "--allowedTools", "mcp__datahandles__*,mcp__uniselector__*,mcp__clock__*",
                    "--output-format", "stream-json", "--verbose", "--include-hook-events", "--no-session-persistence"]
         t0 = time.time()
@@ -334,10 +420,13 @@ def main() -> None:
             threading.Thread(target=change_the_world, args=(world, task, a.direct, stop, t0), daemon=True).start()
         with open(world.dir / "agent-stream.jsonl", "w") as out:
             try:
-                subprocess.run(command, cwd=world.dir / "agent", stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, timeout=AGENT_SECONDS)
+                if a.compaction:
+                    session(command, world, out, prompt, t0)
+                else:
+                    subprocess.run(command, cwd=world.dir / "agent", stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, timeout=AGENT_SECONDS)
             except subprocess.TimeoutExpired:
                 pass
-        record = {"task": a.task, "direct": a.direct, "clock": a.clock, "agent_environment": {k: os.environ[k] for k in COMPACT_ENV if k in os.environ}, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
+        record = {"task": a.task, "direct": a.direct, "clock": a.clock, "compaction": a.compaction, "agent_environment": {k: os.environ[k] for k in COMPACT_ENV if k in os.environ}, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
                   "decision_model": a.decision_model, "limits": {"budget_tokens": a.budget_tokens, "wall_seconds": WALL_SECONDS}, "runners": runners,
                   "seconds": round(time.time() - t0, 1), **measure(world.dir / "agent-stream.jsonl")}
         record["right"] = bool(record["answer"]) and bool(task["check"](record["answer"]))

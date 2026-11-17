@@ -16,6 +16,8 @@ from datahandles.sdk import connect
 
 from uniselector.config import Config
 
+from .compact import CONTEXT
+
 ROLES = {"planner": "UNISELECTOR_PLANNER_TOKEN", "uniselector": "UNISELECTOR_TOKEN", "human": "UNISELECTOR_HUMAN_TOKEN"}
 BIN = Path(sys.executable).parent
 KEY_ENV = Config.decision_key_env   # the environment variable with the API key of the decision model
@@ -35,9 +37,12 @@ def free_port() -> int:
 
 
 class World:
-    def __init__(self, directory: Path, decision_model: str, budget_tokens: int, wall_seconds: int, human_only=(), runners=None):
-        """`runners` has the `[runners.NAME]` tables of the configuration: the model runners that an object can name."""
+    def __init__(self, directory: Path, decision_model: str, budget_tokens: int, wall_seconds: int, human_only=(), runners=None, compaction=False):
+        """`runners` has the `[runners.NAME]` tables of the configuration: the model runners that an object can name. With
+        `compaction`, the configuration names the file with the context of the main agent, and it has the runner `compact`."""
         self.dir = directory.resolve()
+        context = f'main_context = "{self.dir / CONTEXT}"\n' if compaction else ""
+        runners = {**(runners or {}), **({"compact": {"call": "uniselector_tasks.compact:compact", "directory": str(self.dir)}} if compaction else {})}
         (self.dir / "agent").mkdir(parents=True)
         self.processes, self.facts = [], {}
         self.tokens = {role: secrets.token_hex(16) for role in ROLES}
@@ -50,12 +55,12 @@ class World:
         self.runs = self.dir / "runs"
         (self.dir / "uniselector.toml").write_text(
             f"[limits]\nbudget_tokens = {budget_tokens}\nwall_seconds = {wall_seconds}\n\n"
-            f'[runtime]\ntarget = "{self.url}"\nruns_dir = "{self.runs}"\n\n'
+            f'[runtime]\ntarget = "{self.url}"\nruns_dir = "{self.runs}"\n{context}\n'
             f'[decision]\ndecision_model = "{decision_model}"\n\n'
             f"[actions]\nhuman_only = {json.dumps(list(human_only))}\n" + "".join(
-                f"\n[runners.{name}]\n" + "".join(f"{k} = {toml(v)}\n" for k, v in table.items()) for name, table in (runners or {}).items()))
+                f"\n[runners.{name}]\n" + "".join(f"{k} = {toml(v)}\n" for k, v in table.items()) for name, table in runners.items()))
         # The client fills in the API key of the decision model and of each runner from its environment. A key is in no file of the world.
-        keys = {KEY_ENV, *(table["key_env"] for table in (runners or {}).values() if "key_env" in table)}
+        keys = {KEY_ENV, *(table["key_env"] for table in runners.values() if "key_env" in table)}
         env = {**{name: self.tokens[role] for role, name in ROLES.items() if role != "human"}, **{name: f"${{{name}}}" for name in sorted(keys)}}
         (self.dir / "mcp.json").write_text(json.dumps({"mcpServers": {
             "datahandles": {"command": sys.executable, "args": ["-m", "datahandles.protocols.mcp", "--url", self.url],

@@ -51,7 +51,7 @@ from .gate import Gate, is_action
 from .log import RunLog
 from .plan import ANSWER_SCHEMA, check, limits, violations
 from .runner import Outcome, load, make
-from .state import Entry, Form, State, cut
+from .state import COMPACTION, Entry, Form, State, cut
 
 ENDED = ("done", "limit", "failed", "left")
 NEXT = {
@@ -90,7 +90,7 @@ class Run:
         self.orchestrator, self.runners = orchestrator, runners
         budget, wall = limits(cfg, plan)
         self.log = RunLog(Path(cfg.runs_dir) / run_id)
-        self.state = State(list(plan["variables"]), plan.get("notes"), budget, wall)
+        self.state = State(list(plan["variables"]), plan.get("notes"), budget, wall, main_context=cfg.main_context)
         self.state.entries = {e.name: e for e in entries}
         self.status, self.why, self.pending, self.lineage = "running", "", None, None
         self.counts = {"looks": 0, "wakes": 0, "runner_wakes": 0, "rebinds": 0, "forms": 0, "operations": 0, "confirmations": 0, "human_requests": 0}
@@ -259,7 +259,11 @@ class Run:
         asked += [(f"About the object `{e.name}`: {v}", e, None) for e in self.state.entries.values()
                   if e.first_at is not None and e.repair is None for v in e.variables + ([KEEPS] if e.trial and e.prior is not None else [])]
         # The check of a form is asked while the form has a value. The wake takes this form, also when the output changed after it.
-        current = [(e, name) for e in self.state.entries.values() for name, f in e.forms.items() if f.value is not None]
+        # The check of the form `compaction` is asked also with no value, while the form has a runner that does not work now: its
+        # sentences are about the context of the main agent, and not about a value (docs/DECISIONS.md, D66).
+        early = "main_context" in view
+        current = [(e, name) for e in self.state.entries.values() for name, f in e.forms.items() if f.value is not None
+                   or early and name == COMPACTION and f.runner is not None and (e.name, name) not in self.forming]
         asked += [(f"About the form `{name}` of the object `{e.name}`: {v}", e, name) for e, name in current for v in e.forms[name].variables]
         statements = [text for text, _, _ in asked]
         t0 = time.perf_counter()
@@ -304,10 +308,12 @@ class Run:
                         back.append(self._back(entry, by, faults[entry.name]))
         for entry, name in current:   # the look judges each form that it can see
             form, bad = entry.forms[name], failed.get((entry.name, name))
-            if bad:   # the next runner makes the form again, and it reads what this one gave
+            if bad and form.value is not None:   # the next runner makes the form again, and it reads what this one gave
                 form.tried.append({"runner": form.runner, "result": "the form did not pass its check", "value": form.value, "not_true": bad})
                 form.value = form.of = None
                 self._rebind(entry, "the form did not pass its check", name)
+            if bad and name == COMPACTION and form.runner is not None:   # the bound runner compacts now, and no wake comes (D66)
+                self._form(entry, name)
         held = [o["variable"] for o in outside]
         if back:   # the statements are about a version that left. The next look reads the version that is back, and the wake is about it
             self.state.fresh = True
@@ -322,7 +328,8 @@ class Run:
             return
         # A wake is due. Only now does the runner of a form work: the wake waits for each form of the objects that it shows (D58).
         readers = [target] if target is not None else list(self.state.entries.values())
-        empty = [(e, name) for e in readers if e.output is not None for name, f in e.forms.items() if f.value is None and f.runner is not None]
+        empty = [(e, name) for e in readers if e.output is not None for name, f in e.forms.items()
+                 if f.value is None and f.runner is not None and name != COMPACTION]   # a wake does not wait for a compaction (D66)
         if empty:
             for entry, name in empty:
                 if (entry.name, name) not in self.forming:
@@ -737,6 +744,9 @@ class Harness:
                 if o.get("forms"):
                     raise ValueError(f"the operation of the object {o['name']!r} is an action. An action has no forms")
                 forms = {}
+            elif COMPACTION in o.get("forms", {}) and self.cfg.main_context is None:
+                raise ValueError(f"the object {o['name']!r} has the form `{COMPACTION}`, and the configuration names no file with the "
+                                 "context of the main agent (main_context)")
             elif "forms" in o:
                 forms = {n: Form(list(f["runners"]), list(f.get("variables", []))) for n, f in o["forms"].items()}
             else:   # a new version keeps the list of each form: a runner that left the list stays out

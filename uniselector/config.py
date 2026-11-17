@@ -20,6 +20,9 @@ class Config:
     # Where the DataHandles runtime is: a state directory (a runtime in this process) or an http(s) URL.
     target: str = ".datahandles"
     runs_dir: str = ".uniselector/runs"
+    # A JSON file that the harness of the main agent writes: {"tokens": N, "compacts_at": M}. N is the context of the main agent now.
+    # M is the context at which it compacts by itself. With the file, an object can carry the form `compaction` (D66).
+    main_context: str | None = None
 
     # The three principals. With a URL target, each one needs a bearer token in the named environment variable.
     planner: str = "planner"

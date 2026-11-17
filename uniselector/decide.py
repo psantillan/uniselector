@@ -72,6 +72,9 @@ def render(state: dict) -> str:
         lines += _object_lines(o)
     lim = state["limits"]
     lines += ["", "LIMITS", f"time: {lim['elapsed_s']} s of {lim['wall_seconds']} s. tokens: {lim['tokens']} of {lim['budget_tokens']}."]
+    if "main_context" in state:   # the percent is in the text, so the sentence of a check compares two numbers (docs/DECISIONS.md, D66)
+        now, limit = state["main_context"]["tokens"], state["main_context"]["compacts_at"]
+        lines.append(f"context of the main agent: {now} tokens. That is {round(100 * now / limit)}% of the {limit} tokens at which it compacts by itself.")
     return "\n".join(lines)
 
 

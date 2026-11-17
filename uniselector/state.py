@@ -5,6 +5,10 @@
 import json
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
+
+# The name of the one form whose runner compacts the context of the main agent (docs/DECISIONS.md, D66).
+COMPACTION = "compaction"
 
 
 def cut(value, chars: int) -> str:
@@ -133,6 +137,7 @@ class State:
     gap: float = 0.0           # the longest time between two changes so far
     fresh: bool = False        # an output changed after the last look
     quiet: float = 0.0         # the silent time at which the next look with no change is due
+    main_context: str | None = None   # the file with the context of the main agent, when the configuration names one (D66)
 
     def changed(self, entry: Entry) -> None:
         now = self.clock.elapsed()
@@ -151,5 +156,16 @@ class State:
         now = self.clock.elapsed()
         return [e.summary(now) for e in self.entries.values()]
 
+    def context(self) -> dict | None:
+        """The context of the main agent: its tokens now, and the tokens at which it compacts by itself. The harness of the main
+        agent writes the file. With no file, or with a file that is not complete, the run knows no context."""
+        try:
+            report = json.loads(Path(self.main_context).read_text())
+            return {"tokens": int(report["tokens"]), "compacts_at": int(report["compacts_at"])}
+        except (TypeError, OSError, ValueError, KeyError):
+            return None
+
     def view(self) -> dict:
-        return {**({"notes": self.notes} if self.notes else {}), "objects": self.objects(), "limits": self.limits()}
+        context = self.context()
+        return {**({"notes": self.notes} if self.notes else {}), "objects": self.objects(), "limits": self.limits(),
+                **({"main_context": context} if context else {})}

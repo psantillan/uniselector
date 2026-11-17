@@ -48,6 +48,12 @@ INSTRUCTIONS = (
     "made the handle of an object, and the operation of the object. It cannot add or remove a step, and it cannot change the data. A "
     "check that only a change of the data can make true again is a variable of the plan.")
 
+# One more part of the instructions, for a configuration that reports the context of the main agent to the run (docs/DECISIONS.md, D66).
+CONTEXT = (
+    "This configuration reports your context to the run. An object can carry the form `compaction`. Its check is a sentence about "
+    "your context (\"The context of the main agent is below 85% of the tokens at which it compacts by itself.\"), and its runner "
+    "compacts your context when the sentence is not true. The runner costs nothing while the sentence is true.")
+
 _RUN = {"type": "string", "description": "The run id from plan_submit."}
 TOOLS = [
     {"name": "plan_submit", "description": "Start a run of a plan. Return the run id. The plan is the objects that you built and the essential variables.",
@@ -91,7 +97,8 @@ def dispatch(harness: Harness, name: str, arguments: dict) -> dict:
 def instructions(harness: Harness) -> str:
     """The instructions, with the names of the runners that an object can name."""
     names = ", ".join(f"`{name}`" for name in sorted(harness.runners))
-    return f"{INSTRUCTIONS} The runners of this configuration: `main` (you){', ' + names if names else ''}, and `human` (for an action only)."
+    context = f" {CONTEXT}" if harness.cfg.main_context else ""
+    return f"{INSTRUCTIONS}{context} The runners of this configuration: `main` (you){', ' + names if names else ''}, and `human` (for an action only)."
 
 
 def server(harness: Harness) -> Server:
