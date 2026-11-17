@@ -212,6 +212,30 @@ Each column is one run.
   from a hash of words: the run checks the binding, not an embedding engine.
 - The evidence: `forms_20261116_233244`.
 
+## Compaction
+
+An object can carry the form `compaction`: its runner compacts the main agent when the context of
+the main agent is near the point at which the main agent compacts by itself (`docs/DECISIONS.md`,
+D66). The four columns are sessions of the schema task on the 60 s feed. In the small window, two
+variables of Claude Code put that point at 14,400 tokens. The cost is a percent of the mean cost
+of the main agent alone on the same feed.
+
+| | The binding, small window | No binding, small window | The binding, normal window | No binding, normal window (mean of 5) |
+| --- | --- | --- | --- | --- |
+| Compactions by the runner | 2 | 0 | 0 | 0 |
+| Compactions by the main agent itself | 0 | 1 | 0 | 0 |
+| Wakes for a compaction | 0 | 0 | 0 | 0 |
+| Time to repair | 8.0 s | 23.6 s | 8.8 s | 9.1 s |
+| Peak context of the main agent | 14,260 | 14,437 | 17,240 | 16,852 |
+| Cost of the main agent | 113% | 86% | 56% | 54% |
+
+- The runner compacted the main agent while the main agent slept: one time before the break, and
+  one time after the repair. The main agent itself compacted in the middle of the repair.
+- In the normal window the check stayed true, and the runner never started.
+- Each answer was right. The run stayed alive through each compaction.
+- The evidence: `compaction-binding/schema_20261117_035002`, `compaction/schema_20261117_025036`,
+  `compaction-binding/schema_20261117_035217`, and the five `uni-60` sessions of `repeats`.
+
 ## Detector check
 
 <picture>
@@ -289,5 +313,6 @@ the threshold separates the two cases and where it does not. It is not a measure
   only the human's principal holds the action, the protocol refuses that call: in
   `goal-held_20261116_190023` the human approved and ran each switch.
 - In the api task, the main agent gave its answer at the wake and did not end the run (F51).
-- No run made the main agent compact its context, so no run tested a wake into a fresh context.
-- `docs/FAILURES.md` has 72 entries. Each one has its evidence and says if it is open.
+- A compaction in a small window costs more than it saves: the system text and the tool text are
+  most of the context, and no compaction removes them (F75).
+- `docs/FAILURES.md` has 75 entries. Each one has its evidence and says if it is open.

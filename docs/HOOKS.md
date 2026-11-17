@@ -82,6 +82,35 @@ The main agent also gets the command in the summary (`pending.command`), and it 
 its reply. So the user gets the request two times: one time from the hook, one time from the main
 agent.
 
+### What can compact the main agent
+
+Tested with Claude Code 2.1.325 in sessions with `-p` (`docs/evidence/compaction-binding`).
+
+- A hook cannot start a compaction, and an MCP server cannot. The documentation names no such
+  output of a hook and no such request of a server.
+- The process that holds the input of the main agent can. In a session with
+  `--input-format stream-json`, a user message with the text `/compact INSTRUCTIONS` compacts the
+  session. The message waits for the end of the turn that is in work.
+- The same process can end that turn at once: the line
+  `{"type": "control_request", "request_id": "ID", "request": {"subtype": "interrupt"}}`. A tool
+  call that waits gets an error result, and the turn ends with a `result` event. The Uniselector
+  server and its run stay alive: the main agent calls `plan_status` again in its next turn.
+- The same process can read the limits of the session: a control request with the subtype
+  `get_context_usage`. The answer has the window (`maxTokens`) and the context at which the
+  session compacts by itself (`autoCompactThreshold`). The second number does not show the
+  variable `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`. The answer also lists the settings of the machine,
+  so the driver keeps only the two numbers. The documentation does not name this request.
+- The context of the main agent at each request is in the `usage` of each `assistant` event of
+  the stream: the input tokens plus the two cache numbers.
+- Each user message gives one `result` event. `total_cost_usd` counts the whole session.
+  `num_turns` and `duration_ms` count one message.
+- A user at the terminal interface has no such process. There the main agent compacts at its own
+  point, or the user types `/compact`.
+
+So a compaction runner needs a harness that holds the input of the main agent
+(`tasks/drive.py --compaction` is one), or a method of its own that does not need Claude Code,
+such as a local summarizer that writes a shorter form of an object.
+
 ## Codex
 
 Not tested. `codex exec` on this machine fails with HTTP 402 `deactivated_workspace`, so no Codex

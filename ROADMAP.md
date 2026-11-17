@@ -35,6 +35,7 @@ directory in `docs/evidence`. Each measurement is a single run.
 | The runner of a form that does not pass its check leaves the list. After the last one, the wake goes with no form | `tests/test_forms.py` |
 | One look reads each form of a wake. A form that comes after the failure is over gives no wake | `tests/test_forms.py` |
 | A replacement of a runner that does not hold leaves with its runner, and the object has its version from before. The next runner, or the main agent, reads what each runner tried | `tests/test_runners.py`: a runner whose replacement does not hold leaves the list; the main agent reads each replacement that left |
+| The form `compaction`: its runner compacts the main agent when the check of the form is not true. While the check is true, no runner starts. A runner that does not help leaves, and the next one takes the form | `tests/test_forms.py`: a compaction runner works only when the context of the main agent is near its limit |
 | No runner can write an action | `tests/test_runners.py` |
 | An action waits for a confirmation and runs one time | `tests/test_run.py`, `tests/test_gate.py` |
 | A confirmation is the same binding: `["main", "human"]`, or `["human"]` | `tests/test_run.py`: the main agent binds the human for one decision |
@@ -60,6 +61,8 @@ directory in `docs/evidence`. Each measurement is a single run.
 | The main agent passes one decision to the human | `goal-pass_20261116_190342` |
 | The detector check: 63 of 64 statements | `probe_20261117` |
 | Two forms cost nothing while nothing fails: the same 4,597 tokens in 5 looks with the forms and with none. The wake with the forms comes 3.0 s later | `forms_20261116_233244` |
+| A compaction runner compacts the main agent while it sleeps, before the break: the repair takes 8.0 s, against 23.6 s when the main agent compacts by itself in the middle of the repair | `compaction-binding/schema_20261117_035002` |
+| With a normal window the compaction runner never starts, and the repair takes 8.8 s | `compaction-binding/schema_20261117_035217` |
 
 ## Next
 
@@ -67,7 +70,7 @@ directory in `docs/evidence`. Each measurement is a single run.
 - A task where the repair is frequent, or where the main agent must read much to make it.
 - Each task run more than one time on the same code. Each row of the measurements is one run.
 - A second human principal as a runner (a contractor). This changes the action gate.
-- A task run that makes the main agent compact its context, to test a wake into a fresh context.
+- A task where the context of the main agent grows large, so that a compaction removes much of it.
 - A baseline of the main agent alone for each task.
 - A form from an embedding engine, and a search over it. The task of the forms uses a hash of words.
 

@@ -1,0 +1,50 @@
+{
+ "objects": [
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KT4NG5GR97G9M4PZN6ASBR",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  },
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KT528VJDS643S642TRSM5N",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "runners": [
+    "main"
+   ],
+   "variables": [
+    "It sums the amount of only the paid orders, for each region."
+   ]
+  },
+  {
+   "name": "ctx",
+   "handle": "hdl_01M7KT4NG5GR97G9M4PZN6ASBR",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   },
+   "forms": {
+    "compaction": {
+     "runners": [
+      "compact"
+     ],
+     "variables": [
+      "The context of the main agent is below 85% of the tokens at which it compacts by itself."
+     ]
+    }
+   }
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows.",
+  "The object `totals` shows a total for each region and has no error."
+ ]
+}

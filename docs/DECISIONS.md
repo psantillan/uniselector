@@ -1905,3 +1905,75 @@ main agent. It does not show that the summary of a wake alone is enough for a fr
 The record of a session holds the length of each summary of a compaction, and not its text
 (`drive.public`). Reason: Claude Code writes the instructions of the machine of the user into the
 summary, and a record is public.
+
+## D66. A compaction of the main agent is a form of an object, and its runner works when its check is not true
+
+1. **`compaction` is the name of one form.** An object carries it as it carries each form: a list
+   of runners and a check. The check is a sentence about the context of the main agent, such as
+   "The context of the main agent is below 85% of the tokens at which it compacts by itself."
+2. **The harness of the main agent reports the context.** The configuration names a JSON file
+   (`main_context`) with `{"tokens": N, "compacts_at": M}`. N is the context of the main agent
+   now. M is the context at which it compacts by itself. The state of a run shows the two numbers
+   and the percent, so the sentence of the check compares two numbers that the decision model
+   reads. A plan with the form is refused when the configuration names no file.
+3. **The runner is silent while the sentence is true.** Each look judges the sentence. While it is
+   true, no runner starts. When it is not true, the same look starts the bound runner, by the
+   path that makes each form. No wake comes for a compaction, and a wake does not wait for one.
+4. **A runner that does not help leaves.** A runner that gives no result, or whose result leaves
+   the sentence not true, leaves the list, and the next runner takes the form. After the last
+   runner the run does nothing more for the context: the main agent compacts by itself at its
+   own point. That point is the floor.
+5. **The runner is any callable** (D53). `tasks/compact.py` is one: it asks the harness of the
+   main agent to compact with the method of the main agent. A local summarizer is another.
+6. **The harness writes the compacted context back.** The runner gives the run a short text (the
+   context before and after). The new context is in the file of rule 2 before the runner
+   returns, so the next look judges the result.
+
+Reason: the ruling of the user of 2026-11-17. "Early compaction is just another runner bound to
+the existing object, triggered by the same viability check." "Add one optional binding: a
+compaction runner (the coding agent's own compaction method, a local summarizer, or any callable
+it defines)." "No new control path, no competition with the sleep that already exists." "That
+keeps the ultrastable layer on top of autocompaction instead of beside it." In Ashby's terms: the
+context of the main agent is one more essential variable. The step-function acts on it before it
+reaches its limit, and it acts while the main agent sleeps.
+
+What the binding adds to the code: one branch of the look (`_look`), one name (`COMPACTION`), one
+setting (`main_context`), one line of the state text. It adds no thread, no loop and no tool.
+
+The numbers of the driver (`tasks/drive.py --compaction`):
+
+- 85% in the sentence of the prompt is ASSUMED. Reason: a compaction of a small session takes 4 s
+  to 14 s, and the summary of a wake adds about 1,500 tokens to the context of the main agent, so
+  the runner needs room to finish before the main agent compacts by itself.
+- `compacts_at` is MEASURED in two sessions (`docs/evidence/compaction`): with
+  `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`, Claude Code compacted at the first request above
+  (window - 20,000) * percent / 100. Without that variable, the driver takes the number that
+  Claude Code reports (`autoCompactThreshold`). `docs/HOOKS.md` has the facts.
+- The context after a compaction is the context of the next request of the main agent. The
+  number `post_tokens` of a compaction event is not the full context: it was 2,412 where the next
+  request had 12,168 tokens.
+
+Result (`docs/evidence/compaction-binding`, one session each, on the 60 s feed, at `7f0d838`):
+
+| | The binding, small window | Autocompaction, small window (D65) | The binding, normal window | No binding, normal window (mean of 5) |
+| --- | --- | --- | --- | --- |
+| Point at which the main agent compacts by itself | 14,400 | 14,400 | 967,000 | 967,000 |
+| Compactions by the runner | 2 | 0 | 0 | 0 |
+| Compactions by the main agent itself | 0 | 1 | 0 | 0 |
+| Wakes for a compaction | 0 | 0 | 0 | 0 |
+| Time to repair | 8.0 s | 23.6 s | 8.8 s | 9.1 s |
+| Peak context of the main agent | 14,260 | 14,437 | 17,240 | 16,852 |
+| Cost of the main agent | $0.1719 | $0.1306 | $0.0841 | $0.0815 |
+| Tokens of the decision model for each look | 952 | 801 | 986 | 763 |
+
+- In the small window the check was not true at the first look (13,538 tokens, 94%). The runner
+  compacted the main agent 7.6 s before the break, between two requests of the main agent. The
+  main agent then read the wake of the break and repaired the object in 8.0 s. The second
+  compaction came after the repair (14,260 tokens, 99%), while the main agent slept in
+  `plan_status`: the driver ended that call, compacted, and the main agent called `plan_status`
+  again. The run and the server stayed alive each time. The answer was right.
+- In the normal window the context was at most 2% of the point, the sentence stayed true, and no
+  runner started. The binding added 171 tokens to the first request of the main agent (the text
+  about the form in the instructions and in the prompt) and about 220 tokens of the decision
+  model to each look (one more sentence).
+- The compactions of the small window cost more than they saved (F75).

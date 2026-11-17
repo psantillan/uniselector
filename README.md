@@ -152,6 +152,16 @@ wake, such as a summary of a long table or an embedding for a search.
   embedding engine and stores no vectors: a function runner writes its vectors where it chooses
   and gives the run a handle.
 - A form can carry a check and a list of runners, with the same rules as an object.
+- The form `compaction` keeps the context of the agent small. Its check is a sentence about that
+  context, and its runner compacts the agent when the sentence is not true:
+
+      "forms": {"compaction": {"runners": ["compact"],
+                               "variables": ["The context of the main agent is below 85% of the tokens at which it compacts by itself."]}}
+
+  The runner is any callable: the compaction method of the agent itself, or a local summarizer.
+  While the sentence is true, the runner does not start. A wake parks the run, so a compaction
+  does not come in the middle of a repair. The harness of the agent reports the context in a
+  JSON file that the configuration names (`main_context`).
 
 One rule makes a plan easy to watch: **an object shows its essential variable in a small output.**
 For the sentence "the table has only the statuses paid, pending and refunded", build one more

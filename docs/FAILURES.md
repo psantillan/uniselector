@@ -1364,3 +1364,25 @@ look. No runner made a request while each statement was true.
   `tool_calls`, `answer`) and the three `compact_boundary` events of `agent-stream.jsonl`.
 - Fixed in the next session: the value 18 puts the point at about 14,700 tokens, after the first
   wake (D65).
+
+### F75. In a small window, two early compactions cost more than one compaction by the main agent
+
+- Part: the plan (the check of the form), and the task driver.
+- What happened: the session with the compaction binding and a point of 14,400 tokens cost
+  $0.1719. The session with no binding and the same point cost $0.1306 (D65), so the binding cost
+  132% of it. The runner compacted two times. The first compaction took the context from 13,538
+  to 12,168 tokens, and the second from 14,260 to 12,103. The session spent $0.0195 and $0.0180 on
+  the two summaries, and each request after a compaction wrote the context to the cache again. A
+  compaction removed 1,370 and 2,157 tokens, because about 9,700 tokens of each request are the
+  system text and the tool text, and no compaction removes them. After the first compaction the
+  context was at 84.5% of the point, and the check asks for less than 85%: one more turn made
+  the sentence not true again.
+- What the session shows too: the time to repair was 8.0 s against 23.6 s, because no compaction
+  came in the middle of the repair. The answer was right.
+- Evidence: `docs/evidence/compaction-binding/schema_20261117_035002`: `record.json`
+  (`compactions`, `facts.compactions`, `facts.context`), the `total_cost_usd` of the five result
+  events of `agent-stream.jsonl`, and the events `forming` and `form` of the run.
+- Open. A compaction pays only when the part that it removes is large against the fixed text. In
+  the normal window the sentence stayed true and the runner never started
+  (`schema_20261117_035217`). No session with a large context that a compaction can remove ran
+  yet.

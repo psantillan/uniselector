@@ -1,0 +1,40 @@
+{
+ "objects": [
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KT0GZ9D6CYE4AM5P7CGMAS",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  },
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KT0XJD7ADZJH309GBAN6NH",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "forms": {
+    "compaction": {
+     "runners": [
+      "compact"
+     ],
+     "variables": [
+      "The context of the main agent is below 85% of the tokens at which it compacts by itself."
+     ]
+    }
+   },
+   "variables": [
+    "It sums the amount of only the rows with status paid, for each region."
+   ]
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows.",
+  "The object `totals` shows a total for each region with no error."
+ ],
+ "notes": "Feed ends at 600 rows. When rows shows 600, the answer is the head output of totals. If a column gets a new name, rebuild the filter and the aggregate on the new name."
+}

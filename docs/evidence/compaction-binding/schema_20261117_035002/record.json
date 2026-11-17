@@ -1,0 +1,151 @@
+{
+ "task": "schema",
+ "direct": false,
+ "clock": false,
+ "compaction": true,
+ "agent_environment": {
+  "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "100000",
+  "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "18"
+ },
+ "what": "A live data pipeline with a schema break: the column `amount` gets the name `amount_usd`.",
+ "at": "20261117_035002",
+ "commit": "7f0d838",
+ "prompt": "A feed of orders is registered in DataHandles as `orders`. It gets new rows for the next minutes, and it ends at 600 rows. Keep a live total of `amount` for each region, over the orders whose `status` is `paid`. The team that owns the feed can give a column a new name without notice. When that happens, repair your work. When the feed has 600 rows, give the total of each region.",
+ "truth": "the total of each region over the paid orders of the final feed (record: facts.truth)",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 5000000,
+  "wall_seconds": 1800
+ },
+ "runners": {},
+ "seconds": 89.9,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 10337,
+ "context_peak": 14260,
+ "context_added": 3923,
+ "compactions": [
+  {
+   "trigger": "manual",
+   "pre_tokens": 13993,
+   "post_tokens": 2412,
+   "cumulative_dropped_tokens": 11581,
+   "duration_ms": 8461,
+   "preserved_segment": {
+    "head_uuid": "9f1762c0-9823-4a3f-866b-ec1c36bf2a3f",
+    "anchor_uuid": "702c46d6-4349-4e69-a4a1-4df22a590d47",
+    "tail_uuid": "2928c739-3cf3-4769-98b4-4b6c3fe88a77"
+   },
+   "preserved_messages": {
+    "anchor_uuid": "702c46d6-4349-4e69-a4a1-4df22a590d47",
+    "uuids": [
+     "9f1762c0-9823-4a3f-866b-ec1c36bf2a3f",
+     "31059563-ba06-4668-b15c-fc7eff0e1d3a",
+     "2928c739-3cf3-4769-98b4-4b6c3fe88a77"
+    ],
+    "all_uuids": [
+     "9f1762c0-9823-4a3f-866b-ec1c36bf2a3f",
+     "31059563-ba06-4668-b15c-fc7eff0e1d3a",
+     "2928c739-3cf3-4769-98b4-4b6c3fe88a77"
+    ]
+   }
+  },
+  {
+   "trigger": "manual",
+   "pre_tokens": 14570,
+   "post_tokens": 2423,
+   "cumulative_dropped_tokens": 23728,
+   "duration_ms": 6974,
+   "preserved_segment": {
+    "head_uuid": "4b9fc667-f502-4f85-8c4a-c0eae0d7cbc8",
+    "anchor_uuid": "c4745436-4d5c-41a1-878f-c0f51f5efbda",
+    "tail_uuid": "2c159851-1b42-4734-bdc4-5cd78d2818ea"
+   },
+   "preserved_messages": {
+    "anchor_uuid": "c4745436-4d5c-41a1-878f-c0f51f5efbda",
+    "uuids": [
+     "4b9fc667-f502-4f85-8c4a-c0eae0d7cbc8",
+     "162b68df-24a7-4f5b-af00-f23d69e8bf1e",
+     "2c159851-1b42-4734-bdc4-5cd78d2818ea"
+    ],
+    "all_uuids": [
+     "4b9fc667-f502-4f85-8c4a-c0eae0d7cbc8",
+     "162b68df-24a7-4f5b-af00-f23d69e8bf1e",
+     "2c159851-1b42-4734-bdc4-5cd78d2818ea"
+    ]
+   }
+  }
+ ],
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 3,
+  "handle_invoke": 3,
+  "plan_submit": 2,
+  "plan_status": 3,
+  "plan_answer": 2
+ },
+ "turns": 19,
+ "agent_seconds": 88.2,
+ "answer": "Totals of paid orders at 600 rows:\n\n| Region | Total |\n|---|---|\n| south | 15527.26 |\n| west | 14504.72 |\n| east | 15677.18 |\n| north | 10483.22 |",
+ "agent_error": false,
+ "right": true,
+ "facts": {
+  "context": {
+   "window": 100000,
+   "compacts_at": 14400
+  },
+  "changes": [
+   {
+    "what": "the schedule started",
+    "agent_s": 23.0
+   },
+   {
+    "what": "schema",
+    "agent_s": 41.0
+   },
+   {
+    "what": "the feed ended",
+    "agent_s": 83.0
+   }
+  ],
+  "compactions": [
+   {
+    "agent_s": 33.4,
+    "before": 13538,
+    "after": 12168
+   },
+   {
+    "agent_s": 57.7,
+    "before": 14260,
+    "after": 12103
+   }
+  ],
+  "rows": 600,
+  "truth": {
+   "north": 10483.22,
+   "south": 15527.26,
+   "east": 15677.18,
+   "west": 14504.72
+  }
+ },
+ "runs": [
+  {
+   "t": 1794887490.732,
+   "event": "end",
+   "run": "run_20261117_035025_9798",
+   "outcome": "done",
+   "why": "the main agent ended the run",
+   "tokens": 20948,
+   "cost": 0.000419,
+   "seconds": 60.0,
+   "looks": 22,
+   "wakes": 2,
+   "runner_wakes": 0,
+   "rebinds": 0,
+   "forms": 2,
+   "operations": 40,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

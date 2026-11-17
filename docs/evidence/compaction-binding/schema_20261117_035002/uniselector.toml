@@ -1,0 +1,18 @@
+[limits]
+budget_tokens = 5000000
+wall_seconds = 1800
+
+[runtime]
+target = "http://127.0.0.1:54719"
+runs_dir = "/tmp/scratch/worlds/schema_20261117_035002/runs"
+main_context = "/tmp/scratch/worlds/schema_20261117_035002/context.json"
+
+[decision]
+decision_model = "perplexity/pplx-decider-v1.2"
+
+[actions]
+human_only = []
+
+[runners.compact]
+call = "uniselector_tasks.compact:compact"
+directory = "/tmp/scratch/worlds/schema_20261117_035002"
