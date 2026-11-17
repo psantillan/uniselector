@@ -47,6 +47,8 @@ PASS = ("Do not switch the heater yourself: give each switch to the run as an ob
 HELD = ('Only my principal holds the capability that switches the heater: `room.heater`, with the input {"on": true} or {"on": false}. '
         'You cannot invoke it. Give each switch to the run as an object with the runners ["human"]. I cannot reply to you in this session. '
         "When a request is with me, I see the notice and I decide at my terminal. Follow the run with plan_status and wait_seconds until I decide.")
+# The baseline with a clock: the main agent can wait between two readings (uniselector_tasks.clock).
+SLEEP = "To wait between two readings, use the tool `sleep`."
 BY_HUMAN = {"goal-human": ALONE, "goal-pass": PASS, "goal-held": HELD}
 RUNNERS = ('The configuration has the model runners `local` and `top`. Give an object that a model can repair the runners ["local", "top"] '
            "and a check of its own (`variables` of the object), so that its repair does not need you.")
@@ -273,6 +275,7 @@ def main() -> None:
     p.add_argument("--interval-ms", type=int, default=3000, help="the time between two readings of the room or a sensor, or two steps of a feed")
     p.add_argument("--temperature", type=float, default=26, help="goal: the temperature to wait for")
     p.add_argument("--direct", action="store_true", help="the baseline: the main agent does the task itself, without Uniselector")
+    p.add_argument("--clock", action="store_true", help="with --direct: the main agent also has a `sleep` tool, so it can wait between two readings")
     p.add_argument("--budget-tokens", type=int, default=BUDGET_TOKENS, help="the token budget of the configuration")
     p.add_argument("--runners", action="store_true", help="configure the model runners `local` and `top`")
     p.add_argument("--local-url", default="http://127.0.0.1:8000/v1/chat/completions", help="the chat completions API of the runner `local`")
@@ -296,9 +299,12 @@ def main() -> None:
         how, servers = " ".join([HOW, *([BY_HUMAN[a.task]] if a.task in BY_HUMAN else []), *([RUNNERS] if a.runners else [])]), world.dir / "mcp.json"
         if a.direct:   # the baseline has no Uniselector server: the main agent cannot hand the work off
             how, servers = DIRECT, world.dir / "mcp-direct.json"
-            servers.write_text(json.dumps({"mcpServers": {"datahandles": json.loads((world.dir / "mcp.json").read_text())["mcpServers"]["datahandles"]}}))
+            tools = {"datahandles": json.loads((world.dir / "mcp.json").read_text())["mcpServers"]["datahandles"]}
+            if a.clock:
+                how, tools["clock"] = f"{DIRECT} {SLEEP}", {"command": sys.executable, "args": ["-m", "uniselector_tasks.clock"]}
+            servers.write_text(json.dumps({"mcpServers": tools}))
         command = ["claude", "-p", f"{task['prompt']}\n\n{how}", "--model", a.agent_model, "--tools", "", "--mcp-config", str(servers),
-                   "--strict-mcp-config", "--settings", str(world.dir / "settings.json"), "--allowedTools", "mcp__datahandles__*,mcp__uniselector__*",
+                   "--strict-mcp-config", "--settings", str(world.dir / "settings.json"), "--allowedTools", "mcp__datahandles__*,mcp__uniselector__*,mcp__clock__*",
                    "--output-format", "stream-json", "--verbose", "--include-hook-events", "--no-session-persistence"]
         t0 = time.time()
         if "schedule" in task:
@@ -308,7 +314,7 @@ def main() -> None:
                 subprocess.run(command, cwd=world.dir / "agent", stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, timeout=AGENT_SECONDS)
             except subprocess.TimeoutExpired:
                 pass
-        record = {"task": a.task, "direct": a.direct, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
+        record = {"task": a.task, "direct": a.direct, "clock": a.clock, "what": TASKS[a.task].__doc__, "at": stamp, "commit": commit(), "prompt": task["prompt"], "truth": task["truth"],
                   "decision_model": a.decision_model, "limits": {"budget_tokens": a.budget_tokens, "wall_seconds": WALL_SECONDS}, "runners": runners,
                   "seconds": round(time.time() - t0, 1), **measure(world.dir / "agent-stream.jsonl")}
         record["right"] = bool(record["answer"]) and bool(task["check"](record["answer"]))
