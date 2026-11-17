@@ -1794,7 +1794,7 @@ F69), and the text of the tools changed (D60).
 
 | Evidence | Run |
 | --- | --- |
-| In each task run of this page, the first look after the break found it | the tables of `README.md` |
+| In each task run, the first look after the break found it | the tables of `docs/MEASUREMENTS.md` |
 | A runner wrote a wrong replacement that showed a count and no error. The sentence of the check that names the condition got 0.054. The runner left, its replacement left with it, and the next runner repaired the object | `repair_20261117_002143`, D 7 to D 9 |
 | A check with a limit on the tokens of the runners removes a runner that spent more | Only a test: `test_a_check_can_state_what_the_runners_of_an_object_can_spend` |
 | The detector check: 63 of 64 statements | `probe_20261117` |

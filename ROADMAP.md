@@ -50,7 +50,7 @@ directory in `docs/evidence`. Each measurement is a single run.
 
 | Item | Evidence |
 |---|---|
-| Eight task runs with a real main agent, each answer right | `README.md`, the first table of "Measurements" |
+| Eight task runs with a real main agent, each answer right | `docs/MEASUREMENTS.md`, the first table |
 | The main agent alone on the schema task, with two lengths of the feed | `schema-direct_20261116_163205`, `schema-direct_20261116_163736` |
 | A local model repairs a schema break with one request while the main agent sleeps: 6.0 s from the break to a good object. The main agent gets 1 wake and uses 11 turns, at 79% of the base | `schema_20261116_233942` |
 | The same task with no runners: the main agent gets the wake of the break and repairs the object in 3 turns. It gets 2 wakes and uses 14 turns, at 90% of the base | `schema_20261117_004251` |
@@ -76,7 +76,7 @@ directory in `docs/evidence`. Each measurement is a single run.
 
 - The grade of a runner binding has three questions (`docs/DECISIONS.md`, D62). One pair of task
   runs shows that a local model takes a repair off the main agent: 1 wake and 11 turns with the
-  runners, 2 wakes and 14 turns with none, on the 60 s schema task (`README.md`, "Model runners").
+  runners, 2 wakes and 14 turns with none, on the 60 s schema task (`docs/MEASUREMENTS.md`, "Model runners").
   No second run shows how much two equal sessions differ.
 - No live run has a main agent that writes its own function runner. A test covers it.
 - The gain needs a check that states meaning. A check that names a column rejects the right
