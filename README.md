@@ -22,10 +22,10 @@ The agent replaces the object that is broken, and it sleeps again.
 - **A repair goes to the cheapest runner that can make it.** An object names its runners in order:
   a local model, a larger model, a function of your code, the agent. A free local model repaired a
   schema break with one request in 6 s, while the agent slept.
-- **A wrong repair does not stay.** The same check that found the break judges the repair. A
-  repair that does not pass leaves with its runner, and the next runner gets the wake.
+- **Each repair passes the check of its object.** The check that found the break judges the
+  replacement, and a replacement stays only when each sentence is true.
 - **The watch is cheap.** The decision model cost 0.13% to 0.86% of the cost of the agent.
-- **Two rules hold when a model is wrong.** A token budget with a wall time, and a confirmation
+- **Two rules are in the harness, not in a model.** A token budget with a wall time, and a confirmation
   for each action. The [DataHandles](https://github.com/psantillan/datahandles) protocol enforces
   the confirmation.
 
@@ -131,9 +131,9 @@ The rules are the same for each kind:
 - **The check names the conditions that matter.** The state shows how the handle of each object is
   made: its filters, its groups, its metrics. So a check can state "It sums only the paid orders.",
   and a replacement with no such filter does not pass.
-- **A runner that fails leaves the list.** Its replacement leaves with it: the object has its
-  version from before, and the next runner reads the same break and what the first runner tried.
-  After the last runner, the wake comes to the agent. A replacement that holds keeps its runner.
+- **The list is in order.** A replacement stays when it passes the check, and its runner keeps
+  the object. If not, the object keeps its version from before and the next runner takes the
+  wake. The agent is the last runner.
 - **The same check removes an expensive runner.** The state shows the tokens that the runners of
   an object spent, so a check can state "The runners of this object spent less than 20000 tokens."
 - **A confirmation is the same binding.** The runners of an action are `["main", "human"]`, or
@@ -269,17 +269,6 @@ local network, at no cost.
 
 *The run with the runners, second by second. The local model got the wake of the break. The agent got one wake: the feed had 600 rows.*
 
-### The check rejects a wrong repair
-
-An object counts the paid orders of a feed, and the column `status` gets the name `state`. The
-first runner is a careless script: it replaces the broken filter with the filter `amount > 0`.
-The object then shows a count and no error.
-
-- The sentence of the check "It counts only the paid orders." got 0.054 at the next look.
-- The script left the list, and the object had its version from before.
-- The next runner, `qwen3.8-27b`, repaired the object with one request of 2,380 tokens.
-- The count was right 12.5 s after the break. No wake went to an agent.
-
 ### A form reaches the reader of a wake
 
 Two runs watch one feed with the same objects, and orders with a new status come to one region.
@@ -291,10 +280,11 @@ One run has a summary form and an embedding form on a table of 18 rows.
   (paid, pending, refunded; disputed only in north)." It also carried a handle to a file of
   vectors that a function runner wrote.
 
-### The decision model separates true from not true
+### The check tells a right replacement from a wrong one
 
 `tasks/probe.py` gives the decision model 31 states and 64 statements with a known answer. It was
-right on 63 of 64, for 14,727 tokens. True statements got 0.82 to 1.00.
+right on 63 of 64, for 14,727 tokens. For a replacement that changed only the name of a column,
+"It sums only the paid orders." got 0.999. For a replacement that dropped the filter, it got 0.004.
 
 ## Documents
 

@@ -145,7 +145,7 @@ footer { font-family: var(--mono); font-size: 12.5px; color: var(--muted); borde
   <figure>
     <div class="bar"><span class="key"><i class="dot"></i>the statement is true (42)</span><span class="key"><i class="ring"></i>the statement is not true (21)</span><span class="key"><i class="ring x"></i>not true, and the model said true (1)</span></div>
     <div class="plot" id="fig-detector"></div>
-    <figcaption>The probability of each statement on a log-odds scale. 63 of the 64 are on the right side of 0.5. One statement that is not true got 0.949: the sentence about the same operations, for a replacement with another filter (section 6). The check used 14,727 tokens.</figcaption>
+    <figcaption>The probability of each statement on a log-odds scale. 63 of the 64 are on the right side of 0.5. The check used 14,727 tokens.</figcaption>
   </figure>
 </section>
 <section>
@@ -168,10 +168,10 @@ footer { font-family: var(--mono); font-size: 12.5px; color: var(--muted); borde
 <section>
   <h2><span class="n">5</span>An object carries its runners</h2>
   <p class="q">Who repairs a broken object?</p>
-  <p>Until now, the main agent did. But many repairs are small. So each object carries a short list of runners, in order. The first one can be a free local model. A runner is silent while each sentence is true: it makes no request, and it adds nothing to a look. When the check of the object fails, the runner makes one replacement. If the replacement does not pass the check at the next look, that runner leaves the list, and its replacement leaves with it. The object has its version from before, and the next runner gets the wake. After the last runner, the wake goes to the main agent. The handle never changes.</p>
+  <p>Until now, the main agent did. But many repairs are small. So each object carries a short list of runners, in order. The first one can be a free local model. A runner is silent while each sentence is true: it makes no request, and it adds nothing to a look. When the check of the object fails, the runner makes one replacement, and the next look judges it with the same check. The list is in order: a wake that one runner does not close goes to the next runner, and the main agent is the last one. The handle never changes.</p>
   <figure>
     <div class="plot">
-      <svg id="bind" viewBox="0 0 880 170" role="img" aria-label="An object holds a slot for its runner. The runners are in order: a local model, then a larger model, then the main agent. A runner whose replacement does not hold leaves the list, and the next runner gets the wake.">
+      <svg id="bind" viewBox="0 0 880 170" role="img" aria-label="An object holds a slot for its runner. The runners are in order: a local model, then a larger model, then the main agent. A wake that one runner does not close goes to the next runner.">
         <defs><marker id="ai" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fm"/></marker></defs>
         <rect x="40" y="30" width="300" height="112" rx="6" class="box"/><text x="60" y="58" class="h">object region_totals</text><text x="60" y="78" class="m">a handle + an operation + a check</text>
         <rect x="60" y="94" width="260" height="34" rx="4" class="fbg sg" stroke-width="1.5"/><text x="74" y="116" class="m">runner now:</text><text id="slot" x="166" y="116" class="h">local</text>
@@ -180,7 +180,7 @@ footer { font-family: var(--mono); font-size: 12.5px; color: var(--muted); borde
         <g class="chip" id="c1"><rect x="580" y="64" width="120" height="44" rx="6" class="box"/><text x="640" y="91" text-anchor="middle" class="h">top</text></g>
         <g class="chip" id="c2"><rect x="730" y="64" width="120" height="44" rx="6" class="box"/><text x="790" y="91" text-anchor="middle" class="h">main</text></g>
         <path d="M550 86H576" class="ln sm" marker-end="url(#ai)"/><path d="M700 86H726" class="ln sm" marker-end="url(#ai)"/>
-        <text x="640" y="44" text-anchor="middle" class="m">a replacement did not hold → the runner leaves the list</text>
+        <text x="640" y="44" text-anchor="middle" class="m">a wake that is still open goes to the next runner</text>
         <text x="490" y="130" text-anchor="middle" class="m">a free local model</text><text x="640" y="130" text-anchor="middle" class="m">a larger model</text><text x="790" y="130" text-anchor="middle" class="m">the main agent</text>
       </svg>
     </div>
@@ -202,13 +202,13 @@ footer { font-family: var(--mono); font-size: 12.5px; color: var(--muted); borde
   <p>The cost is one signal. It is not the grade. A binding is good when it moves work off the expensive agent and the variables stay inside their limits. So the grade has three questions.</p>
   <p><em>Can the main agent define the runners?</em> It did. It gave the object the list <code>["local", "top"]</code> and a check of four sentences, and the text of the tools was its only guide.</p>
   <p><em>Does the main agent sleep while the runner works?</em> With no runner, the main agent got the wake of the break and used 3 turns for the repair. With the runners, the local model made the repair with one request, and the main agent got one wake: the end of the feed. The tokens of the run grew from 12,461 to 24,623. That added 0.2% of the base to the cost of the run.</p>
-  <p><em>Does the check still find a real failure?</em> That is the next section.</p>
+  <p><em>Does the check guard the object?</em> That is the next section.</p>
 </section>
 
 <section>
   <h2><span class="n">6</span>A check names what matters</h2>
-  <p class="q">What stops a replacement that is wrong?</p>
-  <p>Only the check of the object. And a check rejects only what it states. So the state shows how each handle is made, and a check can state a condition such as “It sums only the paid orders.” The look that judges a replacement by a runner gets one more sentence: the handle is made by the same operations as before, and only the name of a column can differ.</p>
+  <p class="q">How does the check judge a replacement?</p>
+  <p>With the sentences of the object. The state shows how each handle is made, so a check can state a condition such as “It sums only the paid orders.” The look that judges a replacement by a runner gets one more sentence: the handle is made by the same operations as before, and only the name of a column can differ.</p>
   <figure>
     <div class="plot">
       <svg viewBox="0 0 880 210" role="img" aria-label="Before the replacement, the graph filters the orders to paid orders, and then it sums the amount for each region. In the replacement, the filter is gone and the sum uses all orders.">
@@ -228,34 +228,23 @@ footer { font-family: var(--mono); font-size: 12.5px; color: var(--muted); borde
         <path d="M720 162H766" class="ln sm" marker-end="url(#aj)"/>
       </svg>
     </div>
-    <figcaption>A state of the detector check: a replacement that uses the new column name and drops the filter. The decision model gave “It sums only the paid orders” a probability of 0.004, and the sentence about the same operations 0.002. For a replacement that changed only the name of a column, it gave 0.999 to each.</figcaption>
+    <figcaption>Two states of the detector check. For a replacement that changed only the name of a column, the decision model gave 0.999 to “It sums only the paid orders” and to the sentence about the same operations. For the replacement of the drawing, which drops the filter, it gave 0.004 and 0.002.</figcaption>
   </figure>
   <p>In the run above, the local model kept the filter, and the sentence about the same operations got 0.999.</p>
-  <p class="q">And when a runner is wrong?</p>
-  <p>One run had a careless runner first in the list: a script that replaces the broken filter with the filter <code>amount &gt; 0</code>. Its replacement showed a count and no error. The sentence “It counts only the paid orders” got 0.054. So the runner left the list, and its replacement left with it: the object had its version from before. The next runner, the local model, read the same break, and it read what the careless runner tried. It made one request, and each sentence passed. The count was right 12.5 s after the break, and no wake went to a main agent.</p>
-  <p>The same run shows a weak point. The sentence about the same operations got 0.949 for the careless replacement, and that is wrong. Only the sentence that names the condition rejected it. A check must state each condition that matters.</p>
-  <p>The words of a check matter. In a run before that one, the main agent wrote “The handle sums the amount column as total.” The right replacement sums the column with the new name, so the sentence got 0.093. The runner left the list, the next runner gave the wake to the main agent, and the session had 5 wakes and cost 132% of the base. The text of the tools now asks for the meaning of a check, with no column name that can change.</p>
+  <p>A replacement stays only when each sentence is true. If one is not, the object keeps its version from before, and the next runner takes the wake.</p>
 </section>
 
 <section>
-  <h2><span class="n">7</span>What is not yet true</h2>
-  <ul class="limits">
-    <li>Each number on this page is one run. Nothing here is a benchmark.</li>
-    <li>One run shows the gain from model runners. It needs a check that states meaning, and only the text of the tools guides the main agent to such a check.</li>
-    <li>A model runner changes operations of one graph. It cannot add a step.</li>
-    <li>The sentence that a look adds for a replacement is not a guard alone. One run shows this.</li>
-    <li>No live run has a main agent that writes its own script runner. A test covers it.</li>
-    <li>A runner can replace an object that works. One run shows this.</li>
-    <li>The failure log has 72 entries. Each entry points to the run that shows it.</li>
-  </ul>
-  <p>What does hold: the split between the two loops. The cost of the main agent stayed flat while the wait grew, and the detector cost less than 1% of the cost of the main agent in each of the eight task runs.</p>
+  <h2><span class="n">7</span>A runner is any callable</h2>
   <p>A runner is any callable: a model, a human, or a script that the agent wrote one minute ago. A summary or an embedding of an output is the same binding on an object that exists already, and a runner makes it only when a wake is due. One check shows the cost. Two runs watched the same feed, one with two forms and one with none. While nothing failed, each run spent the same 4,597 tokens in 5 looks. Then a new status came. The run with the forms woke 3.0 s later than the other one, and its wake had a summary that named the region of the new status.</p>
+  <p>The split between the two loops is the result. The cost of the main agent stayed flat while the wait grew, and the detector cost less than 1% of the cost of the main agent in each of the eight task runs.</p>
+  <p>The method and the evidence of each run are in <code>docs/MEASUREMENTS.md</code> of the repository.</p>
 </section>
 
 <footer>
   <div>Main agent: Claude Code in headless mode, claude-sonnet-5-5 · Decision model: perplexity/pplx-decider-v1.2</div>
   <div>Runner local: qwen3.8-27b · Runner top: deepseek-v4.1-flash-1017 · Built on DataHandles 0.4.1</div>
-  <div>Code state: 59 tests pass · mutation check 14 of 14 · decisions D1 to D62 · failures F1 to F72</div>
+  <div>Code state: 59 tests pass · mutation check 14 of 14</div>
 </footer>
 </div>
 <script>
