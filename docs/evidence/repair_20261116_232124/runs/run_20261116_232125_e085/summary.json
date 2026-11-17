@@ -1,0 +1,94 @@
+{
+ "run": "run_20261116_232125_e085",
+ "state": "left",
+ "why": "the MCP server of the main agent ended before the run did",
+ "plan": {
+  "variables": [
+   "The object `orders` shows fewer than 1000 rows."
+  ]
+ },
+ "objects": [
+  {
+   "name": "paid",
+   "handle": "hdl_01M7KANGHMG715DPGCYN9RA5Z5",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.count"
+   },
+   "written": "wake_1",
+   "made": "dataset.filter {\"where\": [{\"column\": \"state\", \"op\": \"eq\", \"value\": \"paid\"}]}",
+   "variables": [
+    "It shows a count of rows: a number that is more than 0.",
+    "It counts only the paid orders."
+   ],
+   "runner": "runner",
+   "runner_tokens": 2164,
+   "output": "{\"rows\": 139}",
+   "ran_s": 1.0,
+   "runs": 1,
+   "changes": 0,
+   "changed_s": 0.9
+  },
+  {
+   "name": "orders",
+   "handle": "hdl_01M7KAMN7SXMJZZ9BG8BBR1PN4",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.count"
+   },
+   "written": "plan",
+   "output": "{\"rows\": 204}",
+   "ran_s": 4.9,
+   "runs": 6,
+   "changes": 4,
+   "changed_s": 6.8
+  }
+ ],
+ "pending": null,
+ "last_wake": {
+  "id": "wake_1",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "No object shows an error.",
+    "probability": 0.0
+   },
+   {
+    "variable": "About the object `paid`: It shows a count of rows: a number that is more than 0.",
+    "probability": 0.001
+   }
+  ],
+  "object": "paid",
+  "by": "runner",
+  "answer": {
+   "objects": [
+    {
+     "name": "paid",
+     "handle": "hdl_01M7KANGHMG715DPGCYN9RA5Z5",
+     "operation": {
+      "capability": "dataset.count"
+     }
+    }
+   ]
+  }
+ },
+ "lineage": "/tmp/scratch/worlds/repair_20261116_232124/runs/run_20261116_232125_e085/lineage.json",
+ "logs": "/tmp/scratch/worlds/repair_20261116_232124/runs/run_20261116_232125_e085",
+ "limits": {
+  "elapsed_s": 29.0,
+  "wall_seconds": 600,
+  "tokens": 6940,
+  "budget_tokens": 1000000
+ },
+ "counts": {
+  "looks": 7,
+  "wakes": 1,
+  "runner_wakes": 1,
+  "rebinds": 0,
+  "forms": 0,
+  "operations": 13,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The process of the run ended before the run did. The handles of the objects stay usable. Call plan_submit to watch them again."
+}

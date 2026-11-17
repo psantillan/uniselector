@@ -1,0 +1,41 @@
+{
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "what": "One look for each case and each wording, with the one sentence as the only statement.",
+ "wordings": {
+  "before": "The handle of this version is made by the same operations as the version before it, and no filter, group or metric is gone or new.",
+  "after": "The handle of this version is made by the same operations as the version before it: the same filters, the same groups and the same metrics. Only the name of a column can differ."
+ },
+ "cases": [
+  {
+   "case": "a replacement changes only the name of a column",
+   "true": true,
+   "before": 0.9891,
+   "after": 0.9972
+  },
+  {
+   "case": "a replacement changes the names of two columns",
+   "true": true,
+   "before": 0.9761,
+   "after": 0.9662
+  },
+  {
+   "case": "a replacement drops the filter",
+   "true": false,
+   "before": 0.0048,
+   "after": 0.0044
+  },
+  {
+   "case": "a replacement has another group",
+   "true": false,
+   "before": 0.4839,
+   "after": 0.0218
+  },
+  {
+   "case": "a replacement drops a metric",
+   "true": false,
+   "before": 0.0182,
+   "after": 0.0164
+  }
+ ],
+ "tokens": 4675
+}

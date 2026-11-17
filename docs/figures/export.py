@@ -29,13 +29,14 @@ FIGURES = [
     ("context", 1, [BROWN_LINE, BLUE_LINE]),
     ("two-loops", 1, []),
     ("looks", 1, [("dot", "blue", "inside the limit"), ("dot", "gold", "outside: a wake")]),
-    ("detector", 1, [("dot", "blue", "the statement is true (30)"), ("ring", "brown", "the statement is not true (10)")]),
+    ("detector", 1, [("dot", "blue", "the statement is true (42)"), ("ring", "brown", "the statement is not true (21)"),
+                    ("ring", "red", "not true, and the model said true (1)")]),
     ("longer-wait", 3, [BROWN_LINE, BLUE_LINE]),
     ("runners-in-order", 1, []),
-    ("runner-versions", 1, [("bar", "blue", "session time"), ("bar", "red", "of that: the runner top worked and gave no repair")]),
     ("timeline", 1, [("dot", "blue", "a look, all inside"), ("dot", "gold", "a look, one outside"),
                      ("ring", "gold", "outside, and the wake waits for the runner")]),
-    ("repair-that-held", 1, []),
+    ("sessions", 1, [("bar", "brown", "the agent alone"), ("bar", "blue", "the agent with Uniselector")]),
+    ("replacement-check", 1, []),
 ]
 
 

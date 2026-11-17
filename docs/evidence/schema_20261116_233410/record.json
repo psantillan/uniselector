@@ -1,0 +1,93 @@
+{
+ "task": "schema",
+ "direct": false,
+ "what": "A live data pipeline with a schema break: the column `amount` gets the name `amount_usd`.",
+ "at": "20261116_233410",
+ "commit": "bad15db+",
+ "prompt": "A feed of orders is registered in DataHandles as `orders`. It gets new rows for the next minutes, and it ends at 600 rows. Keep a live total of `amount` for each region, over the orders whose `status` is `paid`. The team that owns the feed can give a column a new name without notice. When that happens, repair your work. When the feed has 600 rows, give the total of each region.",
+ "truth": "the total of each region over the paid orders of the final feed (record: facts.truth)",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 5000000,
+  "wall_seconds": 1800
+ },
+ "runners": {
+  "local": {
+   "url": "http://local-model:18020/v1/chat/completions",
+   "model": "qwen3.8-27b",
+   "key_env": "LOCAL_MODEL_API_KEY",
+   "body": {
+    "chat_template_kwargs": {
+     "enable_thinking": false
+    }
+   }
+  },
+  "top": {
+   "url": "https://openrouter.ai/api/v1/chat/completions",
+   "model": "deepseek/deepseek-v4.1-flash-1017",
+   "key_env": "OPENROUTER_API_KEY"
+  }
+ },
+ "seconds": 87.5,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 10148,
+ "context_peak": 23567,
+ "context_added": 13419,
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 3,
+  "handle_invoke": 2,
+  "plan_submit": 1,
+  "plan_status": 5,
+  "plan_answer": 5
+ },
+ "turns": 18,
+ "agent_seconds": 85.9,
+ "answer": "The feed has 600 rows. These are the totals of `amount` for paid orders in each region:\n\n| Region | Total |\n|---|---|\n| east | 15677.18 |\n| north | 10483.22 |\n| south | 15527.26 |\n| west | 14504.72 |\n\nThe feed team renamed `amount` to `amount_usd` during the run. The runner `local` repaired the object, and the totals use `amount_usd` now.",
+ "agent_error": false,
+ "right": true,
+ "facts": {
+  "changes": [
+   {
+    "what": "the schedule started",
+    "agent_s": 19.0
+   },
+   {
+    "what": "schema",
+    "agent_s": 37.0
+   },
+   {
+    "what": "the feed ended",
+    "agent_s": 79.2
+   }
+  ],
+  "rows": 600,
+  "truth": {
+   "north": 10483.22,
+   "south": 15527.26,
+   "east": 15677.18,
+   "west": 14504.72
+  }
+ },
+ "runs": [
+  {
+   "t": 1794872136.325,
+   "event": "end",
+   "run": "run_20261116_233429_7530",
+   "outcome": "done",
+   "why": "the main agent ended the run",
+   "tokens": 31458,
+   "cost": 0.001254,
+   "seconds": 50.0,
+   "looks": 19,
+   "wakes": 6,
+   "runner_wakes": 2,
+   "rebinds": 1,
+   "forms": 0,
+   "operations": 37,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

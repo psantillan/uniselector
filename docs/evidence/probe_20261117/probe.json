@@ -1,0 +1,1450 @@
+{
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "inside": 0.5,
+ "cases": [
+  {
+   "case": "each object reads",
+   "state": {
+    "objects": [
+     {
+      "name": "rows",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.count"
+      },
+      "written": "plan",
+      "output": "{\"rows\": 320}",
+      "runs": 7,
+      "changed_s": 1.2
+     },
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "limit": 10
+       }
+      },
+      "written": "plan",
+      "runs": 7,
+      "changed_s": 1.2,
+      "output": "{\"columns\": [\"region\", \"total\"], \"rows\": [[\"north\", 5120.5], [\"south\", 4411.0], [\"east\", 3899.25]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9993,
+     "right": true
+    },
+    {
+     "statement": "The object `rows` shows fewer than 600 rows.",
+     "true": true,
+     "probability": 0.9993,
+     "right": true
+    }
+   ],
+   "tokens": 422
+  },
+  {
+   "case": "a schema break",
+   "state": {
+    "objects": [
+     {
+      "name": "rows",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.count"
+      },
+      "written": "plan",
+      "output": "{\"rows\": 320}",
+      "runs": 7,
+      "changed_s": 1.2
+     },
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "limit": 10
+       }
+      },
+      "written": "plan",
+      "error": {
+       "code": "ADAPTER_ERROR",
+       "message": "BinderException: Binder Error: Referenced column \"amount\" not found in FROM clause!\nCandidate bindings: \"amount_usd\""
+      },
+      "runs": 8,
+      "changed_s": 0.3
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": false,
+     "probability": 0.0003,
+     "right": true
+    },
+    {
+     "statement": "The object `rows` shows fewer than 600 rows.",
+     "true": true,
+     "probability": 0.9964,
+     "right": true
+    }
+   ],
+   "tokens": 405
+  },
+  {
+   "case": "the goal is met",
+   "state": {
+    "objects": [
+     {
+      "name": "rows",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.count"
+      },
+      "written": "plan",
+      "output": "{\"rows\": 600}",
+      "runs": 21,
+      "changed_s": 0.4
+     },
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "limit": 10
+       }
+      },
+      "written": "plan",
+      "runs": 7,
+      "changed_s": 1.2,
+      "output": "{\"columns\": [\"region\", \"total\"], \"rows\": [[\"north\", 5120.5], [\"south\", 4411.0], [\"east\", 3899.25]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9992,
+     "right": true
+    },
+    {
+     "statement": "The object `rows` shows fewer than 600 rows.",
+     "true": false,
+     "probability": 0.0008,
+     "right": true
+    }
+   ],
+   "tokens": 423
+  },
+  {
+   "case": "a silent feed",
+   "state": {
+    "objects": [
+     {
+      "name": "latest",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.count"
+      },
+      "written": "plan",
+      "output": "{\"rows\": 11}",
+      "runs": 11,
+      "changed_s": 16.4
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.999,
+     "right": true
+    },
+    {
+     "statement": "The output of the object `latest` changed in the last 10 seconds.",
+     "true": false,
+     "probability": 0.0067,
+     "right": true
+    }
+   ],
+   "tokens": 339
+  },
+  {
+   "case": "a live feed",
+   "state": {
+    "objects": [
+     {
+      "name": "latest",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.count"
+      },
+      "written": "plan",
+      "output": "{\"rows\": 11}",
+      "runs": 11,
+      "changed_s": 1.9
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9992,
+     "right": true
+    },
+    {
+     "statement": "The output of the object `latest` changed in the last 10 seconds.",
+     "true": true,
+     "probability": 0.9994,
+     "right": true
+    }
+   ],
+   "tokens": 338
+  },
+  {
+   "case": "a new status",
+   "state": {
+    "objects": [
+     {
+      "name": "statuses",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "limit": 20
+       }
+      },
+      "written": "plan",
+      "output": "{\"columns\": [\"status\", \"n\"], \"rows\": [[\"paid\", 150], [\"pending\", 80], [\"refunded\", 40], [\"settled\", 12]]}",
+      "runs": 9,
+      "changed_s": 0.5
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9992,
+     "right": true
+    },
+    {
+     "statement": "Each status in the object `statuses` is one of: paid, pending, refunded.",
+     "true": false,
+     "probability": 0.0013,
+     "right": true
+    }
+   ],
+   "tokens": 381
+  },
+  {
+   "case": "the known statuses",
+   "state": {
+    "objects": [
+     {
+      "name": "statuses",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "limit": 20
+       }
+      },
+      "written": "plan",
+      "output": "{\"columns\": [\"status\", \"n\"], \"rows\": [[\"paid\", 150], [\"pending\", 80], [\"refunded\", 40]]}",
+      "runs": 9,
+      "changed_s": 0.5
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9995,
+     "right": true
+    },
+    {
+     "statement": "Each status in the object `statuses` is one of: paid, pending, refunded.",
+     "true": true,
+     "probability": 0.9993,
+     "right": true
+    }
+   ],
+   "tokens": 373
+  },
+  {
+   "case": "room at 21.4",
+   "state": {
+    "objects": [
+     {
+      "name": "reading",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "room.latest"
+      },
+      "written": "plan",
+      "runs": 41,
+      "changed_s": 0.2,
+      "output": "{\"seq\": 41, \"t_ms\": 123000, \"heater\": true, \"temperature\": 21.4}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9995,
+     "right": true
+    },
+    {
+     "statement": "The newest temperature is below 26.",
+     "true": true,
+     "probability": 0.9993,
+     "right": true
+    }
+   ],
+   "tokens": 356
+  },
+  {
+   "case": "room at 25.9",
+   "state": {
+    "objects": [
+     {
+      "name": "reading",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "room.latest"
+      },
+      "written": "plan",
+      "runs": 41,
+      "changed_s": 0.2,
+      "output": "{\"seq\": 41, \"t_ms\": 123000, \"heater\": true, \"temperature\": 25.9}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9994,
+     "right": true
+    },
+    {
+     "statement": "The newest temperature is below 26.",
+     "true": true,
+     "probability": 0.9985,
+     "right": true
+    }
+   ],
+   "tokens": 356
+  },
+  {
+   "case": "room at 26.1",
+   "state": {
+    "objects": [
+     {
+      "name": "reading",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "room.latest"
+      },
+      "written": "plan",
+      "runs": 41,
+      "changed_s": 0.2,
+      "output": "{\"seq\": 41, \"t_ms\": 123000, \"heater\": true, \"temperature\": 26.1}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9994,
+     "right": true
+    },
+    {
+     "statement": "The newest temperature is below 26.",
+     "true": false,
+     "probability": 0.0015,
+     "right": true
+    }
+   ],
+   "tokens": 356
+  },
+  {
+   "case": "a job runs",
+   "state": {
+    "objects": [
+     {
+      "name": "job",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "script.run"
+      },
+      "written": "plan",
+      "running_s": 64.0,
+      "runs": 0,
+      "changed_s": 64.0
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9991,
+     "right": true
+    },
+    {
+     "statement": "The script of the object `job` has not finished.",
+     "true": true,
+     "probability": 0.9949,
+     "right": true
+    }
+   ],
+   "tokens": 341
+  },
+  {
+   "case": "a job ended",
+   "state": {
+    "objects": [
+     {
+      "name": "job",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "script.run"
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.1,
+      "output": "{\"exit_code\": 0, \"seconds\": 150.2, \"output\": \"round 30\\nchecksum 9f2c11aa03b4d7e1\\n\"}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9971,
+     "right": true
+    },
+    {
+     "statement": "The script of the object `job` has not finished.",
+     "true": false,
+     "probability": 0.0391,
+     "right": true
+    }
+   ],
+   "tokens": 370
+  },
+  {
+   "case": "a quiet object whose source is live",
+   "state": {
+    "objects": [
+     {
+      "name": "highest",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.aggregate"
+      },
+      "written": "plan",
+      "output": "{\"max\": 28.9}",
+      "ran_s": 2.1,
+      "runs": 14,
+      "changes": 3,
+      "changed_s": 31.4
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9994,
+     "right": true
+    },
+    {
+     "statement": "About the object `highest`: Its operation ran in the last 15 seconds.",
+     "true": true,
+     "probability": 0.9976,
+     "right": true
+    }
+   ],
+   "tokens": 352
+  },
+  {
+   "case": "a quiet object whose source stopped",
+   "state": {
+    "objects": [
+     {
+      "name": "highest",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.aggregate"
+      },
+      "written": "plan",
+      "output": "{\"max\": 28.9}",
+      "ran_s": 31.4,
+      "runs": 14,
+      "changes": 3,
+      "changed_s": 47.0
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9988,
+     "right": true
+    },
+    {
+     "statement": "About the object `highest`: Its operation ran in the last 15 seconds.",
+     "true": false,
+     "probability": 0.0142,
+     "right": true
+    }
+   ],
+   "tokens": 353
+  },
+  {
+   "case": "the check of an object holds",
+   "state": {
+    "objects": [
+     {
+      "name": "rows",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.count"
+      },
+      "written": "plan",
+      "output": "{\"rows\": 320}",
+      "runs": 7,
+      "changed_s": 1.2
+     },
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "limit": 10
+       }
+      },
+      "written": "plan",
+      "runs": 7,
+      "changed_s": 1.2,
+      "output": "{\"columns\": [\"region\", \"total\"], \"rows\": [[\"north\", 5120.5], [\"south\", 4411.0], [\"east\", 3899.25]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9995,
+     "right": true
+    },
+    {
+     "statement": "About the object `totals`: It shows one row for each of the regions north, south and east, with a number in total.",
+     "true": true,
+     "probability": 0.9994,
+     "right": true
+    }
+   ],
+   "tokens": 435
+  },
+  {
+   "case": "the check of an object does not hold",
+   "state": {
+    "objects": [
+     {
+      "name": "rows",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.count"
+      },
+      "written": "plan",
+      "output": "{\"rows\": 320}",
+      "runs": 7,
+      "changed_s": 1.2
+     },
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "limit": 10
+       }
+      },
+      "written": "plan",
+      "runs": 7,
+      "changed_s": 1.2,
+      "output": "{\"columns\": [\"region\", \"total\"], \"rows\": [[\"north\", null]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9956,
+     "right": true
+    },
+    {
+     "statement": "About the object `totals`: It shows one row for each of the regions north, south and east, with a number in total.",
+     "true": false,
+     "probability": 0.0493,
+     "right": true
+    }
+   ],
+   "tokens": 406
+  },
+  {
+   "case": "a form of a long output",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 2,
+      "changes": 1,
+      "changed_s": 3.1,
+      "output": "{\"columns\": [\"region\", \"status\", \"total\", \"n\"], \"rows\": [[\"central\", \"paid\", 1000.5, 20], [\"central\", \"pending\", 1001.5, 21], [\"central\", \"refunded\", 1002.5, 22], [\"east\", \"paid\", 1007.5, 21], [\"east\", \"pending\", 1008.5, 22], [\"east\", \"refunded\", 1009.5, 23], [\"islands\", \"paid\", 1014.5, 22], [\"islan ... (cut: 63 of 663 characters) ... ], [\"north\", \"paid\", 1021.5, 23], [\"north\", \"pending\", 1022.5, 24], [\"north\", \"refunded\", 1023.5, 25], [\"south\", \"paid\", 1028.5, 24], [\"south\", \"pending\", 1029.5, 25], [\"south\", \"refunded\", 1030.5, 26], [\"west\", \"paid\", 1035.5, 25], [\"west\", \"pending\", 1036.5, 26], [\"west\", \"refunded\", 1037.5, 27]]}",
+      "forms": {
+       "summary": {
+        "value": "The table has three statuses: paid, pending, and refunded.",
+        "changes_behind": 0
+       }
+      }
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9994,
+     "right": true
+    },
+    {
+     "statement": "The table of the object `totals` has only the statuses paid, pending and refunded.",
+     "true": true,
+     "probability": 0.9955,
+     "right": true
+    },
+    {
+     "statement": "About the form `summary` of the object `totals`: The summary names one status or more.",
+     "true": true,
+     "probability": 0.9993,
+     "right": true
+    }
+   ],
+   "tokens": 803
+  },
+  {
+   "case": "a form shows a value of the part that the state does not keep",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 2,
+      "changes": 1,
+      "changed_s": 3.1,
+      "output": "{\"columns\": [\"region\", \"status\", \"total\", \"n\"], \"rows\": [[\"central\", \"paid\", 1000.5, 20], [\"central\", \"pending\", 1001.5, 21], [\"central\", \"refunded\", 1002.5, 22], [\"east\", \"paid\", 1007.5, 21], [\"east\", \"pending\", 1008.5, 22], [\"east\", \"refunded\", 1009.5, 23], [\"islands\", \"paid\", 1014.5, 22], [\"islan ... (cut: 63 of 663 characters) ... ], [\"north\", \"paid\", 1021.5, 23], [\"north\", \"pending\", 1022.5, 24], [\"north\", \"refunded\", 1023.5, 25], [\"south\", \"paid\", 1028.5, 24], [\"south\", \"pending\", 1029.5, 25], [\"south\", \"refunded\", 1030.5, 26], [\"west\", \"paid\", 1035.5, 25], [\"west\", \"pending\", 1036.5, 26], [\"west\", \"refunded\", 1037.5, 27]]}",
+      "forms": {
+       "summary": {
+        "value": "The table has four statuses: disputed, paid, pending, and refunded. Only the region north has disputed orders.",
+        "changes_behind": 0
+       }
+      }
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9987,
+     "right": true
+    },
+    {
+     "statement": "The table of the object `totals` has only the statuses paid, pending and refunded.",
+     "true": false,
+     "probability": 0.0275,
+     "right": true
+    },
+    {
+     "statement": "About the form `summary` of the object `totals`: The summary names one status or more.",
+     "true": true,
+     "probability": 0.9992,
+     "right": true
+    }
+   ],
+   "tokens": 813
+  },
+  {
+   "case": "a form that does not pass its check",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 2,
+      "changes": 1,
+      "changed_s": 3.1,
+      "output": "{\"columns\": [\"region\", \"status\", \"total\", \"n\"], \"rows\": [[\"central\", \"paid\", 1000.5, 20], [\"central\", \"pending\", 1001.5, 21], [\"central\", \"refunded\", 1002.5, 22], [\"east\", \"paid\", 1007.5, 21], [\"east\", \"pending\", 1008.5, 22], [\"east\", \"refunded\", 1009.5, 23], [\"islands\", \"paid\", 1014.5, 22], [\"islan ... (cut: 63 of 663 characters) ... ], [\"north\", \"paid\", 1021.5, 23], [\"north\", \"pending\", 1022.5, 24], [\"north\", \"refunded\", 1023.5, 25], [\"south\", \"paid\", 1028.5, 24], [\"south\", \"pending\", 1029.5, 25], [\"south\", \"refunded\", 1030.5, 26], [\"west\", \"paid\", 1035.5, 25], [\"west\", \"pending\", 1036.5, 26], [\"west\", \"refunded\", 1037.5, 27]]}",
+      "forms": {
+       "summary": {
+        "value": "I could not read the table.",
+        "changes_behind": 0
+       }
+      }
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9121,
+     "right": true
+    },
+    {
+     "statement": "About the form `summary` of the object `totals`: The summary names one status or more.",
+     "true": false,
+     "probability": 0.0643,
+     "right": true
+    }
+   ],
+   "tokens": 688
+  },
+  {
+   "case": "the handle has the filter that the check names",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.4,
+      "made": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "output": "{\"columns\": [\"region\", \"total\", \"n\"], \"rows\": [[\"north\", 21515.21, 109], [\"south\", 19004.1, 98], [\"east\", 17650.0, 93]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9992,
+     "right": true
+    },
+    {
+     "statement": "About the object `totals`: It sums only the paid orders.",
+     "true": true,
+     "probability": 0.9995,
+     "right": true
+    },
+    {
+     "statement": "About the object `totals`: It has one row for each region.",
+     "true": true,
+     "probability": 0.983,
+     "right": true
+    }
+   ],
+   "tokens": 581
+  },
+  {
+   "case": "the handle has no filter",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.4,
+      "made": "dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "output": "{\"columns\": [\"region\", \"total\", \"n\"], \"rows\": [[\"north\", 21515.21, 109], [\"south\", 19004.1, 98], [\"east\", 17650.0, 93]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "About the object `totals`: It sums only the paid orders.",
+     "true": false,
+     "probability": 0.0637,
+     "right": true
+    },
+    {
+     "statement": "About the object `totals`: It has one row for each region.",
+     "true": true,
+     "probability": 0.9134,
+     "right": true
+    }
+   ],
+   "tokens": 459
+  },
+  {
+   "case": "the handle has another filter",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.4,
+      "made": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"pending\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "output": "{\"columns\": [\"region\", \"total\", \"n\"], \"rows\": [[\"north\", 21515.21, 109], [\"south\", 19004.1, 98], [\"east\", 17650.0, 93]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "About the object `totals`: It sums only the paid orders.",
+     "true": false,
+     "probability": 0.0006,
+     "right": true
+    }
+   ],
+   "tokens": 379
+  },
+  {
+   "case": "a replacement changes only the name of a column",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.4,
+      "made": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "made_before": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "output": "{\"columns\": [\"region\", \"total\", \"n\"], \"rows\": [[\"north\", 21515.21, 109], [\"south\", 19004.1, 98], [\"east\", 17650.0, 93]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "About the object `totals`: It sums only the paid orders.",
+     "true": true,
+     "probability": 0.9991,
+     "right": true
+    },
+    {
+     "statement": "About the object `totals`: The handle of this version is made by the same operations as the version before it: the same filters, the same groups and the same metrics. Only the name of a column can differ.",
+     "true": true,
+     "probability": 0.999,
+     "right": true
+    }
+   ],
+   "tokens": 593
+  },
+  {
+   "case": "a replacement changes the names of two columns",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.4,
+      "made": "dataset.filter {\"where\": [{\"column\": \"state\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "made_before": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "output": "{\"columns\": [\"region\", \"total\", \"n\"], \"rows\": [[\"north\", 21515.21, 109], [\"south\", 19004.1, 98], [\"east\", 17650.0, 93]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "About the object `totals`: It sums only the paid orders.",
+     "true": true,
+     "probability": 0.8238,
+     "right": true
+    },
+    {
+     "statement": "About the object `totals`: The handle of this version is made by the same operations as the version before it: the same filters, the same groups and the same metrics. Only the name of a column can differ.",
+     "true": true,
+     "probability": 0.9361,
+     "right": true
+    }
+   ],
+   "tokens": 593
+  },
+  {
+   "case": "a replacement drops the filter",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.4,
+      "made": "dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "made_before": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "output": "{\"columns\": [\"region\", \"total\", \"n\"], \"rows\": [[\"north\", 21515.21, 109], [\"south\", 19004.1, 98], [\"east\", 17650.0, 93]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "About the object `totals`: It sums only the paid orders.",
+     "true": false,
+     "probability": 0.004,
+     "right": true
+    },
+    {
+     "statement": "About the object `totals`: The handle of this version is made by the same operations as the version before it: the same filters, the same groups and the same metrics. Only the name of a column can differ.",
+     "true": false,
+     "probability": 0.0024,
+     "right": true
+    }
+   ],
+   "tokens": 568
+  },
+  {
+   "case": "a replacement has another filter",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.4,
+      "made": "dataset.filter {\"where\": [{\"column\": \"amount_usd\", \"op\": \"gt\", \"value\": 0}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "made_before": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "output": "{\"columns\": [\"region\", \"total\", \"n\"], \"rows\": [[\"north\", 21515.21, 109], [\"south\", 19004.1, 98], [\"east\", 17650.0, 93]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "About the object `totals`: It sums only the paid orders.",
+     "true": false,
+     "probability": 0.0144,
+     "right": true
+    },
+    {
+     "statement": "About the object `totals`: The handle of this version is made by the same operations as the version before it: the same filters, the same groups and the same metrics. Only the name of a column can differ.",
+     "true": false,
+     "probability": 0.0097,
+     "right": true
+    }
+   ],
+   "tokens": 595
+  },
+  {
+   "case": "a run: the replacement of a filter is another filter",
+   "state": {
+    "objects": [
+     {
+      "name": "paid",
+      "handle": "hdl_x",
+      "type": "dataset",
+      "operation": {
+       "capability": "dataset.count"
+      },
+      "written": "wake_1",
+      "output": "{\"rows\": 204}",
+      "ran_s": 0.1,
+      "runs": 1,
+      "changes": 0,
+      "changed_s": 0.0,
+      "made": "dataset.filter {\"where\": [{\"column\": \"amount\", \"op\": \"gt\", \"value\": 0}]}",
+      "made_before": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]}"
+     },
+     {
+      "name": "orders",
+      "handle": "hdl_x",
+      "type": "dataset",
+      "operation": {
+       "capability": "dataset.count"
+      },
+      "written": "plan",
+      "output": "{\"rows\": 204}",
+      "ran_s": 2.1,
+      "runs": 6,
+      "changes": 4,
+      "changed_s": 4.0
+     }
+    ],
+    "limits": {
+     "elapsed_s": 26.1,
+     "wall_seconds": 600,
+     "tokens": 3944,
+     "budget_tokens": 1000000
+    }
+   },
+   "answers": [
+    {
+     "statement": "No object shows an error.",
+     "true": true,
+     "probability": 0.9993,
+     "right": true
+    },
+    {
+     "statement": "The object `orders` shows fewer than 1000 rows.",
+     "true": true,
+     "probability": 0.9994,
+     "right": true
+    },
+    {
+     "statement": "About the object `paid`: It shows a count of rows: a number that is more than 0.",
+     "true": true,
+     "probability": 0.9996,
+     "right": true
+    },
+    {
+     "statement": "About the object `paid`: It counts only the paid orders.",
+     "true": false,
+     "probability": 0.0543,
+     "right": true
+    },
+    {
+     "statement": "About the object `paid`: The handle of this version is made by the same operations as the version before it: the same filters, the same groups and the same metrics. Only the name of a column can differ.",
+     "true": false,
+     "probability": 0.9489,
+     "right": false
+    }
+   ],
+   "tokens": 817
+  },
+  {
+   "case": "a replacement has another group",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.4,
+      "made": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"status\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "made_before": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "output": "{\"columns\": [\"status\", \"total\", \"n\"], \"rows\": [[\"paid\", 58169.31, 300]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "About the object `totals`: It has one row for each region.",
+     "true": false,
+     "probability": 0.003,
+     "right": true
+    },
+    {
+     "statement": "About the object `totals`: The handle of this version is made by the same operations as the version before it: the same filters, the same groups and the same metrics. Only the name of a column can differ.",
+     "true": false,
+     "probability": 0.0061,
+     "right": true
+    }
+   ],
+   "tokens": 562
+  },
+  {
+   "case": "a replacement drops a metric",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.4,
+      "made": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}]}",
+      "made_before": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "output": "{\"columns\": [\"region\", \"total\"], \"rows\": [[\"north\", 21515.21], [\"south\", 19004.1], [\"east\", 17650.0]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "About the object `totals`: The handle of this version is made by the same operations as the version before it: the same filters, the same groups and the same metrics. Only the name of a column can differ.",
+     "true": false,
+     "probability": 0.0193,
+     "right": true
+    }
+   ],
+   "tokens": 461
+  },
+  {
+   "case": "the runners spent little",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.4,
+      "made": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "runner_tokens": 3100,
+      "output": "{\"columns\": [\"region\", \"total\", \"n\"], \"rows\": [[\"north\", 21515.21, 109], [\"south\", 19004.1, 98], [\"east\", 17650.0, 93]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "About the object `totals`: The runners of this object spent less than 20000 tokens.",
+     "true": true,
+     "probability": 0.9995,
+     "right": true
+    }
+   ],
+   "tokens": 403
+  },
+  {
+   "case": "the runners spent much",
+   "state": {
+    "objects": [
+     {
+      "name": "totals",
+      "handle": "hdl_x",
+      "type": "computation",
+      "operation": {
+       "capability": "dataset.head",
+       "input": {
+        "n": 50
+       }
+      },
+      "written": "plan",
+      "runs": 1,
+      "changed_s": 0.4,
+      "made": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+      "runner_tokens": 1090476,
+      "output": "{\"columns\": [\"region\", \"total\", \"n\"], \"rows\": [[\"north\", 21515.21, 109], [\"south\", 19004.1, 98], [\"east\", 17650.0, 93]]}"
+     }
+    ],
+    "limits": {
+     "elapsed_s": 40.0,
+     "wall_seconds": 1800,
+     "tokens": 3000,
+     "budget_tokens": 400000
+    }
+   },
+   "answers": [
+    {
+     "statement": "About the object `totals`: The runners of this object spent less than 20000 tokens.",
+     "true": false,
+     "probability": 0.0006,
+     "right": true
+    }
+   ],
+   "tokens": 406
+  }
+ ],
+ "statements": 64,
+ "wrong": 1,
+ "tokens": 14727,
+ "cost": 0.000293
+}

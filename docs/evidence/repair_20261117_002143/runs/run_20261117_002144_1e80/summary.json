@@ -1,0 +1,107 @@
+{
+ "run": "run_20261117_002144_1e80",
+ "state": "left",
+ "why": "the MCP server of the main agent ended before the run did",
+ "plan": {
+  "variables": [
+   "The object `orders` shows fewer than 1000 rows."
+  ]
+ },
+ "objects": [
+  {
+   "name": "paid",
+   "handle": "hdl_01M7KE43566BMWDGP4T97RHX5D",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.count"
+   },
+   "written": "wake_2",
+   "made": "dataset.filter {\"where\": [{\"column\": \"state\", \"op\": \"eq\", \"value\": \"paid\"}]}",
+   "variables": [
+    "It shows a count of rows: a number that is more than 0.",
+    "It counts only the paid orders."
+   ],
+   "runner": "runner",
+   "runner_tokens": 2380,
+   "output": "{\"rows\": 139}",
+   "ran_s": 1.0,
+   "runs": 1,
+   "changes": 0,
+   "changed_s": 1.0
+  },
+  {
+   "name": "orders",
+   "handle": "hdl_01M7KE33A1W9W3ZMN2JYD2306Q",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.count"
+   },
+   "written": "plan",
+   "output": "{\"rows\": 204}",
+   "ran_s": 11.0,
+   "runs": 6,
+   "changes": 4,
+   "changed_s": 12.9
+  }
+ ],
+ "pending": null,
+ "last_wake": {
+  "id": "wake_2",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "No object shows an error.",
+    "probability": 0.0
+   },
+   {
+    "variable": "About the object `paid`: It shows a count of rows: a number that is more than 0.",
+    "probability": 0.0
+   }
+  ],
+  "object": "paid",
+  "tried": [
+   {
+    "runner": "careless",
+    "result": "the replacement did not hold",
+    "made": "dataset.filter {\"where\": [{\"column\": \"amount\", \"op\": \"gt\", \"value\": 0}]}",
+    "not_true": [
+     {
+      "variable": "About the object `paid`: It counts only the paid orders.",
+      "probability": 0.054
+     }
+    ]
+   }
+  ],
+  "by": "runner",
+  "answer": {
+   "objects": [
+    {
+     "name": "paid",
+     "handle": "hdl_01M7KE43566BMWDGP4T97RHX5D",
+     "operation": {
+      "capability": "dataset.count"
+     }
+    }
+   ]
+  }
+ },
+ "lineage": "/tmp/scratch/worlds/repair_20261117_002143/runs/run_20261117_002144_1e80/lineage.json",
+ "logs": "/tmp/scratch/worlds/repair_20261117_002143/runs/run_20261117_002144_1e80",
+ "limits": {
+  "elapsed_s": 35.0,
+  "wall_seconds": 600,
+  "tokens": 8690,
+  "budget_tokens": 1000000
+ },
+ "counts": {
+  "looks": 9,
+  "wakes": 2,
+  "runner_wakes": 2,
+  "rebinds": 1,
+  "forms": 0,
+  "operations": 14,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The process of the run ended before the run did. The handles of the objects stay usable. Call plan_submit to watch them again."
+}

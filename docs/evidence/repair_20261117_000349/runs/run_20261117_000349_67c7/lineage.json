@@ -1,0 +1,74 @@
+{
+ "id": "gr_run_20261117_000349_67c7",
+ "nodes": [
+  {
+   "id": "hdl_01M7KD2A0TJ7K1RSA3S1TSJQKH",
+   "kind": "resource",
+   "reference": "hdl_01M7KD2A0TJ7K1RSA3S1TSJQKH"
+  },
+  {
+   "id": "op_01M7KD2A1H5B60WDSRJZTD8T24",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "status",
+       "op": "eq",
+       "value": "paid"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KD2A1PH197E8KRSBM4VK0F",
+   "kind": "derived",
+   "reference": "hdl_01M7KD2A1PH197E8KRSBM4VK0F"
+  },
+  {
+   "id": "op_01M7KD3298R04MRBXZP2ZEP6KE",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "amount",
+       "op": "gt",
+       "value": 0
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KD329FG3GZNHQ311P8E6K5",
+   "kind": "derived",
+   "reference": "hdl_01M7KD329FG3GZNHQ311P8E6K5"
+  }
+ ],
+ "edges": [
+  {
+   "from": "hdl_01M7KD2A0TJ7K1RSA3S1TSJQKH",
+   "to": "op_01M7KD2A1H5B60WDSRJZTD8T24"
+  },
+  {
+   "from": "op_01M7KD2A1H5B60WDSRJZTD8T24",
+   "to": "hdl_01M7KD2A1PH197E8KRSBM4VK0F"
+  },
+  {
+   "from": "hdl_01M7KD2A0TJ7K1RSA3S1TSJQKH",
+   "to": "op_01M7KD3298R04MRBXZP2ZEP6KE"
+  },
+  {
+   "from": "op_01M7KD3298R04MRBXZP2ZEP6KE",
+   "to": "hdl_01M7KD329FG3GZNHQ311P8E6K5"
+  }
+ ],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}

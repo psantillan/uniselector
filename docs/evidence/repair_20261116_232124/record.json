@@ -1,0 +1,81 @@
+{
+ "runner": "qwen3.8-27b",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "truth": {
+  "rows": 139
+ },
+ "state": "running",
+ "why": "the objects run, and no look found a variable outside its limits",
+ "object": {
+  "name": "paid",
+  "handle": "hdl_01M7KANGHMG715DPGCYN9RA5Z5",
+  "type": "dataset",
+  "operation": {
+   "capability": "dataset.count"
+  },
+  "written": "wake_1",
+  "made": "dataset.filter {\"where\": [{\"column\": \"state\", \"op\": \"eq\", \"value\": \"paid\"}]}",
+  "variables": [
+   "It shows a count of rows: a number that is more than 0.",
+   "It counts only the paid orders."
+  ],
+  "runner": "runner",
+  "runner_tokens": 2164,
+  "output": "{\"rows\": 139}",
+  "ran_s": 1.0,
+  "runs": 1,
+  "changes": 0,
+  "changed_s": 0.9
+ },
+ "right": true,
+ "while_nothing_failed": {
+  "looks": 4,
+  "tokens": 2582,
+  "runner_wakes": 0,
+  "runner_tokens": 0
+ },
+ "seconds_from_the_break": 6.5,
+ "counts": {
+  "looks": 7,
+  "wakes": 1,
+  "runner_wakes": 1,
+  "rebinds": 0,
+  "forms": 0,
+  "operations": 13,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "limits": {
+  "elapsed_s": 29.0,
+  "wall_seconds": 600,
+  "tokens": 6940,
+  "budget_tokens": 1000000
+ },
+ "runner_requests": [
+  {
+   "runner": "runner",
+   "reason": "repair",
+   "tokens": 2164,
+   "ms": 3278
+  }
+ ],
+ "look_that_judged_the_replacement": [
+  {
+   "statements": [
+    "No object shows an error.",
+    "The object `orders` shows fewer than 1000 rows.",
+    "About the object `paid`: It shows a count of rows: a number that is more than 0.",
+    "About the object `paid`: It counts only the paid orders.",
+    "About the object `paid`: The handle of this version is made by the same operations as the version before it: the same filters, the same groups and the same metrics. Only the name of a column can differ."
+   ],
+   "probs": [
+    0.9994190282359551,
+    0.999597330550267,
+    0.9997396158993688,
+    0.9980972017108788,
+    0.9992267163989048
+   ],
+   "tokens": 832
+  }
+ ]
+}

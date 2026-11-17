@@ -966,6 +966,9 @@ agent slept through it: it got no wake about the schema. In that time the other 
 - Changed: a runner can give the wake to the main agent with `to_main`; the tool text says that
   the check of an object is about the object only; the prompt of the driver does not tell the
   main agent to give each object the runners (`docs/DECISIONS.md`, D51).
+- Fixed, for the cost: a model runner makes one request for one wake, and it has no tools (D57).
+  In `schema_20261116_233410`, `top` got a wake that no replacement could close. It made one
+  request (3,957 tokens, 17.4 s) and gave the wake to the main agent (E 40).
 - Live check: `schema_20261116_192536`. The main agent wrote the goal as a variable of the plan
   ("The row count of row_count is less than 600."), so this failure did not occur again. The run
   showed three more failures: F60, F61 and F62.
@@ -1025,8 +1028,10 @@ agent went from 8,531 to 18,409 tokens.
 - Evidence: E 22, E 47 to E 53, R 1.
 - Changed: the tool text says that a model runner cannot change the data, so a check that only a
   change of the data can make true again is a variable of the plan (`docs/DECISIONS.md`, D52).
-- Open: a model runner can replace an object that works. After a repair that does not hold, the
-  next runner gets the version of that repair.
+- Open: a model runner can replace an object that works.
+- Changed: after a replacement that does not hold, the next runner gets `tried`, and `made_before`
+  shows how the handle was made before each runner (D56, D59). A model runner can change only the
+  operations of the graph that made the handle (D57), so it cannot give an object another graph.
 
 ### F61. The runner `top` read for 430 s and gave no result
 
@@ -1040,8 +1045,10 @@ agent went from 8,531 to 18,409 tokens.
 - This is an item of the watch list of the brief: a sub-agent whose exploration cost more than the
   question was worth.
 - Evidence: R 3, E 53, E 65.
-- Open. The limits did not change: one wake is one turn of an agent (D50). With D52 the main agent
-  does not wait for the wake, and the end of the run stops the runner at its next request.
+- Fixed: one wake of a model runner is one request (D57). The loop with the tools is gone. The
+  requests of the model runners in the four runs after the change: 2,015 to 3,957 tokens each
+  (`repair_20261116_232124`, `forms_20261116_233244`, `schema_20261116_233410`,
+  `schema_20261116_233942`).
 
 ### F62. The goal of the plan waited 432 s for a runner of another object
 
@@ -1119,6 +1126,13 @@ plan woke the main agent at 62.0 s (E 53). The session took 101.2 s. The session
   says already: "Change only what is broken: the new version shows the same thing as the old one."
   `handle_describe` of the filtered handle showed the old column name (`docs/GAPS.md`, G14), so the
   runner could not see from it that the filter still worked.
+- Fixed (D56, D57). The state shows how the handle of an object is made, so a check can state the
+  filter, and the look that judges a replacement by a runner has one more sentence: the handle is
+  made by the same operations as before. A model runner changes operations of the graph, and it
+  cannot remove one. The detector check has the case "a replacement drops the filter"
+  (`probe_20261117`): "It sums only the paid orders." got 0.004, and the sentence about the
+  operations got 0.0024. In three live runs `local` kept the filter: `repair_20261116_232124`,
+  `schema_20261116_233410` (E 25) and `schema_20261116_233942` (E 21).
 
 ### F65. The decision model did not get the forms
 
@@ -1150,3 +1164,156 @@ plan woke the main agent at 62.0 s (E 53). The session took 101.2 s. The session
 - Evidence: `forms_20261116_213117`: `pending` in `record.json`, and events 5 to 7 of the run with
   the forms.
 - Fixed: the function reads the names from `columns`.
+
+## The runs with silent bindings
+
+The runs of 2026-11-16 (UTC) with the code of D55 to D59: a runner does nothing while each
+statement is true, a model runner makes one request, and a runner that fails leaves the list. The
+models and the limits are the same as before. `local` is `qwen3.8-27b`, and `top` is
+`deepseek/deepseek-v4.1-flash-1017`.
+
+| Run | Main agent | Answer | Looks | Wakes | Wakes for the main agent | Requests of a model runner | Rebinds | Run tokens |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `repair_20261116_232124` | none | right | 7 | 1 | 0 | 1 | 0 | 6,940 |
+| `forms_20261116_233244`, the run with two forms | none: a wake ends the watch | a wake with the two forms | 7 | 1 | 1 | 1 | 0 | 8,665 |
+| `schema_20261116_233410` | Claude Code | right | 19 | 6 | 5 | 2 | 1 | 31,458 |
+| `schema_20261116_233942` | Claude Code | right | 21 | 2 | 1 | 1 | 0 | 24,623 |
+
+**What worked.** In each run, no runner made a request before a statement was not true. Each
+wake of a model runner was one request: 2,164, 2,015, 2,813, 3,957 and 2,726 tokens. `local`
+repaired the new column name three times, and it kept the filter each time. In the last run the
+main agent slept through the repair: 6.0 s from the look that found the error (D 7) to the look
+that found the replacement good (D 9), and the main agent got one wake in the run, at the end of
+the feed.
+
+The first run with a main agent gave the main agent 5 wakes, and its session cost 132% of the
+base. The log shows three causes. Each one is a sentence that the main agent wrote (F67, F68,
+F69). The tool text changed (`docs/DECISIONS.md`, D60), and the second run is the run with the new
+text: 1 wake for the main agent, and 79% of the base. Each number is one run.
+
+### F67. A check that named a column rejected the right replacement
+
+- Part: plan.
+- What happened: the main agent gave the object `region_totals` the check sentence "The handle
+  sums the amount column as total." The feed got the column name `amount_usd`. `local` made one
+  request and gave the right replacement: the same filter on `status`, the same group, and the sum
+  of `amount_usd` (E 23, E 25). The look that judged it gave the sentence 0.093 (D 8), so the
+  replacement did not hold, and `local` left the list (E 28). `top` got the wake, found no break,
+  and gave the wake to the main agent after 17.4 s (E 40, E 41). The main agent wrote the check
+  again with the new names and bound the two runners again (E 43). The decision model was right:
+  the sentence was not true of the new handle.
+- The cause was the tool text of D56. It told the main agent to state each condition that a
+  replacement must keep, "(the filter, the group, the columns)", and the prompt of the driver said
+  it again. A sentence with the old name of a column rejects each replacement that uses the new
+  name.
+- Evidence: `schema_20261116_233410`, run `run_20261116_233429_7530`: E 23 to E 43, D 8, and the
+  check sentences in `plan.json`.
+- Fixed: the tool text says to state the meaning ("It sums only the paid orders.") and not to
+  name a column whose name can change. The prompt of the driver has no sentence about the check
+  (D60). In `schema_20261116_233942` the main agent wrote "It sums the amount only for the orders
+  whose status is paid." and "It groups the orders by region." The replacement of `local` passed:
+  each statement got 0.998 or more (D 9). No code enforces the rule.
+
+### F68. The main agent stated the goal as met, and the run woke at once
+
+- Part: plan.
+- What happened: the main agent wrote the variable "The row count of orders is 600 or more, and
+  region_totals shows the final total of each region." A variable must be true while the main
+  agent can sleep. This sentence is true only at the end. The first look gave it 0.003, and the
+  run woke the main agent 0.7 s after its start (D 1, E 5). The main agent answered with
+  `objects: []`, the next look gave 0.005, and the run woke again (D 2, E 9). Then the main agent
+  wrote "The row count of orders is less than 600." (E 10). Nothing was broken in that time.
+- This is an item of the watch list of the brief: a wake when nothing was wrong. F47 and F63 are
+  two more.
+- Evidence: `schema_20261116_233410`: D 1, D 2, E 5 to E 10.
+- Changed: the tool text says that a variable for a goal states that the goal is not met yet,
+  with an example (D60). In `schema_20261116_233942` the main agent wrote "The object `rows` shows
+  fewer than 600 rows.", and the run woke one time, at 600 rows (E 49). One run shows this.
+
+### F69. One look woke a runner and the main agent for the same break
+
+- Part: plan.
+- What happened: the answer of the main agent to the second wake of F68 had the variable
+  "region_totals works with no error." This states the check of the object `region_totals` again
+  as a variable of the plan. Look 6 found the error of the object. The object went to `local`
+  (E 18), and the variable woke the main agent at the same look (E 19). The main agent read the
+  wake and answered `objects: []` after 1.7 s (E 20). It had nothing to do: `local` gave the
+  replacement 3.5 s later.
+- This is the cost that D52 names, and the same failure as F63. The tool text says not to do it.
+- Evidence: `schema_20261116_233410`: D 6, E 18 to E 20.
+- Open. The cost was one wake. In `schema_20261116_233942` the plan had no such variable. The
+  variable "No object shows an error." of each plan was not true at the same break, and the run
+  held it while the runner worked (E 19, `held`).
+
+### F70. The first form of the sentence about a replacement did not reject another group
+
+- Part: decision model, state.
+- What happened: the first form of the sentence that a look adds for a replacement by a runner was
+  "The handle of this version is made by the same operations as the version before it, and no
+  filter, group or metric is gone or new." For a replacement that groups by `status` where the
+  version before it groups by `region`, the decision model gave 0.4839. The limit is 0.5, so one
+  look more or less passes such a replacement.
+- Found in a probe of the decision model before a run used the sentence.
+- Evidence: `docs/evidence/probe_20261116_v6/keeps_wording.json`: one look for each of five cases
+  and each form of the sentence.
+- Fixed: the sentence states what can differ: "... the same filters, the same groups and the same
+  metrics. Only the name of a column can differ." The same case got 0.0218. `tasks/probe.py` has
+  the five cases, and two cases more (`probe_20261117`: 63 of 64; F72).
+
+## The runs with a careless runner
+
+The runs of 2026-11-17 (UTC) of `tasks/repair.py --careless`. The object has two runners in order:
+`careless`, a script with no model that replaces the broken filter with the filter `amount > 0`,
+and `qwen3.8-27b`. The check of the object has the sentence "It counts only the paid orders." The
+runs have no main agent. The right count is 139.
+
+| Run | Code | Count of the object | Looks | Requests of a runner | Rebinds | Wakes for a main agent | Run tokens |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `repair_20261117_000349` | before D61 | 204: wrong | 7 | 2 | 2 | 1 | 7,005 |
+| `repair_20261117_002143` | with D61 | 139: right | 9 | 2 | 1 | 0 | 8,690 |
+
+**What worked.** In each run the look that judged the replacement of `careless` rejected it: the
+sentence about the paid orders got 0.057 and 0.054 (D 7). `careless` left the list in the same
+look. No runner made a request while each statement was true.
+
+### F71. After a wrong replacement left its runner, the next runner read the wrong version
+
+- Part: state.
+- What happened: `careless` replaced the object at 26.0 s (E 15 to E 17). The look at 26.5 s
+  rejected the replacement, and the object bound `qwen3.8-27b` (D 7, E 19). The question of that
+  runner showed the version of `careless`: the count 204, no error, and in `made_before` the filter
+  of the plan. The runner made one request (2,244 tokens, 5.5 s) and wrote the filter of the plan
+  again, on the old column name. The graph failed: "no such column: ['status']" (E 21). The runner
+  gave no replacement, it left the list, and the wake went to a main agent (E 22, E 23). The object
+  still showed the count 204.
+- The cause: the object kept the replacement that did not hold. The next runner did not get the
+  error text that names the new column, so it had no fact to repair from.
+- Evidence: `repair_20261117_000349`, run `run_20261117_000349_67c7`: E 14 to E 24, D 7, and the
+  question in line 2 of `runners.jsonl`. The directory has the logs of the run and no `record.json`.
+- Fixed (D61): the replacement leaves with its runner, and the object gets back the version from
+  before the trial. In `repair_20261117_002143` the next look read the error again (D 8), the
+  runner got the error and `tried`, and its one request gave the filter on `state` (E 20 to E 25).
+  The look that judged it gave each statement 0.998 or more (D 9).
+
+### F72. The sentence about a replacement did not reject another filter in the state of a run
+
+- Part: decision model.
+- What happened: the look that judges a replacement by a runner adds the sentence of D56: "The
+  handle of this version is made by the same operations as the version before it: the same
+  filters, the same groups and the same metrics. Only the name of a column can differ." The
+  replacement of `careless` has the filter `amount > 0`, and the version before it has the filter
+  `status = paid`. The sentence is not true. The decision model gave it 0.940 and 0.949 in the two
+  runs (D 7).
+- The runs did not fail from it: the check of the object names the condition, and that sentence
+  got 0.057 and 0.054. An object whose check does not name the condition has only the sentence of
+  D56, and this replacement passes it.
+- The detector check has the state of that look as a case ("a run: the replacement of a filter is
+  another filter"): 0.9489 again, so the check shows 63 right of 64. The same change of the filter
+  in the state of the totals task got 0.0097 (the case "a replacement has another filter").
+  So the answer depends on the state, not only on the two `made` lines.
+- Evidence: `repair_20261117_000349` and `repair_20261117_002143`, D 7 of each run.
+  `docs/evidence/probe_20261117/probe.json`.
+- Not fixed. The first form of the sentence came from one probe of five cases (F70), and a second
+  change of the wording from one more case fits the cases, not the model. The rule of D56 and D60
+  stays the guard: the check of an object with runners states each condition as meaning. The
+  sentence of D56 is a default that helps, and no object can depend on it alone.

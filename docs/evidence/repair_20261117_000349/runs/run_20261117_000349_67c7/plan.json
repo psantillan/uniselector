@@ -1,0 +1,29 @@
+{
+ "objects": [
+  {
+   "name": "paid",
+   "handle": "hdl_01M7KD2A1PH197E8KRSBM4VK0F",
+   "operation": {
+    "capability": "dataset.count"
+   },
+   "variables": [
+    "It shows a count of rows: a number that is more than 0.",
+    "It counts only the paid orders."
+   ],
+   "runners": [
+    "careless",
+    "runner"
+   ]
+  },
+  {
+   "name": "orders",
+   "handle": "hdl_01M7KD2A0TJ7K1RSA3S1TSJQKH",
+   "operation": {
+    "capability": "dataset.count"
+   }
+  }
+ ],
+ "variables": [
+  "The object `orders` shows fewer than 1000 rows."
+ ]
+}

@@ -1,0 +1,89 @@
+{
+ "run": "run_20261116_233245_79ce",
+ "state": "left",
+ "why": "the MCP server of the main agent ended before the run did",
+ "plan": {
+  "variables": [
+   "The table of the object `statuses` has only the statuses paid, pending and refunded."
+  ]
+ },
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KB9D0BVW4YNJHT7J5RBEN5",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "written": "plan",
+   "made": "dataset.aggregate {\"group_by\": [\"region\", \"status\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]} \u2192 dataset.sort {\"by\": [{\"column\": \"region\"}, {\"column\": \"status\"}]}",
+   "runner_tokens": 2015,
+   "output": "{\"columns\": [\"region\", \"status\", \"total\", \"n\"], \"rows\": [[\"central\", \"paid\", 4535.88, 22], [\"central\", \"pending\", 6382.240000000001, 28], [\"central\", \"refunded\", 5375.66, 28], [\"east\", \"paid\", 4233.509999999999, 21], [\"east\", \"pending\", 5951.009999999999, 31], [\"east\", \"refunded\", 4728.03, 26], [\"is ... (cut: 235 of 835 characters) ...  [\"north\", \"refunded\", 3156.8, 18], [\"south\", \"paid\", 4824.59, 31], [\"south\", \"pending\", 5051.710000000001, 32], [\"south\", \"refunded\", 4637.200000000001, 24], [\"west\", \"paid\", 3454.86, 19], [\"west\", \"pending\", 3748.7400000000007, 16], [\"west\", \"refunded\", 4745.709999999999, 23]], \"truncated\": false}",
+   "forms": {
+    "summary": {
+     "value": "Totals by region and status (paid, pending, refunded; disputed only in north).",
+     "changes_behind": 0
+    },
+    "embedding": {
+     "value": "{\"handle\": \"hdl_01M7KBA3GTNJ0KJNCR8PNCE47A\"}",
+     "changes_behind": 0
+    }
+   },
+   "ran_s": 4.4,
+   "runs": 6,
+   "changes": 5,
+   "changed_s": 4.3
+  },
+  {
+   "name": "statuses",
+   "handle": "hdl_01M7KB9D21KAKHYF6RHD0RPYYB",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 20
+    }
+   },
+   "written": "plan",
+   "made": "dataset.aggregate {\"group_by\": [\"status\"], \"metrics\": [{\"fn\": \"count\", \"as\": \"n\"}]} \u2192 dataset.sort {\"by\": [{\"column\": \"status\"}]}",
+   "output": "{\"columns\": [\"status\", \"n\"], \"rows\": [[\"disputed\", 5], [\"paid\", 126], [\"pending\", 154], [\"refunded\", 140]], \"truncated\": false}",
+   "ran_s": 4.3,
+   "runs": 6,
+   "changes": 5,
+   "changed_s": 4.2
+  }
+ ],
+ "pending": {
+  "id": "wake_1",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "The table of the object `statuses` has only the statuses paid, pending and refunded.",
+    "probability": 0.0
+   }
+  ]
+ },
+ "last_wake": null,
+ "lineage": "/tmp/scratch/worlds/forms_20261116_233244/runs/run_20261116_233245_79ce/lineage.json",
+ "logs": "/tmp/scratch/worlds/forms_20261116_233244/runs/run_20261116_233245_79ce",
+ "limits": {
+  "elapsed_s": 26.4,
+  "wall_seconds": 600,
+  "tokens": 8665,
+  "budget_tokens": 1000000
+ },
+ "counts": {
+  "looks": 7,
+  "wakes": 1,
+  "runner_wakes": 0,
+  "rebinds": 0,
+  "forms": 2,
+  "operations": 12,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The process of the run ended before the run did. The handles of the objects stay usable. Call plan_submit to watch them again."
+}

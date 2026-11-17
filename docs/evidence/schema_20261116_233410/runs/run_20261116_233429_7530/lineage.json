@@ -1,0 +1,138 @@
+{
+ "id": "gr_run_20261116_233429_7530",
+ "nodes": [
+  {
+   "id": "hdl_01M7KBC143B4Z00HKR6XH58A4V",
+   "kind": "resource",
+   "reference": "hdl_01M7KBC143B4Z00HKR6XH58A4V"
+  },
+  {
+   "id": "op_01M7KBCAMRAS7HP2QE4R8CKQSM",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "status",
+       "op": "eq",
+       "value": "paid"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KBCAN1VATXGER9ZDEG05B7",
+   "kind": "derived",
+   "reference": "hdl_01M7KBCAN1VATXGER9ZDEG05B7"
+  },
+  {
+   "id": "op_01M7KBCCZKX6X8YAWCASBE0PJ9",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.aggregate",
+    "input": {
+     "group_by": [
+      "region"
+     ],
+     "metrics": [
+      {
+       "fn": "sum",
+       "column": "amount",
+       "as": "total"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KBCCZTWZNSRESPDMVM5EGX",
+   "kind": "derived",
+   "reference": "hdl_01M7KBCCZTWZNSRESPDMVM5EGX"
+  },
+  {
+   "id": "op_01M7KBDB6XPJGH5PGGEAKMDVXR",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "status",
+       "op": "eq",
+       "value": "paid"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KBDB74GHQQ76QZCDA9RS24",
+   "kind": "derived",
+   "reference": "hdl_01M7KBDB74GHQQ76QZCDA9RS24"
+  },
+  {
+   "id": "op_01M7KBDB7TQ2YZNSJK5CG4B799",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.aggregate",
+    "input": {
+     "group_by": [
+      "region"
+     ],
+     "metrics": [
+      {
+       "fn": "sum",
+       "column": "amount_usd",
+       "as": "total"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KBDB7ZM8ZH6K1R7V00REPH",
+   "kind": "derived",
+   "reference": "hdl_01M7KBDB7ZM8ZH6K1R7V00REPH"
+  }
+ ],
+ "edges": [
+  {
+   "from": "hdl_01M7KBC143B4Z00HKR6XH58A4V",
+   "to": "op_01M7KBCAMRAS7HP2QE4R8CKQSM"
+  },
+  {
+   "from": "op_01M7KBCAMRAS7HP2QE4R8CKQSM",
+   "to": "hdl_01M7KBCAN1VATXGER9ZDEG05B7"
+  },
+  {
+   "from": "hdl_01M7KBCAN1VATXGER9ZDEG05B7",
+   "to": "op_01M7KBCCZKX6X8YAWCASBE0PJ9"
+  },
+  {
+   "from": "op_01M7KBCCZKX6X8YAWCASBE0PJ9",
+   "to": "hdl_01M7KBCCZTWZNSRESPDMVM5EGX"
+  },
+  {
+   "from": "hdl_01M7KBC143B4Z00HKR6XH58A4V",
+   "to": "op_01M7KBDB6XPJGH5PGGEAKMDVXR"
+  },
+  {
+   "from": "op_01M7KBDB6XPJGH5PGGEAKMDVXR",
+   "to": "hdl_01M7KBDB74GHQQ76QZCDA9RS24"
+  },
+  {
+   "from": "hdl_01M7KBDB74GHQQ76QZCDA9RS24",
+   "to": "op_01M7KBDB7TQ2YZNSJK5CG4B799"
+  },
+  {
+   "from": "op_01M7KBDB7TQ2YZNSJK5CG4B799",
+   "to": "hdl_01M7KBDB7ZM8ZH6K1R7V00REPH"
+  }
+ ],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}

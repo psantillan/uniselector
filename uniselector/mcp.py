@@ -27,19 +27,26 @@ INSTRUCTIONS = (
     "filter and an aggregate on a dataset) and one operation on it that gives a small value: the run keeps only the first and the last "
     "part of a long output. Each look of the decision model costs tokens, and a look comes at each change of an output: prefer an "
     "object whose output changes only when the work needs attention. An object shows when its operation last ran (`ran_s`), so a "
-    "variable can state that a quiet object still gets new data. A handle that you derive reads the newest data of its source at each read. Then state the essential variables: sentences that are true while you can sleep. Call "
+    "variable can state that a quiet object still gets new data. A handle that you derive reads the newest data of its source at each "
+    "read. Then state the essential variables: sentences that are true while you can sleep. For a goal, state that the goal is not "
+    "met yet (\"The object `rows` shows fewer than 600 rows.\"): the wake comes when the sentence is not true. Call "
     "plan_submit, then plan_status with wait_seconds. The objects run without you, and a decision model judges the variables. It "
     "wakes you when one is not true. The summary then has the reason and the objects. Build a new version of only the object that is "
     "broken, write it back with plan_answer, and sleep again. An object can carry a check of its own (`variables`) and the runners "
-    "that answer for it, in order (`runners`): a wake about the object goes to its runner first, and to you after the last one. "
+    "that answer for it, in order (`runners`). A runner costs nothing while each variable is true. At a wake about the object, the "
+    "first runner gives one replacement of it, and the next look judges the replacement with the check of the object. A runner whose "
+    "replacement does not pass leaves the list. After the last one, the wake comes to you. "
     "A runner is a model of the configuration, or a function of your code (`FILE.py:NAME`) when the configuration lets a plan name "
-    "code. An object can also carry forms of its output (`forms`), for example a summary: a runner makes each form again after each "
-    "new output, and the decision model and you read the form in the object. Use a form when the output is longer than a summary "
-    "shows. "
+    "code. A check rejects only what it states: for an object with runners, state each condition that a replacement must keep. "
+    "State its meaning (\"It sums only the paid orders.\"), and do not name a column whose name can change: a sentence with the old "
+    "name rejects the right replacement. An object can also carry forms of its output (`forms`), for example a summary: a runner "
+    "makes each form one time before a wake, and the wake has it. A form does not help the decision model to find a failure: when "
+    "an output is longer than a summary shows, build an object with a small output. "
     "The check of an object says only that the object works. A sentence that tells you that the work is done, or that needs your "
     "decision, is a variable of the plan: it has no object, and its wake comes to you at once, also while a runner repairs an object. "
-    "So do not state the check of an object again as a variable of the plan. A model runner can replace the handle and the operation "
-    "of an object. It cannot change the data. A check that only a change of the data can make true again is a variable of the plan.")
+    "So do not state the check of an object again as a variable of the plan. A model runner can change operations in the graph that "
+    "made the handle of an object, and the operation of the object. It cannot add or remove a step, and it cannot change the data. A "
+    "check that only a change of the data can make true again is a variable of the plan.")
 
 _RUN = {"type": "string", "description": "The run id from plan_submit."}
 TOOLS = [

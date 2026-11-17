@@ -1,0 +1,26 @@
+{
+ "objects": [
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KF9S9B1Y6H5WD3WTEMYR81",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  },
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KFA4QBAMBRN41KBE1MH44N",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   }
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows.",
+  "The object `totals` shows a total for each region with no error."
+ ]
+}

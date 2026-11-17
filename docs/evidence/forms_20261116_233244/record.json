@@ -1,0 +1,133 @@
+{
+ "runner": "qwen3.8-27b",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "table_rows": 19,
+ "table_characters": 768,
+ "new_status": "disputed",
+ "while_nothing_failed": {
+  "plain": {
+   "looks": 5,
+   "tokens": 4597,
+   "tokens_of_one_look": [
+    912,
+    915,
+    922,
+    924
+   ],
+   "forms": 0,
+   "forms_in_the_state": null
+  },
+  "formed": {
+   "looks": 5,
+   "tokens": 4597,
+   "tokens_of_one_look": [
+    912,
+    915,
+    922,
+    924
+   ],
+   "forms": 0,
+   "forms_in_the_state": {
+    "summary": null,
+    "embedding": null
+   }
+  }
+ },
+ "runs": {
+  "plain": {
+   "state": "woke",
+   "why": "outside its limits: The table of the object `statuses` has only the statuses paid, pending and refunded. (probability that it is true: 0.002)",
+   "pending": {
+    "id": "wake_1",
+    "kind": "wake",
+    "outside": [
+     {
+      "variable": "The table of the object `statuses` has only the statuses paid, pending and refunded.",
+      "probability": 0.002
+     }
+    ]
+   },
+   "counts": {
+    "looks": 6,
+    "wakes": 1,
+    "runner_wakes": 0,
+    "rebinds": 0,
+    "forms": 0,
+    "operations": 12,
+    "confirmations": 0,
+    "human_requests": 0
+   },
+   "limits": {
+    "elapsed_s": 23.4,
+    "wall_seconds": 600,
+    "tokens": 5528,
+    "budget_tokens": 1000000
+   },
+   "seconds_to_the_wake": 3.0,
+   "forms_at_the_wake": null,
+   "runner_tokens": 0
+  },
+  "formed": {
+   "state": "woke",
+   "why": "outside its limits: The table of the object `statuses` has only the statuses paid, pending and refunded. (probability that it is true: 0.0)",
+   "pending": {
+    "id": "wake_1",
+    "kind": "wake",
+    "outside": [
+     {
+      "variable": "The table of the object `statuses` has only the statuses paid, pending and refunded.",
+      "probability": 0.0
+     }
+    ]
+   },
+   "counts": {
+    "looks": 7,
+    "wakes": 1,
+    "runner_wakes": 0,
+    "rebinds": 0,
+    "forms": 2,
+    "operations": 12,
+    "confirmations": 0,
+    "human_requests": 0
+   },
+   "limits": {
+    "elapsed_s": 26.4,
+    "wall_seconds": 600,
+    "tokens": 8665,
+    "budget_tokens": 1000000
+   },
+   "seconds_to_the_wake": 6.0,
+   "forms_at_the_wake": {
+    "summary": {
+     "value": "Totals by region and status (paid, pending, refunded; disputed only in north).",
+     "changes_behind": 0
+    },
+    "embedding": {
+     "value": "{\"handle\": \"hdl_01M7KBA3GTNJ0KJNCR8PNCE47A\"}",
+     "changes_behind": 0
+    }
+   },
+   "runner_tokens": 2015
+  }
+ },
+ "form_requests": [
+  {
+   "form": "embedding",
+   "runner": "embedder",
+   "reason": "form",
+   "tokens": 0,
+   "ms": 116
+  },
+  {
+   "form": "summary",
+   "runner": "local",
+   "reason": "form",
+   "tokens": 2015,
+   "ms": 2567
+  }
+ ],
+ "summary_names_the_region_of_the_new_status": true,
+ "vectors_at_the_wake": {
+  "rows": 19
+ }
+}

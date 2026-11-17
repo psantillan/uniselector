@@ -1,0 +1,94 @@
+{
+ "run": "run_20261116_233429_7530",
+ "state": "done",
+ "why": "the main agent ended the run",
+ "plan": {
+  "variables": [
+   "The row count of orders is less than 600.",
+   "region_totals works with no error."
+  ]
+ },
+ "objects": [
+  {
+   "name": "region_totals",
+   "handle": "hdl_01M7KBDB7ZM8ZH6K1R7V00REPH",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "written": "wake_5",
+   "made": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}]}",
+   "variables": [
+    "The handle filters rows where the status column equals paid.",
+    "The handle groups by the region column.",
+    "The handle sums the money amount column of the source, under its current name, as total. The name can be amount, amount_usd or a later new name.",
+    "The handle reads the source dataset orders. If a column gets a new name, the replacement uses the new name from the schema of orders.",
+    "The output shows one row for each region with a total, and no error."
+   ],
+   "runner": "local",
+   "runner_tokens": 6770,
+   "output": "{\"columns\": [\"region\", \"total\"], \"rows\": [[\"north\", 10483.22], [\"south\", 15527.259999999998], [\"west\", 14504.719999999996], [\"east\", 15677.18]], \"truncated\": false}",
+   "ran_s": 2.0,
+   "runs": 6,
+   "changes": 5,
+   "changed_s": 1.9
+  },
+  {
+   "name": "row_count",
+   "handle": "hdl_01M7KBC143B4Z00HKR6XH58A4V",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   },
+   "written": "plan",
+   "variables": [
+    "The handle reads the source dataset orders with no filter.",
+    "The output is a row count, and no error."
+   ],
+   "runner": "local",
+   "output": "{\"rows\": 600}",
+   "ran_s": 1.9,
+   "runs": 18,
+   "changes": 17,
+   "changed_s": 1.8
+  }
+ ],
+ "pending": null,
+ "last_wake": {
+  "id": "wake_6",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "The row count of orders is less than 600.",
+    "probability": 0.001
+   }
+  ],
+  "by": "main",
+  "answer": {
+   "end": true
+  }
+ },
+ "lineage": "/tmp/scratch/worlds/schema_20261116_233410/runs/run_20261116_233429_7530/lineage.json",
+ "logs": "/tmp/scratch/worlds/schema_20261116_233410/runs/run_20261116_233429_7530",
+ "limits": {
+  "elapsed_s": 50.0,
+  "wall_seconds": 1800,
+  "tokens": 31458,
+  "budget_tokens": 5000000
+ },
+ "counts": {
+  "looks": 19,
+  "wakes": 6,
+  "runner_wakes": 2,
+  "rebinds": 1,
+  "forms": 0,
+  "operations": 37,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The run ended at your word. Read the handles of the objects with the DataHandles tools."
+}

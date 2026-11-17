@@ -12,7 +12,7 @@ import os
 import sys
 
 from uniselector.config import Config
-from uniselector.decide import NO_ERROR, Decider, judge
+from uniselector.decide import KEEPS, NO_ERROR, Decider, judge
 from uniselector.state import cut
 
 LIMITS = {"elapsed_s": 40.0, "wall_seconds": 1800, "tokens": 3000, "budget_tokens": 400000}
@@ -27,6 +27,12 @@ THREE = "About the object `totals`: It shows one row for each of the regions nor
 # A form of an output, and its check in the form that a look gives it.
 KNOWN = "The table of the object `totals` has only the statuses paid, pending and refunded."
 NAMES = "About the form `summary` of the object `totals`: The summary names one status or more."
+# The check of an object with runners names each condition that a replacement must keep. The look reads how the handle is made.
+PAID = "About the object `totals`: It sums only the paid orders."
+REGION = "About the object `totals`: It has one row for each region."
+SAME = f"About the object `totals`: {KEEPS}"   # the sentence that a look adds for a replacement by a runner
+CHEAP = "About the object `totals`: The runners of this object spent less than 20000 tokens."
+FILTER = 'dataset.filter {"where": [{"column": "%s", "op": "eq", "value": "%s"}]}'
 NO_COLUMN = {"code": "ADAPTER_ERROR", "message": 'BinderException: Binder Error: Referenced column "amount" not found in FROM clause!\n'
                                                  'Candidate bindings: "amount_usd"'}
 
@@ -58,6 +64,17 @@ def cases() -> list:
                          output=cut({"columns": ["region", "status", "total", "n"], "rows": table}, 600),
                          forms={"summary": summary and {"value": summary, "changes_behind": behind}}))
 
+    def made(*steps: str, before: tuple | None = None, **shows) -> dict:
+        """The totals of the regions, on a handle that `steps` made. `before` has the steps of the version before a replacement."""
+        shows.setdefault("output", '{"columns": ["region", "total", "n"], "rows": [["north", 21515.21, 109], ["south", 19004.1, 98], ["east", 17650.0, 93]]}')
+        return state(obj("totals", "dataset.head", {"n": 50}, runs=1, changed_s=0.4, made=" → ".join(steps),
+                         **({"made_before": " → ".join(before)} if before else {}), **shows))
+
+    def total(column: str, by: str = "region", count: bool = True) -> str:
+        metrics = [{"fn": "sum", "column": column, "as": "total"}, *([{"fn": "count", "as": "n"}] if count else [])]
+        return f"dataset.aggregate {json.dumps({'group_by': [by], 'metrics': metrics})}"
+
+    paid, was = FILTER % ("status", "paid"), (FILTER % ("status", "paid"), total("amount"))
     return [
         ("each object reads", state(rows, totals), {NO_ERROR: 1, ROWS: 1}),
         ("a schema break", state(rows, obj("totals", "dataset.head", {"limit": 10}, error=NO_COLUMN, runs=8, changed_s=0.3)), {NO_ERROR: 0, ROWS: 1}),
@@ -88,6 +105,31 @@ def cases() -> list:
          long("The table has four statuses: disputed, paid, pending, and refunded. Only the region north has disputed orders."),
          {NO_ERROR: 1, KNOWN: 0, NAMES: 1}),
         ("a form that does not pass its check", long("I could not read the table."), {NO_ERROR: 1, NAMES: 0}),
+        ("the handle has the filter that the check names", made(paid, total("amount_usd")), {NO_ERROR: 1, PAID: 1, REGION: 1}),
+        ("the handle has no filter", made(total("amount_usd")), {PAID: 0, REGION: 1}),
+        ("the handle has another filter", made(FILTER % ("status", "pending"), total("amount_usd")), {PAID: 0}),
+        ("a replacement changes only the name of a column", made(paid, total("amount_usd"), before=was), {PAID: 1, SAME: 1}),
+        ("a replacement changes the names of two columns", made(FILTER % ("state", "paid"), total("amount_usd"), before=was), {PAID: 1, SAME: 1}),
+        ("a replacement drops the filter", made(total("amount_usd"), before=was), {PAID: 0, SAME: 0}),
+        ("a replacement has another filter", made('dataset.filter {"where": [{"column": "amount_usd", "op": "gt", "value": 0}]}', total("amount_usd"),
+                                                  before=was), {PAID: 0, SAME: 0}),
+        # The state of a look of a run (docs/FAILURES.md, F72): the replacement of one filter is another filter.
+        ("a run: the replacement of a filter is another filter",
+         state({**obj("paid", "dataset.count", output='{"rows": 204}', ran_s=0.1, runs=1, changes=0, changed_s=0.0, written="wake_1",
+                      made='dataset.filter {"where": [{"column": "amount", "op": "gt", "value": 0}]}', made_before=FILTER % ("status", "paid")),
+                 "type": "dataset"},
+               {**obj("orders", "dataset.count", output='{"rows": 204}', ran_s=2.1, runs=6, changes=4, changed_s=4.0), "type": "dataset"},
+               elapsed_s=26.1, wall_seconds=600, tokens=3944, budget_tokens=1000000),
+         {NO_ERROR: 1, "The object `orders` shows fewer than 1000 rows.": 1,
+          "About the object `paid`: It shows a count of rows: a number that is more than 0.": 1,
+          "About the object `paid`: It counts only the paid orders.": 0, f"About the object `paid`: {KEEPS}": 0}),
+        ("a replacement has another group", made(paid, total("amount_usd", "status"), before=was,
+                                                 output='{"columns": ["status", "total", "n"], "rows": [["paid", 58169.31, 300]]}'), {REGION: 0, SAME: 0}),
+        ("a replacement drops a metric", made(paid, total("amount_usd", count=False), before=was,
+                                              output='{"columns": ["region", "total"], "rows": [["north", 21515.21], ["south", 19004.1], ["east", 17650.0]]}'),
+         {SAME: 0}),
+        ("the runners spent little", made(paid, total("amount_usd"), runner_tokens=3100), {CHEAP: 1}),
+        ("the runners spent much", made(paid, total("amount_usd"), runner_tokens=1090476), {CHEAP: 0}),
     ]
 
 

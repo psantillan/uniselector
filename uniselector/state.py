@@ -37,16 +37,15 @@ class Clock:
 @dataclass
 class Form:
     """One form of the output of an object, for example a summary or an embedding, and the runners that can make it."""
-    runners: list               # who makes the form, in order. After the last one: the main agent gets a wake
+    runners: list               # who makes the form, in order. The first one is bound. A runner that fails leaves the list
     variables: list = field(default_factory=list)   # the check of the form: sentences about its value
-    bound: int = 0              # the place of the current runner in `runners`
     value: str | None = None    # the form: a bounded value, or the id of a handle that holds it
     of: int | None = None       # the change of the output that the value is a form of
-    tried: list = field(default_factory=list)   # what each runner gave that was not a good form, for the next runner
+    tried: list = field(default_factory=list)   # what each runner gave that was not a good form, for the next runner and for the wake
 
     @property
-    def runner(self) -> str:
-        return self.runners[self.bound] if self.bound < len(self.runners) else "main"
+    def runner(self) -> str | None:
+        return self.runners[0] if self.runners else None
 
 
 @dataclass
@@ -58,10 +57,16 @@ class Entry:
     written: str              # what wrote this version of the object: "plan", or the id of a wake
     action: dict | None       # the descriptor of the capability, when the operation is an action
     variables: list = field(default_factory=list)   # the check of this object: sentences about its output
-    runners: list = field(default_factory=list)     # who answers for this object, in order. After the last one: the main agent
+    runners: list = field(default_factory=list)     # who answers for this object, in order. A runner that fails leaves the list.
+                                                    # After the last one: the main agent
     holder: str = "main"         # the runner whose principal holds the action, and so runs it
     bound: int = 0               # the place of the current runner in `runners`
-    trial: bool = False          # a runner changed the object, and no look judged the change yet
+    trial: bool = False          # a runner replaced the object, and no look judged the replacement yet
+    graph: dict = field(default_factory=dict)   # the graph that made the handle: a runner changes nodes of it
+    made: str = ""               # the operations of that graph, as bounded text for the state
+    prior: object = None         # the version that a runner replaced, until a look finds the replacement good
+    tried: list = field(default_factory=list)   # the replacements that left this version, for the next wake of the object
+    spent: int = 0               # the tokens that the runners of this object spent, in each version of it
     repair: str | None = None    # the id of the wake that a model runner of the object works on now
     changes: int = 0             # the changes of the output after the first output
     first_at: float | None = None   # when this version showed its first output
@@ -89,17 +94,23 @@ class Entry:
 
     def summary(self, now: float) -> dict:
         out = {"name": self.name, "handle": self.id, "type": self.handle.info["type"], "operation": self.operation, "written": self.written}
+        if self.made:
+            out["made"] = self.made
+        if self.prior is not None:
+            out["made_before"] = self.prior.made
         if self.variables:
             out["variables"] = self.variables
         if self.runners:
             out["runner"] = self.runner
+        if self.spent:
+            out["runner_tokens"] = self.spent
         if self.repair is not None:
             out["in_repair"] = self.repair
         if self.error is not None:
             out["error"] = self.error
         elif self.output is not None:
             out["output"] = self.output
-        if self.forms:   # a form can be behind the output: its runner works beside the loop
+        if self.forms:   # a form is of the output at one wake. The output can change after it
             out["forms"] = {name: None if form.value is None else {"value": form.value, "changes_behind": self.changes - form.of}
                             for name, form in self.forms.items()}
         if self.job is not None:

@@ -216,3 +216,19 @@ the graph (D44). One request has one approval and one run.
 
 Proposal for DataHandles: a failed run keeps the approval when the action did not start, and the
 approval records its principal.
+
+## G18. A describe of a source keeps the old columns after its file changes
+
+Measured on DataHandles v0.4.1: a CSV file behind a `duckdb` resource handle gets a new name for
+one column. `handle_describe` (brief form) of the resource handle still shows the old column
+names, also after `observe`. A read of the handle gives the new names.
+
+Effect: a runner that reads the description of a source to find the new name of a column gets the
+old name. G14 is the same fault for a derived handle.
+
+Workaround: a model runner runs the graph of the object one time before its request
+(`docs/DECISIONS.md`, D57). The fault of the failed node names the column that is gone and the
+columns that the source has now.
+
+Proposal for DataHandles: `observe` of a resource handle reads the schema again when the version
+of the resource changes.

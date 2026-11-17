@@ -18,6 +18,9 @@ RULES = (
     "Is the statement true now?")
 # The essential variable of each run. The harness does not judge an error: it can be a fault of one read or a break of the structure.
 NO_ERROR = "No object shows an error."
+# The one more sentence for an object that a runner replaced, at the look that judges the replacement (docs/DECISIONS.md, D56).
+KEEPS = ("The handle of this version is made by the same operations as the version before it: the same filters, the same groups and the same "
+         "metrics. Only the name of a column can differ.")
 
 
 class Busy(Exception):
@@ -44,10 +47,14 @@ def _object_lines(o: dict) -> list[str]:
         lines.append(f"  output: {o['output']}")
     else:
         lines.append("  no output yet")
+    if o.get("made") or "made_before" in o:   # a sentence about a filter or a group can be judged only from how the handle is made (D56)
+        lines.append(f"  the handle is made by: {o.get('made') or 'no operation'}")
+    if "made_before" in o:
+        lines.append(f"  the version before this one was made by: {o['made_before'] or 'no operation'}")
+    if "runner_tokens" in o:   # a check can state what the runners of the object can spend (docs/DECISIONS.md, D59)
+        lines.append(f"  the runners of this object spent: {o['runner_tokens']} tokens")
     for name, form in o.get("forms", {}).items():   # a form of the output, for example a summary (docs/DECISIONS.md, D54)
-        if form is None:
-            lines.append(f"  form `{name}` of the output: no form yet")
-        else:
+        if form is not None:   # a form that no runner made adds nothing to the look (docs/DECISIONS.md, D55)
             behind = f", {form['changes_behind']} changes behind the output" if form["changes_behind"] else ""
             lines.append(f"  form `{name}` of the output{behind}: {form['value']}")
     if "running_s" in o:

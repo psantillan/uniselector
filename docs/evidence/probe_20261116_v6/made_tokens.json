@@ -1,0 +1,9 @@
+{
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "what": "One look at the same state with the `made` line of the object and with none, with the same two statements.",
+ "made": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]} \u2192 dataset.aggregate {\"group_by\": [\"region\"], \"metrics\": [{\"fn\": \"sum\", \"column\": \"amount_usd\", \"as\": \"total\"}, {\"fn\": \"count\", \"as\": \"n\"}]}",
+ "characters": 217,
+ "tokens_with_the_line": 477,
+ "tokens_with_no_line": 399,
+ "tokens_of_the_line": 78
+}

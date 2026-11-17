@@ -1,0 +1,45 @@
+{
+ "objects": [
+  {
+   "name": "region_totals",
+   "handle": "hdl_01M7KBCCZTWZNSRESPDMVM5EGX",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "The handle filters rows where status equals paid.",
+    "The handle groups by region.",
+    "The handle sums the amount column as total.",
+    "The handle reads the source dataset orders, and the replacement keeps the same meaning if a column gets a new name: it uses the new names of the columns status, region and amount.",
+    "The output shows one row for each region with a total, and no error."
+   ]
+  },
+  {
+   "name": "row_count",
+   "handle": "hdl_01M7KBC143B4Z00HKR6XH58A4V",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "The handle reads the source dataset orders with no filter.",
+    "The output is a row count, and no error."
+   ]
+  }
+ ],
+ "variables": [
+  "The row count of orders is 600 or more, and region_totals shows the final total of each region.",
+  "region_totals works with no error."
+ ]
+}

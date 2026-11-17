@@ -280,15 +280,11 @@ def main() -> None:
     p.add_argument("--local-key-env", help="the environment variable with the API key of the runner `local`")
     p.add_argument("--local-body", type=json.loads, help="more keys for each request of the runner `local`, as JSON")
     p.add_argument("--top-model", help="the model of the runner `top`, on the chat completions API of OpenRouter")
-    # ASSUMED: each request sends the whole conversation again. `local`: 30 requests in a context that grows to 100,000 tokens.
-    # `top`: about 0.15 USD for one wake at 0.15 USD for each million input tokens.
-    p.add_argument("--wake-tokens", type=int, nargs=2, default=[2_000_000, 1_000_000], metavar=("LOCAL", "TOP"),
-                   help="the most that one wake of each runner can spend")
     a = p.parse_args()
     stamp = time.strftime("%Y%m%d_%H%M%S")
-    runners = {"local": {"url": a.local_url, "model": a.local_model, "wake_tokens": a.wake_tokens[0],
+    runners = {"local": {"url": a.local_url, "model": a.local_model,
                          **({"key_env": a.local_key_env} if a.local_key_env else {}), **({"body": a.local_body} if a.local_body else {})},
-               "top": {"url": "https://openrouter.ai/api/v1/chat/completions", "model": a.top_model, "wake_tokens": a.wake_tokens[1],
+               "top": {"url": "https://openrouter.ai/api/v1/chat/completions", "model": a.top_model,
                        "key_env": KEY_ENV}} if a.runners else {}
     world = World(Path(a.work) / f"{a.task}_{stamp}", a.decision_model, a.budget_tokens, WALL_SECONDS,
                   human_only=["room.heater"] if a.task == "goal-human" else [], runners=runners)

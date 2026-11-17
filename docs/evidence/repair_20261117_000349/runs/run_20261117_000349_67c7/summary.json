@@ -1,0 +1,110 @@
+{
+ "run": "run_20261117_000349_67c7",
+ "state": "left",
+ "why": "the MCP server of the main agent ended before the run did",
+ "plan": {
+  "variables": [
+   "The object `orders` shows fewer than 1000 rows."
+  ]
+ },
+ "objects": [
+  {
+   "name": "paid",
+   "handle": "hdl_01M7KD329FG3GZNHQ311P8E6K5",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.count"
+   },
+   "written": "wake_1",
+   "made": "dataset.filter {\"where\": [{\"column\": \"amount\", \"op\": \"gt\", \"value\": 0}]}",
+   "made_before": "dataset.filter {\"where\": [{\"column\": \"status\", \"op\": \"eq\", \"value\": \"paid\"}]}",
+   "variables": [
+    "It shows a count of rows: a number that is more than 0.",
+    "It counts only the paid orders."
+   ],
+   "runner_tokens": 2244,
+   "output": "{\"rows\": 204}",
+   "ran_s": 6.0,
+   "runs": 1,
+   "changes": 0,
+   "changed_s": 5.9
+  },
+  {
+   "name": "orders",
+   "handle": "hdl_01M7KD2A0TJ7K1RSA3S1TSJQKH",
+   "type": "dataset",
+   "operation": {
+    "capability": "dataset.count"
+   },
+   "written": "plan",
+   "output": "{\"rows\": 204}",
+   "ran_s": 8.0,
+   "runs": 6,
+   "changes": 4,
+   "changed_s": 9.9
+  }
+ ],
+ "pending": {
+  "id": "wake_2",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "About the object `paid`: It counts only the paid orders.",
+    "probability": 0.057
+   }
+  ],
+  "object": "paid",
+  "tried": [
+   {
+    "runner": "runner",
+    "result": "the run did not take the repair: the changed graph failed: {\"op_01M7KD3298R04MRBXZP2ZEP6KE\": {\"code\": \"INVALID_INPUT\", \"message\": \"no such column: ['status']\", \"retryable\": false, \"details\": {\"columns\": [\"id\", \"region\", \"state\", \"amount\"]}}}"
+   }
+  ]
+ },
+ "last_wake": {
+  "id": "wake_1",
+  "kind": "wake",
+  "outside": [
+   {
+    "variable": "No object shows an error.",
+    "probability": 0.0
+   },
+   {
+    "variable": "About the object `paid`: It shows a count of rows: a number that is more than 0.",
+    "probability": 0.001
+   }
+  ],
+  "object": "paid",
+  "by": "careless",
+  "answer": {
+   "objects": [
+    {
+     "name": "paid",
+     "handle": "hdl_01M7KD329FG3GZNHQ311P8E6K5",
+     "operation": {
+      "capability": "dataset.count"
+     }
+    }
+   ]
+  }
+ },
+ "lineage": "/tmp/scratch/worlds/repair_20261117_000349/runs/run_20261117_000349_67c7/lineage.json",
+ "logs": "/tmp/scratch/worlds/repair_20261117_000349/runs/run_20261117_000349_67c7",
+ "limits": {
+  "elapsed_s": 32.0,
+  "wall_seconds": 600,
+  "tokens": 7005,
+  "budget_tokens": 1000000
+ },
+ "counts": {
+  "looks": 7,
+  "wakes": 2,
+  "runner_wakes": 2,
+  "rebinds": 2,
+  "forms": 0,
+  "operations": 13,
+  "confirmations": 0,
+  "human_requests": 0
+ },
+ "next": "The process of the run ended before the run did. The handles of the objects stay usable. Call plan_submit to watch them again."
+}

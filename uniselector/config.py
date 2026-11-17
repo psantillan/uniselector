@@ -53,10 +53,10 @@ def load(path) -> Config:
         raise ValueError(f"{path}: [limits] must state {' and '.join(missing)}. The user decides the hard limits.")
     runners = data.pop("runners", {})
     for name, runner in runners.items():
-        # `wake_tokens` has no default: it is a limit of the spend, so the user states it. A table with `call` names code of the user.
-        model = {"url", "model", "wake_tokens"} <= set(runner) <= {"url", "model", "wake_tokens", "key_env", "body"}
+        # A model runner makes one request for one invocation, so it has no limit of its own (D57). A table with `call` names code of the user.
+        model = {"url", "model"} <= set(runner) <= {"url", "model", "key_env", "body"}
         if name in ("main", "human") or ":" in name or not ("call" in runner or model):
-            raise ValueError(f"{path}: [runners.{name}] must state url, model and wake_tokens, and it can state key_env and body. Or it "
+            raise ValueError(f"{path}: [runners.{name}] must state url and model, and it can state key_env and body. Or it "
                              "states call. The names main and human are taken, and a name has no colon.")
     flat = {**limits, **{k: v for section in data.values() for k, v in section.items()}}
     unknown = sorted(set(flat) - {f.name for f in fields(Config)})

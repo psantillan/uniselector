@@ -25,15 +25,16 @@ decision_key_env = "OPENROUTER_API_KEY"
 human_only = []
 
 # Runners: what an object can name in its `runners`, and a form of an object in its `runners`.
-# A runner repairs an object at a wake, or it makes a form of an output (a summary, an embedding).
+# A runner does nothing while each variable is inside its limits. At a wake, it gives one
+# replacement of an object, or it makes a form of an output (a summary, an embedding).
 # It works as the orchestrator's principal, so the runtime gives it no action.
 #
-# A table with `url` is a model runner: a chat model with the DataHandles tools. `url` is a chat
-# completions API in the OpenAI form. `wake_tokens` is the most that one wake of this runner can
-# spend: each request sends the whole conversation again, so a wake of 30 requests in a context of
-# 100,000 tokens can spend 2,000,000 tokens. `key_env` names the environment variable with the API
-# key, when the API needs one. `body` has more keys for each request, when the server of the model
-# needs them. The names `main` (the main agent) and `human` need no table.
+# A table with `url` is a model runner: a chat model that makes one request for one wake. The
+# request has the object, the graph that made its handle, and the fault of each step of the graph.
+# The reply names the steps that change. `url` is a chat completions API in the OpenAI form.
+# `key_env` names the environment variable with the API key, when the API needs one. `body` has
+# more keys for each request, when the server of the model needs them. The names `main` (the main
+# agent) and `human` need no table.
 #
 # Before you name a local model, read the context that its server gives it. A server can give less
 # than the model has: Ollama gives 4,096 tokens when no one sets `num_ctx`.
@@ -41,13 +42,11 @@ human_only = []
 # [runners.local]
 # url = "http://127.0.0.1:8000/v1/chat/completions"
 # model = "a-local-model"
-# wake_tokens = 2000000
 # body = { chat_template_kwargs = { enable_thinking = false } }
 #
 # [runners.top]
 # url = "https://openrouter.ai/api/v1/chat/completions"
 # model = "a-large-model"
-# wake_tokens = 1000000
 # key_env = "OPENROUTER_API_KEY"
 #
 # A table with `call` is a function of your code: `FILE.py:NAME` or `MODULE:NAME`. Uniselector

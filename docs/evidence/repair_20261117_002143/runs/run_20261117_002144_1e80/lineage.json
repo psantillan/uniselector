@@ -1,0 +1,103 @@
+{
+ "id": "gr_run_20261117_002144_1e80",
+ "nodes": [
+  {
+   "id": "hdl_01M7KE33A1W9W3ZMN2JYD2306Q",
+   "kind": "resource",
+   "reference": "hdl_01M7KE33A1W9W3ZMN2JYD2306Q"
+  },
+  {
+   "id": "op_01M7KE33ANK11KJ6PSD0T12QX5",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "status",
+       "op": "eq",
+       "value": "paid"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KE33ATVQMQVW7Y5PHRQ1D7",
+   "kind": "derived",
+   "reference": "hdl_01M7KE33ATVQMQVW7Y5PHRQ1D7"
+  },
+  {
+   "id": "op_01M7KE3VCQ2WE46VH0T1SEB751",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "amount",
+       "op": "gt",
+       "value": 0
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KE3VCXV4MH72D1ZSBBVGES",
+   "kind": "derived",
+   "reference": "hdl_01M7KE3VCXV4MH72D1ZSBBVGES"
+  },
+  {
+   "id": "op_01M7KE4350ANF7CGB1D6N0G2J7",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "state",
+       "op": "eq",
+       "value": "paid"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KE43566BMWDGP4T97RHX5D",
+   "kind": "derived",
+   "reference": "hdl_01M7KE43566BMWDGP4T97RHX5D"
+  }
+ ],
+ "edges": [
+  {
+   "from": "hdl_01M7KE33A1W9W3ZMN2JYD2306Q",
+   "to": "op_01M7KE33ANK11KJ6PSD0T12QX5"
+  },
+  {
+   "from": "op_01M7KE33ANK11KJ6PSD0T12QX5",
+   "to": "hdl_01M7KE33ATVQMQVW7Y5PHRQ1D7"
+  },
+  {
+   "from": "hdl_01M7KE33A1W9W3ZMN2JYD2306Q",
+   "to": "op_01M7KE3VCQ2WE46VH0T1SEB751"
+  },
+  {
+   "from": "op_01M7KE3VCQ2WE46VH0T1SEB751",
+   "to": "hdl_01M7KE3VCXV4MH72D1ZSBBVGES"
+  },
+  {
+   "from": "hdl_01M7KE33A1W9W3ZMN2JYD2306Q",
+   "to": "op_01M7KE4350ANF7CGB1D6N0G2J7"
+  },
+  {
+   "from": "op_01M7KE4350ANF7CGB1D6N0G2J7",
+   "to": "hdl_01M7KE43566BMWDGP4T97RHX5D"
+  }
+ ],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}
