@@ -232,3 +232,32 @@ columns that the source has now.
 
 Proposal for DataHandles: `observe` of a resource handle reads the schema again when the version
 of the resource changes.
+
+## G19. The `api` adapter has no small view of a part of a response that changes
+
+`api.get` gives the whole body of a response, and `api.fetch` stores a response that never changes.
+`response.get` and `response.select` read a part, but only of a stored response. So no one
+operation on an `api` handle gives "the price of one stock now" from a list of stocks.
+
+Effect: an object on `api.get` of a list has a long output. The state of a run keeps the two ends
+of it (`docs/DECISIONS.md`, D36 and D38), so the detector cannot see a value in the middle, and a
+change in the middle is still a new output and a look.
+
+Workaround: the driver of the SentinelBench tasks copies each list of the application to a CSV
+file, and registers each file as a dataset handle (D63). A filter or an aggregate on the dataset
+is the small view.
+
+Proposal for DataHandles: `api.get` takes an optional `select` (the path of `response.select`), and
+gives only that part of the body.
+
+## G20. A dataset filter has no predicate for text inside a value
+
+The filter of the `duckdb` adapter has the operators `eq`, `ne`, `lt`, `le`, `gt`, `ge` and `in`.
+None of them finds a word inside a text value.
+
+Effect: not measured yet. An object cannot be "the issues whose text names X". The main agent must
+build an object on a column with an exact value, or read the rows itself.
+
+Workaround: none in the protocol.
+
+Proposal for DataHandles: a `contains` operator for text columns.

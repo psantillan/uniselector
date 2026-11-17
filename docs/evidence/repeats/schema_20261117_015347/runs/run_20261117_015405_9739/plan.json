@@ -1,0 +1,36 @@
+{
+ "objects": [
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KKBP76Z37FJYH2WY7YE9SQ",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  },
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KKC25FVSMSMH1G8SD2Y44R",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "It shows one row for each region with a numeric total.",
+    "It sums only the rows whose status is paid.",
+    "It sums the order amount, and it groups by region.",
+    "It runs with no error."
+   ]
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows."
+ ],
+ "notes": "Object `totals` has the live paid total of amount for each region. When `rows` shows 600, read `totals` as the final answer. A column can get a new name: a runner must repair `totals` by use of the new names."
+}

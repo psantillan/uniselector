@@ -1,0 +1,43 @@
+{
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KJQ3M23J62SDC7T2NNZ61X",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "It shows one row for each region with a total.",
+    "It sums the amount of only the orders that have the paid status.",
+    "It groups the rows by the region."
+   ]
+  },
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KJPR8DY15QPZK6SN4D7JNX",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "It counts all rows of the orders feed, with no filter."
+   ]
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows.",
+  "The object `totals` works and shows no error."
+ ],
+ "notes": "Feed ends at 600 rows. When rows is 600, report totals for each region. Column names can change; repair the filter and aggregate with the new names."
+}

@@ -1,0 +1,35 @@
+{
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KM0ZE0J5W6QVSGTSSJ49PY",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "It shows one row for each region, with a total column that is the sum of the amount of the orders whose status is paid.",
+    "It runs without an error.",
+    "It keeps the filter on the paid status and the group by region."
+   ]
+  },
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KM0MCVCD721C3TKESAEGF4",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows."
+ ],
+ "notes": "Totals are the paid amount sum for each region. Column names in the feed can change. When rows shows 600, read totals and give them to the user."
+}

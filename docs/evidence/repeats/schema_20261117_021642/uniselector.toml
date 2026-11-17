@@ -1,0 +1,24 @@
+[limits]
+budget_tokens = 5000000
+wall_seconds = 1800
+
+[runtime]
+target = "http://127.0.0.1:47611"
+runs_dir = "/tmp/scratch/worlds/schema_20261117_021642/runs"
+
+[decision]
+decision_model = "perplexity/pplx-decider-v1.2"
+
+[actions]
+human_only = []
+
+[runners.local]
+url = "http://local-model:18020/v1/chat/completions"
+model = "qwen3.8-27b"
+key_env = "LOCAL_MODEL_API_KEY"
+body = { chat_template_kwargs = { enable_thinking = false } }
+
+[runners.top]
+url = "https://openrouter.ai/api/v1/chat/completions"
+model = "deepseek/deepseek-v4.1-flash-1017"
+key_env = "OPENROUTER_API_KEY"

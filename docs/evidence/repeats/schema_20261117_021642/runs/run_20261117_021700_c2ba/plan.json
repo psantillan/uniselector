@@ -1,0 +1,35 @@
+{
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KMNZBR6EVN7ZZT0PGEQCVE",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "It reads the orders feed and gives one row for each region.",
+    "It sums the order amount, and only for the orders whose status is paid.",
+    "It groups by the region column and gives no error about a missing column."
+   ]
+  },
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KMNM6BH85652HR3TGH5EB0",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows."
+ ],
+ "notes": "Object totals = sum of amount for status=paid, grouped by region, over the orders feed. The feed can rename a column. If totals fails, rebuild the filter and aggregate from the orders handle hdl_01M7KMNM6BH85652HR3TGH5EB0 with the new column names. Feed ends at 600 rows."
+}

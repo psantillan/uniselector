@@ -1317,3 +1317,50 @@ look. No runner made a request while each statement was true.
   change of the wording from one more case fits the cases, not the model. The rule of D56 and D60
   stays the guard: the check of an object with runners states each condition as meaning. The
   sentence of D56 is a default that helps, and no object can depend on it alone.
+
+### F73. The baseline of the wait had no way to wait, so the gain measured the lack of a clock
+
+- Part: the task driver.
+- What happened: the baseline of the schema task was a main agent alone with no shell and no clock.
+  It read the feed again and again, as fast as it could: a mean of 42 turns on the 60 s feed and
+  152 turns on the 200 s feed. Against that baseline, the main agent with Uniselector cost 54% and
+  18%. With a `sleep` tool (D64), the main agent alone slept for 30 s to 120 s at a time and
+  computed the totals one time, at the end. Against that baseline, the main agent with Uniselector
+  cost more:
+
+  | 100% = the mean of the main agent alone with a `sleep` tool | 60 s feed | 200 s feed |
+  | --- | --- | --- |
+  | Cost of the main agent | 131% | 118% |
+  | Turns of the main agent | 89% | 76% |
+  | Peak context of the main agent | 171% | 156% |
+  | Tokens of the main agent and the run | 182% | 155% |
+  | Time to repair | 17% (9.1 s of 53.2 s) | 8% (13.4 s of 166.4 s) |
+
+  The task grades only the last answer, so each of the 27 sessions passes. In 6 of the 6 sessions
+  with a `sleep` tool, the first right total after the break came after the feed had ended: the
+  prompt asks for a live total, and that main agent had none while it slept. A run noticed the
+  break in 2.5 s to 2.8 s in each of its 13 sessions. The main agent alone with no tool to wait
+  repaired in 38.0 s on the 60 s feed (3 of 5 sessions after the end of the feed) and in 9.0 s on
+  the 200 s feed.
+- Evidence: the 27 sessions of `docs/evidence/repeats`. The file `kind.txt` of each session names
+  its kind: `alone-60` (5), `uni-60` (5), `runners-60` (5), `sleep-60` (3), `alone-200` (3),
+  `uni-200` (3), `sleep-200` (3). The cost is `total_cost_usd` of the result event in
+  `agent-stream.jsonl`. `python -m uniselector_tasks.react docs/evidence/repeats` gives the time to
+  repair of each session.
+- Fixed in the driver: `--clock` gives the baseline a `sleep` tool, and a session has a time to
+  repair (D64). Not fixed: the tables of `docs/MEASUREMENTS.md` have the baseline with no tool to
+  wait as their base.
+
+### F74. A point of compaction below the first turn of the main agent stopped the session
+
+- Part: the task driver.
+- What happened: the first compaction session had `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=14`. The context
+  of the main agent is 10,166 tokens at its first turn, before it reads a handle. Claude Code
+  compacted three times in 100.8 s, at 11,620, 13,238 and 12,566 tokens, and then stopped the
+  session: "Autocompact is thrashing: the context refilled to the limit within 3 turns of the
+  previous compact, 3 times in a row." The main agent never called `plan_submit`, so no run
+  started. The session cost $0.4642, which is 5.7 times the mean of a session with no compaction.
+- Evidence: `docs/evidence/compaction/schema_20261117_024727`: `record.json` (`compactions`,
+  `tool_calls`, `answer`) and the three `compact_boundary` events of `agent-stream.jsonl`.
+- Fixed in the next session: the value 18 puts the point at about 14,700 tokens, after the first
+  wake (D65).

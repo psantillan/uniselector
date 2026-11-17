@@ -1,0 +1,27 @@
+{
+ "objects": [
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KMK3AQMH7TQHXY7EEXKS1K",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  },
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KMKFW4DYGMFGBATGNMX1AZ",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   }
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows.",
+  "The object `totals` shows a total for each region and no error."
+ ],
+ "notes": "rows = row count of the feed. totals = sum of amount for each region over paid orders. If a column is renamed, rebuild the filter and aggregate with the new name."
+}

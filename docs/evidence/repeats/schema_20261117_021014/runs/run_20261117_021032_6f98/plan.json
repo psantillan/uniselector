@@ -1,0 +1,26 @@
+{
+ "objects": [
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KM9STAWF1V0D1TEQ64WYSR",
+   "operation": {
+    "capability": "dataset.count"
+   }
+  },
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KMA6V36BX3N5F7M16BD0PK",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   }
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows.",
+  "The object `totals` shows no error and no missing column."
+ ],
+ "notes": "totals = sum of amount by region over rows with status paid. If a column is renamed, rebuild the filter and aggregate with the new name."
+}

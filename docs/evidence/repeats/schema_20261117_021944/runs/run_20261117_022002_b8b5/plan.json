@@ -1,0 +1,34 @@
+{
+ "objects": [
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KMV5YTMNMMNVFAR55NY8ZV",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  },
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KMVJ1S8SFMTT8XYZXBAH5C",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "runners": [
+    "main"
+   ],
+   "variables": [
+    "It sums the amount of only the paid orders, for each region.",
+    "It returns one row for each region with a total."
+   ]
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows.",
+  "The object `totals` returns the totals without an error."
+ ],
+ "notes": "Feed ends at 600 rows. A column can be renamed without notice. If totals fails, rebuild the filter (status=paid) and the aggregate (sum amount by region) with the new column names."
+}

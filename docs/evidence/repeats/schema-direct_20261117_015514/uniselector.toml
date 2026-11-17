@@ -1,0 +1,13 @@
+[limits]
+budget_tokens = 5000000
+wall_seconds = 1800
+
+[runtime]
+target = "http://127.0.0.1:57425"
+runs_dir = "/tmp/scratch/worlds/schema_20261117_015514/runs"
+
+[decision]
+decision_model = "perplexity/pplx-decider-v1.2"
+
+[actions]
+human_only = []

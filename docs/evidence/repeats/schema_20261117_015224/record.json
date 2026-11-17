@@ -1,0 +1,77 @@
+{
+ "task": "schema",
+ "direct": false,
+ "what": "A live data pipeline with a schema break: the column `amount` gets the name `amount_usd`.",
+ "at": "20261117_015224",
+ "commit": "676e515",
+ "prompt": "A feed of orders is registered in DataHandles as `orders`. It gets new rows for the next minutes, and it ends at 600 rows. Keep a live total of `amount` for each region, over the orders whose `status` is `paid`. The team that owns the feed can give a column a new name without notice. When that happens, repair your work. When the feed has 600 rows, give the total of each region.",
+ "truth": "the total of each region over the paid orders of the final feed (record: facts.truth)",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 5000000,
+  "wall_seconds": 1800
+ },
+ "runners": {},
+ "seconds": 83.1,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 10166,
+ "context_peak": 16941,
+ "context_added": 6775,
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 3,
+  "handle_invoke": 3,
+  "plan_submit": 1,
+  "plan_status": 2,
+  "plan_answer": 2
+ },
+ "turns": 13,
+ "agent_seconds": 81.4,
+ "answer": "These are the totals of `amount_usd` for paid orders, at 600 rows. The feed renamed `amount` to `amount_usd` during the run, and I changed the sum to use the new name.\n\n| region | total |\n|---|---|\n| east | 15677.18 |\n| north | 10483.22 |\n| south | 15527.26 |\n| west | 14504.72 |",
+ "agent_error": false,
+ "right": true,
+ "facts": {
+  "changes": [
+   {
+    "what": "the schedule started",
+    "agent_s": 16.5
+   },
+   {
+    "what": "schema",
+    "agent_s": 34.5
+   },
+   {
+    "what": "the feed ended",
+    "agent_s": 76.5
+   }
+  ],
+  "rows": 600,
+  "truth": {
+   "north": 10483.22,
+   "south": 15527.26,
+   "east": 15677.18,
+   "west": 14504.72
+  }
+ },
+ "runs": [
+  {
+   "t": 1794880426.378,
+   "event": "end",
+   "run": "run_20261117_015241_f998",
+   "outcome": "done",
+   "why": "the main agent ended the run",
+   "tokens": 13583,
+   "cost": 0.000272,
+   "seconds": 58.0,
+   "looks": 19,
+   "wakes": 2,
+   "runner_wakes": 0,
+   "rebinds": 0,
+   "forms": 0,
+   "operations": 38,
+   "confirmations": 0,
+   "human_requests": 0
+  }
+ ],
+ "human_stand_in": []
+}

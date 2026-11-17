@@ -1,0 +1,31 @@
+{
+ "objects": [
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KK0CZ3ET2QBY1YYJQ4097M",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 5
+    }
+   }
+  },
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KK0A8DTEZ4Y5PR9TAKVRHR",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "variables": [
+    "It sums the amount of only the rows with status paid, for each region."
+   ]
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows.",
+  "The object `totals` works and shows a total for each region."
+ ]
+}

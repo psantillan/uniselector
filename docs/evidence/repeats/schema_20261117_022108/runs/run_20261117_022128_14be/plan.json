@@ -1,0 +1,36 @@
+{
+ "objects": [
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KMY3XQ7425N1Q7JPS62MPY",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   },
+   "runners": [
+    "local",
+    "top"
+   ],
+   "variables": [
+    "The object shows one row for each region, with a total.",
+    "It sums only the amount of the orders whose status is paid.",
+    "It reads the live feed `orders` and does not read a fixed copy.",
+    "It shows no error about a missing column."
+   ]
+  },
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KMXR8WP40YEPS3W0NB1170",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows."
+ ],
+ "notes": "Feed `orders` ends at 600 rows. When rows reaches 600, read object `totals` for the final total of each region. A column may get a new name; the runners of `totals` repair it."
+}

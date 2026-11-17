@@ -1,0 +1,55 @@
+{
+ "task": "schema",
+ "direct": true,
+ "what": "A live data pipeline with a schema break: the column `amount` gets the name `amount_usd`.",
+ "at": "20261117_021808",
+ "commit": "676e515",
+ "prompt": "A feed of orders is registered in DataHandles as `orders`. It gets new rows for the next minutes, and it ends at 600 rows. Keep a live total of `amount` for each region, over the orders whose `status` is `paid`. The team that owns the feed can give a column a new name without notice. When that happens, repair your work. When the feed has 600 rows, give the total of each region.",
+ "truth": "the total of each region over the paid orders of the final feed (record: facts.truth)",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 5000000,
+  "wall_seconds": 1800
+ },
+ "runners": {},
+ "seconds": 95.0,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 5852,
+ "context_peak": 15358,
+ "context_added": 9506,
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 3,
+  "handle_invoke": 39
+ },
+ "turns": 44,
+ "agent_seconds": 93.2,
+ "answer": "Totals of `amount_usd` for paid orders, with 600 rows in the feed:\n\n| Region | Total |\n|---|---|\n| east | 15677.18 |\n| south | 15527.26 |\n| west | 14504.72 |\n| north | 10483.22 |\n\nThe feed renamed `amount` to `amount_usd` at about 460 rows. I ran the work again with the new name.",
+ "agent_error": false,
+ "right": true,
+ "facts": {
+  "changes": [
+   {
+    "what": "the schedule started",
+    "agent_s": 6.0
+   },
+   {
+    "what": "schema",
+    "agent_s": 24.0
+   },
+   {
+    "what": "the feed ended",
+    "agent_s": 66.0
+   }
+  ],
+  "rows": 600,
+  "truth": {
+   "north": 10483.22,
+   "south": 15527.26,
+   "east": 15677.18,
+   "west": 14504.72
+  }
+ },
+ "runs": [],
+ "human_stand_in": []
+}

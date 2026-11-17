@@ -1,0 +1,27 @@
+{
+ "objects": [
+  {
+   "name": "rows",
+   "handle": "hdl_01M7KK94M83A38KHJ5ABVYW8C4",
+   "operation": {
+    "capability": "dataset.count",
+    "input": {}
+   }
+  },
+  {
+   "name": "totals",
+   "handle": "hdl_01M7KK9FTPERM1K3ED3DTHSCZE",
+   "operation": {
+    "capability": "dataset.head",
+    "input": {
+     "n": 50
+    }
+   }
+  }
+ ],
+ "variables": [
+  "The object `rows` shows fewer than 600 rows.",
+  "The object `totals` shows a total for each region and no error."
+ ],
+ "notes": "totals = paid orders, sum of amount by region. If a column is renamed, rebuild the filter and aggregate from handle hdl_01M7KK94M83A38KHJ5ABVYW8C4 with the new column names."
+}

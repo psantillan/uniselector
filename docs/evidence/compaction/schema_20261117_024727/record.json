@@ -1,0 +1,89 @@
+{
+ "task": "schema",
+ "direct": false,
+ "clock": false,
+ "agent_environment": {
+  "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "100000",
+  "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "14"
+ },
+ "what": "A live data pipeline with a schema break: the column `amount` gets the name `amount_usd`.",
+ "at": "20261117_024727",
+ "commit": "c128367",
+ "prompt": "A feed of orders is registered in DataHandles as `orders`. It gets new rows for the next minutes, and it ends at 600 rows. Keep a live total of `amount` for each region, over the orders whose `status` is `paid`. The team that owns the feed can give a column a new name without notice. When that happens, repair your work. When the feed has 600 rows, give the total of each region.",
+ "truth": "the total of each region over the paid orders of the final feed (record: facts.truth)",
+ "decision_model": "perplexity/pplx-decider-v1.2",
+ "limits": {
+  "budget_tokens": 5000000,
+  "wall_seconds": 1800
+ },
+ "runners": {},
+ "seconds": 100.8,
+ "agent_model": "claude-sonnet-5-5",
+ "context_first_turn": 10166,
+ "context_peak": 12512,
+ "context_added": 2346,
+ "compactions": [
+  {
+   "trigger": "auto",
+   "pre_tokens": 11620,
+   "post_tokens": 2771,
+   "cumulative_dropped_tokens": 8849,
+   "duration_ms": 13016,
+   "preserved_segment": {
+    "head_uuid": "5c9582c8-5394-4457-add1-9ac52f4b5516",
+    "anchor_uuid": "6bb31391-4098-427b-99ec-50f7f6a8adbf",
+    "tail_uuid": "280db36f-1064-4780-aef6-47eea634d10d"
+   },
+   "preserved_messages": {
+    "anchor_uuid": "6bb31391-4098-427b-99ec-50f7f6a8adbf",
+    "uuids": [
+     "5c9582c8-5394-4457-add1-9ac52f4b5516",
+     "3737d3d8-2414-4e58-9070-92948031686d",
+     "74dd453c-0ffe-4a22-900d-90b6714c3f07",
+     "280db36f-1064-4780-aef6-47eea634d10d"
+    ],
+    "all_uuids": [
+     "5c9582c8-5394-4457-add1-9ac52f4b5516",
+     "3737d3d8-2414-4e58-9070-92948031686d",
+     "74dd453c-0ffe-4a22-900d-90b6714c3f07",
+     "280db36f-1064-4780-aef6-47eea634d10d"
+    ]
+   }
+  },
+  {
+   "trigger": "auto",
+   "pre_tokens": 13238,
+   "post_tokens": 2639,
+   "cumulative_dropped_tokens": 19448,
+   "duration_ms": 13521
+  },
+  {
+   "trigger": "auto",
+   "pre_tokens": 12566,
+   "post_tokens": 2440,
+   "cumulative_dropped_tokens": 29574,
+   "duration_ms": 11575
+  }
+ ],
+ "tool_calls": {
+  "handle_find": 1,
+  "handle_describe": 5,
+  "handle_invoke": 3
+ },
+ "turns": 13,
+ "agent_seconds": 99.1,
+ "answer": "Autocompact is thrashing: the context refilled to the limit within 3 turns of the previous compact, 3 times in a row. A file being read or a tool output is likely too large for the context window. Try reading in smaller chunks, or use /clear to start fresh.",
+ "agent_error": true,
+ "right": false,
+ "facts": {
+  "rows": 200,
+  "truth": {
+   "north": 4057.31,
+   "south": 5275.78,
+   "east": 3607.19,
+   "west": 4248.48
+  }
+ },
+ "runs": [],
+ "human_stand_in": []
+}

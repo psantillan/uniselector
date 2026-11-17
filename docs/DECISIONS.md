@@ -1817,3 +1817,91 @@ Known limits.
   default, and the user decides (D53).
 - The main agent is fast on this task: its repair took 6.1 s. A runner moves more work when the
   repair is frequent, or when the main agent must read much to make it. No run measured that.
+
+## D63. SentinelBench grades the wait, and the main agent reads the data of the application
+
+The external benchmark for Uniselector is SentinelBench ("SentinelBench: A Benchmark for
+Long-Running Monitoring Agents", arXiv 2606.05342; `github.com/microsoft/sentinel_environments`).
+It has 100 tasks in 10 web applications. In each task, an agent waits for a condition that comes
+between 10 s and 600 s after the start, and then it tells the user through a contact form. 42 tasks
+also need an action, and 20 tasks have a condition that never comes. The benchmark gives three
+numbers: success, reaction time, and cost.
+
+Reason: this is the claim of Uniselector, measured by a third party. A task of the benchmark is one
+wait with a condition. The 20 tasks with no condition measure a wake when nothing was wrong (the
+list of Step 7 of the brief). No other public benchmark grades a wait: Terminal-Bench grades the
+work of an agent in a terminal, LOCA-bench grades the growth of the context, and neither one has a
+condition that comes later.
+
+`tasks/sentinel.py` is the agent of the benchmark's harness. It adds no knowledge of a task: the
+main agent reads the prompt, builds the objects and writes the variables.
+
+1. **The main agent reads the data, not the screen.** The agent of the paper reads a browser. This
+   main agent reads the JSON data of the application through DataHandles. So a number of the paper
+   is context for a number of this record, and the two do not compare directly. The direct
+   comparison is the same main agent with the same handles and no Uniselector.
+2. **Each list of the application is a table.** The handle `app` is the HTTP API of the
+   application. An object on `api.get` of a list shows only the two ends of the body (D36, D38), so
+   the module copies each list to a CSV file one time each second, and each file is a dataset
+   handle (`docs/GAPS.md`, G19). A file changes only when its list changed, so a list with no
+   change gives no look. The copy adds at most 1 s to the reaction time.
+3. **The agent alone has a `sleep` tool** (`tasks/clock.py`). The baseline agent of the paper has
+   one. Without it, an agent with no shell reads as fast as it can, and its cost measures the lack
+   of a clock. The tool has no upper limit.
+4. **An action of a task goes through the action gate.** A POST to the application is an action in
+   DataHandles. The run asks the main agent, and the main agent confirms.
+5. **The module ends the main agent 6 s before the harness kills it** (ASSUMED: 6 s to write the
+   record). The harness kills the process group at 600 s / speed + 30 s with no warning. The two
+   numbers are from the benchmark (`server/timing.py`).
+6. **The pilot is 10 tasks, chosen before the first run**: 4 tasks with a condition, 4 tasks with a
+   condition and an action, and 2 tasks with no condition, from the 4 applications that need text
+   only (stocks, issues, calendar, papers). ASSUMED: 10 tasks. It is the smallest set with each
+   kind in more than one application; a full run is 100 tasks and about 11 hours for each mode.
+
+## D64. The baseline of a wait has a `sleep` tool, and a session has a time to repair
+
+The schema task has two baselines. `drive schema --direct` is a main agent alone with no tool to
+wait. `drive schema --direct --clock` is a main agent alone with the `sleep` tool of
+`tasks/clock.py`.
+
+Reason: a main agent with no shell and no clock reads the feed again and again, as fast as it can.
+Its cost measures the lack of a clock, and a run of Uniselector looks better than it is (F73). An
+agent in real use can wait. The baseline with the `sleep` tool is the base of a comparison of cost.
+The baseline with no tool to wait stays in the record, and each table states which one is its base.
+
+The schema task grades only the last answer of the main agent. A main agent that sleeps through
+the break gives a right last answer, and its total was wrong for the rest of the feed. So each
+session also has a time to repair: the time from the break to the first total that uses the new
+name and has no error. `python -m uniselector_tasks.react DIRECTORY` reads it from the records of
+the sessions.
+
+Reason: the essential variables of a run are true or not true at each look, and not only at the
+end. A measure of the last answer alone cannot see the work of the detector.
+
+## D65. Two variables of Claude Code make the main agent compact its context
+
+A session with `CLAUDE_CODE_AUTO_COMPACT_WINDOW=100000` and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=18`
+in the environment of the driver has a main agent that compacts its context at about 14,700
+tokens. The driver gives its environment to the main agent. It writes the two variables to the
+record (`agent_environment`), and each compaction of the stream (`compactions`).
+
+Reason: the brief says that the main agent can compact its context after it submitted the plan,
+and that a run must continue. A compaction at the default point needs a session of hours. The two
+variables move the point into a session of 83 s. The context of the main agent is 10,166 tokens at
+its first turn, 12,477 at `plan_submit` and 14,519 at the first wake, so the point must be above
+the first number (F74) and below the last one.
+
+Result (`docs/evidence/compaction/schema_20261117_025036`, one session on the 60 s feed): the main
+agent read the first wake, started the repair, and compacted at 14,746 tokens. The compaction took
+14.2 s. The run stayed alive in the server process (D25). After the compaction the main agent
+answered the wake with the right replacement, ended the run at the second wake, and gave the right
+totals. The time to repair was 23.6 s. The mean of the five sessions with no compaction is 9.1 s.
+The cost was $0.1306, which is 160% of the mean of those five sessions.
+
+The main agent continued from the summary that Claude Code wrote. It did not read `plan_status`
+again before its answer. So this session shows that a run continues through a compaction of the
+main agent. It does not show that the summary of a wake alone is enough for a fresh context.
+
+The record of a session holds the length of each summary of a compaction, and not its text
+(`drive.public`). Reason: Claude Code writes the instructions of the machine of the user into the
+summary, and a record is public.

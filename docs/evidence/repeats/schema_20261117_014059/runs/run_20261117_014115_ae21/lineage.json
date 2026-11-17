@@ -1,0 +1,109 @@
+{
+ "id": "gr_run_20261117_014115_ae21",
+ "nodes": [
+  {
+   "id": "hdl_01M7KJM7V02YW9J5481Y8EJGRJ",
+   "kind": "resource",
+   "reference": "hdl_01M7KJM7V02YW9J5481Y8EJGRJ"
+  },
+  {
+   "id": "op_01M7KJMGN8AD9DC198X28PHCMN",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.filter",
+    "input": {
+     "where": [
+      {
+       "column": "status",
+       "op": "eq",
+       "value": "paid"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KJMGNFPK8QFV09YBWZRMYA",
+   "kind": "derived",
+   "reference": "hdl_01M7KJMGNFPK8QFV09YBWZRMYA"
+  },
+  {
+   "id": "op_01M7KJMJYZPEY8GX17S3AN7G6K",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.aggregate",
+    "input": {
+     "group_by": [
+      "region"
+     ],
+     "metrics": [
+      {
+       "fn": "sum",
+       "column": "amount",
+       "as": "total"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KJMJZ6MWCHM8MCAVG66DAM",
+   "kind": "derived",
+   "reference": "hdl_01M7KJMJZ6MWCHM8MCAVG66DAM"
+  },
+  {
+   "id": "op_01M7KJNDNWHQCZ1NYR1Q1RCFMN",
+   "kind": "operation",
+   "operation": {
+    "capability": "dataset.aggregate",
+    "input": {
+     "group_by": [
+      "region"
+     ],
+     "metrics": [
+      {
+       "fn": "sum",
+       "column": "amount_usd",
+       "as": "total"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "hdl_01M7KJNDP3WN4X7MB0B3Q8CM0V",
+   "kind": "derived",
+   "reference": "hdl_01M7KJNDP3WN4X7MB0B3Q8CM0V"
+  }
+ ],
+ "edges": [
+  {
+   "from": "hdl_01M7KJM7V02YW9J5481Y8EJGRJ",
+   "to": "op_01M7KJMGN8AD9DC198X28PHCMN"
+  },
+  {
+   "from": "op_01M7KJMGN8AD9DC198X28PHCMN",
+   "to": "hdl_01M7KJMGNFPK8QFV09YBWZRMYA"
+  },
+  {
+   "from": "hdl_01M7KJMGNFPK8QFV09YBWZRMYA",
+   "to": "op_01M7KJMJYZPEY8GX17S3AN7G6K"
+  },
+  {
+   "from": "op_01M7KJMJYZPEY8GX17S3AN7G6K",
+   "to": "hdl_01M7KJMJZ6MWCHM8MCAVG66DAM"
+  },
+  {
+   "from": "hdl_01M7KJMGNFPK8QFV09YBWZRMYA",
+   "to": "op_01M7KJNDNWHQCZ1NYR1Q1RCFMN"
+  },
+  {
+   "from": "op_01M7KJNDNWHQCZ1NYR1Q1RCFMN",
+   "to": "hdl_01M7KJNDP3WN4X7MB0B3Q8CM0V"
+  }
+ ],
+ "execution": {
+  "strategy": "lazy",
+  "consistency": "latest"
+ }
+}
