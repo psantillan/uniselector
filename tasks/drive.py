@@ -268,6 +268,25 @@ def measure(stream_file: Path) -> dict:
             "answer": result.get("result"), "agent_error": result.get("is_error")}
 
 
+def public(stream_file: Path) -> str:
+    """The stream of the main agent for the evidence, without the two items that hold the settings and the instructions of the machine:
+    the first event, and the text of the summary that follows each compaction."""
+    kept, summary = [], False
+    for line in stream_file.read_text().splitlines():
+        flat = line.replace(" ", "")
+        if '"subtype":"init"' in flat:
+            continue
+        if summary and '"type":"user"' in flat:
+            event, summary = json.loads(line), False
+            content = event["message"]["content"]
+            length = len(content) if isinstance(content, str) else sum(len(part.get("text", "")) for part in content)
+            event["message"]["content"] = f"[the summary of the compaction: {length} characters. The text is not in this record]"
+            line = json.dumps(event)
+        summary = summary or '"subtype":"compact_boundary"' in flat
+        kept.append(line)
+    return "\n".join(kept) + "\n"
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description="Run one long task with a real main agent.")
     p.add_argument("task", choices=list(TASKS))
@@ -333,9 +352,7 @@ def main() -> None:
     evidence = Path(a.evidence) / f"{a.task}{'-direct' if a.direct else ''}_{stamp}"
     evidence.mkdir(parents=True)
     (evidence / "record.json").write_text(json.dumps(record, indent=1))
-    # The stream of the main agent, without the first event: it lists the tools and the settings of the machine.
-    kept = [line for line in (world.dir / "agent-stream.jsonl").read_text().splitlines() if '"subtype":"init"' not in line.replace(" ", "")]
-    (evidence / "agent-stream.jsonl").write_text("\n".join(kept) + "\n")
+    (evidence / "agent-stream.jsonl").write_text(public(world.dir / "agent-stream.jsonl"))
     for name in ("hook-input.jsonl", "human.log", "uniselector.toml"):
         if (world.dir / name).exists():
             shutil.copy(world.dir / name, evidence / name)

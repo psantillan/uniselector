@@ -30,7 +30,7 @@ from http.client import HTTPConnection
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .drive import BUDGET_TOKENS, DIRECT, HOW, SLEEP, WALL_SECONDS, commit, measure, write
+from .drive import BUDGET_TOKENS, DIRECT, HOW, SLEEP, WALL_SECONDS, commit, measure, public, write
 from .world import World
 
 # The two times of the benchmark (its file server/timing.py): the last moment of a condition, and the time to react after it.
@@ -210,9 +210,7 @@ def main() -> None:
         evidence = Path(a.evidence) / f"{a.name}{'-direct' if a.direct else ''}_{stamp}"
         evidence.mkdir(parents=True)
         (evidence / "record.json").write_text(json.dumps(record, indent=1))
-        # The stream of the main agent, without the first event: it lists the tools and the settings of the machine.
-        kept = [line for line in (world.dir / "agent-stream.jsonl").read_text().splitlines() if '"subtype":"init"' not in line.replace(" ", "")]
-        (evidence / "agent-stream.jsonl").write_text("\n".join(kept) + "\n")
+        (evidence / "agent-stream.jsonl").write_text(public(world.dir / "agent-stream.jsonl"))
         shutil.copy(world.dir / "uniselector.toml", evidence / "uniselector.toml")
         if world.runs.exists():
             shutil.copytree(world.runs, evidence / "runs")
