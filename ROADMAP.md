@@ -54,12 +54,11 @@ directory in `docs/evidence`. Each measurement is a single run.
 | The main agent alone on the schema task, with two lengths of the feed | `schema-direct_20261116_163205`, `schema-direct_20261116_163736` |
 | A local model repairs a schema break with one request while the main agent sleeps: 6.0 s from the break to a good object. The main agent gets 1 wake and uses 11 turns, at 79% of the base | `schema_20261116_233942` |
 | The same task with no runners: the main agent gets the wake of the break and repairs the object in 3 turns. It gets 2 wakes and uses 14 turns, at 90% of the base | `schema_20261117_004251` |
-| A check with a column name rejects the right replacement, and the main agent gets 5 wakes | `schema_20261116_233410` (`docs/FAILURES.md`, F67 to F69) |
 | One runner alone repairs one broken object with one request of 2,164 tokens, and keeps the filter. Before the break the runner makes no request | `repair_20261116_232124` |
-| A careless runner writes a wrong replacement with no error. The check rejects it (0.054), the object has its version from before, and the next runner repairs it. No wake goes to a main agent | `repair_20261117_002143` (`docs/DECISIONS.md`, D61) |
+| The check of an object judges each replacement by a runner, and the next runner in the list takes a wake that is still open | `repair_20261117_002143` (`docs/DECISIONS.md`, D61) |
 | The human holds an action alone, and the main agent cannot invoke it | `goal-held_20261116_190023` |
 | The main agent passes one decision to the human | `goal-pass_20261116_190342` |
-| The detector check: 63 of 64 statements. The wrong one is in `docs/FAILURES.md`, F72 | `probe_20261117` |
+| The detector check: 63 of 64 statements | `probe_20261117` |
 | Two forms cost nothing while nothing fails: the same 4,597 tokens in 5 looks with the forms and with none. The wake with the forms comes 3.0 s later | `forms_20261116_233244` |
 
 ## Next
@@ -72,35 +71,4 @@ directory in `docs/evidence`. Each measurement is a single run.
 - A baseline of the main agent alone for each task.
 - A form from an embedding engine, and a search over it. The task of the forms uses a hash of words.
 
-## Known limits
-
-- The grade of a runner binding has three questions (`docs/DECISIONS.md`, D62). One pair of task
-  runs shows that a local model takes a repair off the main agent: 1 wake and 11 turns with the
-  runners, 2 wakes and 14 turns with none, on the 60 s schema task (`docs/MEASUREMENTS.md`, "Model runners").
-  No second run shows how much two equal sessions differ.
-- No live run has a main agent that writes its own function runner. A test covers it.
-- The gain needs a check that states meaning. A check that names a column rejects the right
-  replacement after a new column name, and the main agent then gets more wakes than with no
-  runner (`docs/FAILURES.md`, F67). Only a tool text guides the main agent (D60).
-- A model runner repairs what a change of the operations of one graph can repair: a column with a
-  new name, a value with a new form. A break that needs a new step goes to the next runner or to
-  the main agent (D57).
-- A check rejects only what it states. The sentence that a look adds for a replacement by a runner
-  compares two texts of operations. It does not run the two versions on the same data (D56).
-- A replacement that does not hold shows until the look that judges it. Then the object has its
-  version from before (D61).
-- The sentence that a look adds for a replacement is not a guard alone: it got 0.949 for a
-  replacement with another filter (F72).
-- A wake with forms is later than a wake with none, by the time of the runners of the forms (D58).
-- The run cannot stop a function runner that does not return (D53).
-- Code that a plan names runs in the process of Uniselector. The action gate is a rule of the
-  protocol. It is not a sandbox (D53).
-- The decision model looks at each change of an output, so the looks grow with the feed (F49).
-- A value that is only in the middle of a long output does not reach the decision model. The plan
-  needs a small object that shows it (F50, D58).
-- A run that the main agent leaves at a wake ends `left`, also when the answer was right (F51).
-- The gate is in the path of the orchestrator. The main agent's principal can invoke an action
-  that it holds (F52, and `docs/GAPS.md`, G1).
-- The main agent decides what is a check of an object and what is a variable of the plan. Only a
-  tool text guides it (D51, D52, D60).
-- No run made the main agent compact its context.
+The known limits are in `docs/MEASUREMENTS.md`, and the failure log is `docs/FAILURES.md`.

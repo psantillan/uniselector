@@ -2,8 +2,8 @@
 text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace; font-size: 12px; fill: #1c222c; }
 text.m { fill: #5c6470; } text.s { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 14.5px; } text.h { font-weight: 600; }
 .ax { stroke: #d6cfc0; stroke-width: 1; fill: none; } .ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.sb { stroke: #0F86B0; } .sr { stroke: #A8501C; } .sg { stroke: #9A7400; } .sm { stroke: #5c6470; } .si { stroke: #1c222c; } .sx { stroke: #C23A2E; }
-.fb { fill: #0F86B0; } .fr { fill: #A8501C; } .fg { fill: #9A7400; } .fx, text.fx { fill: #C23A2E; } .fbg, text.fbg { fill: #f6f3ec; } .fp { fill: #eee9dd; } .fn { fill: none; } .fm { fill: #5c6470; }
+.sb { stroke: #0F86B0; } .sr { stroke: #A8501C; } .sg { stroke: #9A7400; } .sm { stroke: #5c6470; } .si { stroke: #1c222c; }
+.fb { fill: #0F86B0; } .fr { fill: #A8501C; } .fg { fill: #9A7400; } .fbg, text.fbg { fill: #f6f3ec; } .fp { fill: #eee9dd; } .fn { fill: none; } .fm { fill: #5c6470; }
 .box { fill: #eee9dd; stroke: #d6cfc0; stroke-width: 1.5; } .dash { stroke-dasharray: 5 5; }
 text.halo { paint-order: stroke; stroke: #f6f3ec; stroke-width: 4px; stroke-linejoin: round; }
 .chip.on rect { stroke: #9A7400; stroke-width: 2.5; }

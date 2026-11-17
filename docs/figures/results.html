@@ -5,7 +5,7 @@
 /* Layout: one reading column of 66 characters; figures break out to 920px. Blue = Uniselector, brown = the agent alone, gold = a wake. */
 :root {
   --bg: #10141c; --panel: #161b25; --ink: #ece8dd; --muted: #9aa3b2; --rule: #2a3140;
-  --blue: #2B9FC6; --brown: #C8763E; --gold: #E8C547; --red: #F0685A; --green: #7FBF5F;
+  --blue: #2B9FC6; --brown: #C8763E; --gold: #E8C547; --green: #7FBF5F;
   --serif: "STIX Two Text", "Latin Modern Roman", "Iowan Old Style", Georgia, serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color-scheme: dark;
@@ -13,13 +13,13 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     --bg: #f6f3ec; --panel: #eee9dd; --ink: #1c222c; --muted: #5c6470; --rule: #d6cfc0;
-    --blue: #0F86B0; --brown: #A8501C; --gold: #9A7400; --red: #C23A2E; --green: #3F7F2A;
+    --blue: #0F86B0; --brown: #A8501C; --gold: #9A7400; --green: #3F7F2A;
     color-scheme: light;
   }
 }
 :root[data-theme="light"] {
   --bg: #f6f3ec; --panel: #eee9dd; --ink: #1c222c; --muted: #5c6470; --rule: #d6cfc0;
-  --blue: #0F86B0; --brown: #A8501C; --gold: #9A7400; --red: #C23A2E; --green: #3F7F2A;
+  --blue: #0F86B0; --brown: #A8501C; --gold: #9A7400; --green: #3F7F2A;
   color-scheme: light;
 }
 body { background: var(--bg); color: var(--ink); font-family: var(--serif); font-size: 19px; line-height: 1.6; }
@@ -42,16 +42,16 @@ figcaption { font-size: 15.5px; line-height: 1.5; color: var(--muted); max-width
 .bar { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
 .key { display: inline-flex; align-items: center; gap: 7px; }
 .key i { width: 18px; height: 3px; border-radius: 2px; background: var(--blue); display: inline-block; }
-.key i.r { background: var(--brown); } .key i.g { background: var(--gold); } .key i.x { background: var(--red); }
-.key i.dot { width: 9px; height: 9px; border-radius: 50%; } .key i.ring { width: 9px; height: 9px; border-radius: 50%; background: transparent; box-shadow: inset 0 0 0 2px var(--brown); } .key i.ring.x { background: transparent; box-shadow: inset 0 0 0 2px var(--red); }
+.key i.r { background: var(--brown); } .key i.g { background: var(--gold); }
+.key i.dot { width: 9px; height: 9px; border-radius: 50%; } .key i.ring { width: 9px; height: 9px; border-radius: 50%; background: transparent; box-shadow: inset 0 0 0 2px var(--brown); }
 button.play { font-family: var(--mono); font-size: 12.5px; color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 12px; cursor: pointer; margin-left: auto; }
 button.play:hover { border-color: var(--gold); } button.play:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 /* marks inside the drawings */
 svg text { font-family: var(--mono); font-size: 12px; fill: var(--ink); }
 svg text.m { fill: var(--muted); } svg text.s { font-family: var(--serif); font-style: italic; font-size: 14.5px; } svg text.h { font-weight: 600; }
 .ax { stroke: var(--rule); stroke-width: 1; fill: none; } .ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.sb { stroke: var(--blue); } .sr { stroke: var(--brown); } .sg { stroke: var(--gold); } .sm { stroke: var(--muted); } .si { stroke: var(--ink); } .sx { stroke: var(--red); }
-.fb { fill: var(--blue); } .fr { fill: var(--brown); } .fg { fill: var(--gold); } .fx { fill: var(--red); } .fbg { fill: var(--bg); } .fp { fill: var(--panel); } .fn { fill: none; } .fm { fill: var(--muted); }
+.sb { stroke: var(--blue); } .sr { stroke: var(--brown); } .sg { stroke: var(--gold); } .sm { stroke: var(--muted); } .si { stroke: var(--ink); }
+.fb { fill: var(--blue); } .fr { fill: var(--brown); } .fg { fill: var(--gold); } .fbg { fill: var(--bg); } .fp { fill: var(--panel); } .fm { fill: var(--muted); }
 .box { fill: var(--panel); stroke: var(--rule); stroke-width: 1.5; } .dash { stroke-dasharray: 5 5; }
 svg text.halo { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
 .chip.on rect { stroke: var(--gold); stroke-width: 2.5; }
@@ -63,7 +63,6 @@ svg text.halo { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; strok
 th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; } th { color: var(--muted); font-weight: 400; } th:first-child, td:first-child, th.l, td.l { text-align: left; }
 td.what { font-family: var(--serif); font-size: 15px; color: var(--muted); min-width: 220px; }
 .sq { display: inline-flex; flex-wrap: wrap; gap: 2px; max-width: 150px; vertical-align: middle; } .sq i { width: 5px; height: 5px; background: var(--blue); } .sq i.w { background: var(--gold); }
-.limits li::marker { color: var(--red); }
 footer { font-family: var(--mono); font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 20px; gap: 6px; }
 @media (max-width: 520px) { body { font-size: 17.5px; } .lede, p.q { font-size: 19.5px; } .page { gap: 56px; } }
 </style>
@@ -140,10 +139,10 @@ footer { font-family: var(--mono); font-size: 12.5px; color: var(--muted); borde
     <figcaption>Run <code>run_20261116_163355_18ad</code>: 22 looks, 3 wakes. The 22 looks used 12,942 tokens. Their cost was 0.27% of the cost of the main agent in the same session.</figcaption>
   </figure>
   <p>Three looks have a dot below 0.5, and each one is a wake. Wake 1 is a surprise. The main agent wrote a sentence about columns that the object does not show. The detector found that the sentence was not true, and the agent wrote a better one. Wake 2 is the new column name. Wake 3 is the end of the feed.</p>
-  <p class="q">Can the detector be trusted?</p>
+  <p class="q">How well does the detector separate true from not true?</p>
   <p>A separate check gave it 64 statements about fixed states. The right answer to each statement was known.</p>
   <figure>
-    <div class="bar"><span class="key"><i class="dot"></i>the statement is true (42)</span><span class="key"><i class="ring"></i>the statement is not true (21)</span><span class="key"><i class="ring x"></i>not true, and the model said true (1)</span></div>
+    <div class="bar"><span class="key"><i class="dot"></i>the statement is true (42)</span><span class="key"><i class="ring"></i>the statement is not true (22)</span></div>
     <div class="plot" id="fig-detector"></div>
     <figcaption>The probability of each statement on a log-odds scale. 63 of the 64 are on the right side of 0.5. The check used 14,727 tokens.</figcaption>
   </figure>
@@ -202,40 +201,11 @@ footer { font-family: var(--mono); font-size: 12.5px; color: var(--muted); borde
   <p>The cost is one signal. It is not the grade. A binding is good when it moves work off the expensive agent and the variables stay inside their limits. So the grade has three questions.</p>
   <p><em>Can the main agent define the runners?</em> It did. It gave the object the list <code>["local", "top"]</code> and a check of four sentences, and the text of the tools was its only guide.</p>
   <p><em>Does the main agent sleep while the runner works?</em> With no runner, the main agent got the wake of the break and used 3 turns for the repair. With the runners, the local model made the repair with one request, and the main agent got one wake: the end of the feed. The tokens of the run grew from 12,461 to 24,623. That added 0.2% of the base to the cost of the run.</p>
-  <p><em>Does the check guard the object?</em> That is the next section.</p>
+  <p><em>Does the check guard the object?</em> The check that found the break judges each replacement, and a replacement stays only when each sentence is true. Section 3 has the measure of the detector: 63 of 64.</p>
 </section>
 
 <section>
-  <h2><span class="n">6</span>A check names what matters</h2>
-  <p class="q">How does the check judge a replacement?</p>
-  <p>With the sentences of the object. The state shows how each handle is made, so a check can state a condition such as “It sums only the paid orders.” The look that judges a replacement by a runner gets one more sentence: the handle is made by the same operations as before, and only the name of a column can differ.</p>
-  <figure>
-    <div class="plot">
-      <svg viewBox="0 0 880 210" role="img" aria-label="Before the replacement, the graph filters the orders to paid orders, and then it sums the amount for each region. In the replacement, the filter is gone and the sum uses all orders.">
-        <defs><marker id="aj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fm"/></marker></defs>
-        <text x="40" y="66" class="s">before</text>
-        <rect x="170" y="40" width="100" height="44" rx="6" class="box"/><text x="220" y="66" text-anchor="middle">orders</text>
-        <rect x="320" y="40" width="180" height="44" rx="6" class="box"/><text x="410" y="66" text-anchor="middle">status = paid</text>
-        <rect x="550" y="40" width="170" height="44" rx="6" class="box"/><text x="635" y="66" text-anchor="middle">sum(amount)</text>
-        <rect x="770" y="40" width="90" height="44" rx="6" class="box"/><text x="815" y="66" text-anchor="middle">totals</text>
-        <path d="M270 62H316" class="ln sm" marker-end="url(#aj)"/><path d="M500 62H546" class="ln sm" marker-end="url(#aj)"/><path d="M720 62H766" class="ln sm" marker-end="url(#aj)"/>
-        <text x="40" y="166" class="s">a replacement</text>
-        <rect x="170" y="140" width="100" height="44" rx="6" class="box"/><text x="220" y="166" text-anchor="middle">orders</text>
-        <path d="M270 162H546" class="ln sm" marker-end="url(#aj)"/>
-        <rect x="320" y="140" width="180" height="44" rx="6" class="fn sx dash" stroke-width="1.5"/><text x="410" y="130" text-anchor="middle" class="fx">the filter is gone</text>
-        <rect x="550" y="140" width="170" height="44" rx="6" class="box"/><text x="635" y="166" text-anchor="middle">sum(amount_usd)</text>
-        <rect x="770" y="140" width="90" height="44" rx="6" class="box"/><text x="815" y="166" text-anchor="middle">totals</text>
-        <path d="M720 162H766" class="ln sm" marker-end="url(#aj)"/>
-      </svg>
-    </div>
-    <figcaption>Two states of the detector check. For a replacement that changed only the name of a column, the decision model gave 0.999 to “It sums only the paid orders” and to the sentence about the same operations. For the replacement of the drawing, which drops the filter, it gave 0.004 and 0.002.</figcaption>
-  </figure>
-  <p>In the run above, the local model kept the filter, and the sentence about the same operations got 0.999.</p>
-  <p>A replacement stays only when each sentence is true. If one is not, the object keeps its version from before, and the next runner takes the wake.</p>
-</section>
-
-<section>
-  <h2><span class="n">7</span>A runner is any callable</h2>
+  <h2><span class="n">6</span>A runner is any callable</h2>
   <p>A runner is any callable: a model, a human, or a script that the agent wrote one minute ago. A summary or an embedding of an output is the same binding on an object that exists already, and a runner makes it only when a wake is due. One check shows the cost. Two runs watched the same feed, one with two forms and one with none. While nothing failed, each run spent the same 4,597 tokens in 5 looks. Then a new status came. The run with the forms woke 3.0 s later than the other one, and its wake had a summary that named the region of the new status.</p>
   <p>The split between the two loops is the result. The cost of the main agent stayed flat while the wait grew, and the detector cost less than 1% of the cost of the main agent in each of the eight task runs.</p>
   <p>The method and the evidence of each run are in <code>docs/MEASUREMENTS.md</code> of the repository.</p>
@@ -357,16 +327,14 @@ const WITH = [[0,7793],[1.4,8004],[3.6,8712],[6.3,9488],[8.4,9797],[11.9,10114],
   for (const p of [.001, .01, .1, .5, .9, .99, .999]) { S("line", { x1: x(p), x2: x(p), y1: base, y2: base + 6, class: "ax" }, svg); T(svg, x(p), base + 22, p, { "text-anchor": "middle", class: "m" }); }
   T(svg, R, base + 46, "probability that the statement is true (log-odds scale)", { "text-anchor": "end", class: "m" });
   const stack = {};
-  const dot = (p, truth, miss) => {
+  const dot = (p, truth) => {
     const bin = Math.round(x(p) / 11), n = stack[bin] = (stack[bin] || 0) + 1;
-    const c = S("circle", { cx: bin * 11, cy: base - 9 - (n - 1) * 11, r: 4.5, class: truth ? "fb" : miss ? "fbg sx" : "fbg sr", "stroke-width": truth ? 0 : 2 }, svg);
+    const c = S("circle", { cx: bin * 11, cy: base - 9 - (n - 1) * 11, r: 4.5, class: truth ? "fb" : "fbg sr", "stroke-width": truth ? 0 : 2 }, svg);
     S("title", {}, c).textContent = `p = ${p}, the statement is ${truth ? "true" : "not true"}`;
     return bin * 11;
   };
   no.forEach(p => dot(p, false));
-  const at = dot(wrong, false, true);
-  S("line", { x1: at, x2: at, y1: base - 18, y2: base - 34, class: "ax sx" }, svg);
-  T(svg, at, base - 40, "not true: 0.949", { "text-anchor": "middle", class: "fx halo" });
+  dot(wrong, false);
   yes.forEach(p => dot(p, true));
 })();
 

@@ -167,12 +167,8 @@ The careless script is a function runner with no model. Its replacement did not 
 with its runner, and the next runner read the same break and what the script tried. The evidence:
 `repair_20261116_232124` and `repair_20261117_002143`.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="figures/replacement-check-dark.svg">
-  <img src="figures/replacement-check-light.svg" alt="A replacement that uses the new column name and drops the filter. The decision model gives the sentence about the paid orders 0.004 and the sentence about the same operations 0.002." width="880">
-</picture>
-
-*A state of the detector check: a replacement that drops the filter. For a replacement that changed only the name of a column, the decision model gave 0.999 to each of the two sentences.*
+In the detector check, a replacement that drops the filter got 0.004 for the sentence about the
+paid orders. A replacement that changed only the name of a column got 0.999.
 
 The weak points:
 
@@ -275,6 +271,10 @@ the threshold separates the two cases and where it does not. It is not a measure
 - A value that is only in the part of a long output that the state does not keep does not reach
   the decision model. The plan needs a small object that shows it (F50).
 - The run cannot stop a function runner that does not return (D53).
+- Code that a plan names runs in the process of Uniselector. The action gate is a rule of the
+  protocol. It is not a sandbox (D53).
+- The main agent decides what is a check of an object and what is a variable of the plan. Only a
+  tool text guides it (D51, D52, D60).
 - The decision model looks at each change of an output. An object that shows each new reading
   gave 54 to 58 looks in the three stream runs, and all but one or two of the looks in each run
   found nothing. At the 387 tokens for each look of the goal run, a budget of 400,000 tokens ends

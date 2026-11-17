@@ -19,9 +19,9 @@ MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monos
 SERIF = 'Georgia, "Times New Roman", serif'
 THEMES = {   # the colors of the page, for each theme
     "light": {"bg": "#f6f3ec", "panel": "#eee9dd", "ink": "#1c222c", "muted": "#5c6470", "rule": "#d6cfc0",
-              "blue": "#0F86B0", "brown": "#A8501C", "gold": "#9A7400", "red": "#C23A2E"},
+              "blue": "#0F86B0", "brown": "#A8501C", "gold": "#9A7400"},
     "dark": {"bg": "#10141c", "panel": "#161b25", "ink": "#ece8dd", "muted": "#9aa3b2", "rule": "#2a3140",
-             "blue": "#2B9FC6", "brown": "#C8763E", "gold": "#E8C547", "red": "#F0685A"},
+             "blue": "#2B9FC6", "brown": "#C8763E", "gold": "#E8C547"},
 }
 BLUE_LINE, BROWN_LINE = ("line", "blue", "the agent with Uniselector"), ("line", "brown", "the agent alone")
 # The drawings in the order of the page: the file name, how many drawings of the page make it, and its legend.
@@ -29,14 +29,12 @@ FIGURES = [
     ("context", 1, [BROWN_LINE, BLUE_LINE]),
     ("two-loops", 1, []),
     ("looks", 1, [("dot", "blue", "inside the limit"), ("dot", "gold", "outside: a wake")]),
-    ("detector", 1, [("dot", "blue", "the statement is true (42)"), ("ring", "brown", "the statement is not true (21)"),
-                    ("ring", "red", "not true, and the model said true (1)")]),
+    ("detector", 1, [("dot", "blue", "the statement is true (42)"), ("ring", "brown", "the statement is not true (22)")]),
     ("longer-wait", 3, [BROWN_LINE, BLUE_LINE]),
     ("runners-in-order", 1, []),
     ("timeline", 1, [("dot", "blue", "a look, all inside"), ("dot", "gold", "a look, one outside"),
                      ("ring", "gold", "outside, and the wake waits for the runner")]),
     ("sessions", 1, [("bar", "brown", "the agent alone"), ("bar", "blue", "the agent with Uniselector")]),
-    ("replacement-check", 1, []),
 ]
 
 
@@ -45,8 +43,8 @@ def css(c: dict) -> str:
 text {{ font-family: {MONO}; font-size: 12px; fill: {c['ink']}; }}
 text.m {{ fill: {c['muted']}; }} text.s {{ font-family: {SERIF}; font-style: italic; font-size: 14.5px; }} text.h {{ font-weight: 600; }}
 .ax {{ stroke: {c['rule']}; stroke-width: 1; fill: none; }} .ln {{ fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }}
-.sb {{ stroke: {c['blue']}; }} .sr {{ stroke: {c['brown']}; }} .sg {{ stroke: {c['gold']}; }} .sm {{ stroke: {c['muted']}; }} .si {{ stroke: {c['ink']}; }} .sx {{ stroke: {c['red']}; }}
-.fb {{ fill: {c['blue']}; }} .fr {{ fill: {c['brown']}; }} .fg {{ fill: {c['gold']}; }} .fx, text.fx {{ fill: {c['red']}; }} .fbg, text.fbg {{ fill: {c['bg']}; }} .fp {{ fill: {c['panel']}; }} .fn {{ fill: none; }} .fm {{ fill: {c['muted']}; }}
+.sb {{ stroke: {c['blue']}; }} .sr {{ stroke: {c['brown']}; }} .sg {{ stroke: {c['gold']}; }} .sm {{ stroke: {c['muted']}; }} .si {{ stroke: {c['ink']}; }}
+.fb {{ fill: {c['blue']}; }} .fr {{ fill: {c['brown']}; }} .fg {{ fill: {c['gold']}; }} .fbg, text.fbg {{ fill: {c['bg']}; }} .fp {{ fill: {c['panel']}; }} .fm {{ fill: {c['muted']}; }}
 .box {{ fill: {c['panel']}; stroke: {c['rule']}; stroke-width: 1.5; }} .dash {{ stroke-dasharray: 5 5; }}
 text.halo {{ paint-order: stroke; stroke: {c['bg']}; stroke-width: 4px; stroke-linejoin: round; }}
 .chip.on rect {{ stroke: {c['gold']}; stroke-width: 2.5; }}

@@ -22,8 +22,8 @@ The agent replaces the object that is broken, and it sleeps again.
 - **A repair goes to the cheapest runner that can make it.** An object names its runners in order:
   a local model, a larger model, a function of your code, the agent. A free local model repaired a
   schema break with one request in 6 s, while the agent slept.
-- **Each repair passes the check of its object.** The check that found the break judges the
-  replacement, and a replacement stays only when each sentence is true.
+- **The context of the agent stays small.** A wake carries a bounded summary. On the 200 s feed,
+  the context of the agent had a peak of 16,122 tokens. Alone, it was 26,993.
 - **The watch is cheap.** The decision model cost 0.13% to 0.86% of the cost of the agent.
 - **Two rules are in the harness, not in a model.** A token budget with a wall time, and a confirmation
   for each action. The [DataHandles](https://github.com/psantillan/datahandles) protocol enforces
@@ -125,17 +125,11 @@ The rules are the same for each kind:
 - **A runner is silent while each sentence is true.** No runner starts. An object with runners
   costs the same as an object with none.
 - **A wake is one replacement.** The current runner of the object writes one new version behind
-  the same name. A model runner gets one request with the object, the graph that made its handle,
-  and the fault of each operation that fails now. It has no tools and no second turn, so its
-  context does not grow.
-- **The check names the conditions that matter.** The state shows how the handle of each object is
-  made: its filters, its groups, its metrics. So a check can state "It sums only the paid orders.",
-  and a replacement with no such filter does not pass.
-- **The list is in order.** A replacement stays when it passes the check, and its runner keeps
-  the object. If not, the object keeps its version from before and the next runner takes the
-  wake. The agent is the last runner.
-- **The same check removes an expensive runner.** The state shows the tokens that the runners of
-  an object spent, so a check can state "The runners of this object spent less than 20000 tokens."
+  the same name. A model runner gets one request, so its context does not grow.
+- **The list is in order.** The check of the object judges each replacement. A wake that one
+  runner does not close goes to the next runner, and the agent is the last one.
+- **A check can state how a handle is made.** The state shows the filters, the groups and the
+  metrics behind each object, and the tokens that its runners spent.
 - **A confirmation is the same binding.** The runners of an action are `["main", "human"]`, or
   `["human"]` for a capability that only the human can confirm.
 
@@ -157,8 +151,7 @@ wake, such as a summary of a long table or an embedding for a search.
 - A form is a bounded value, or the id of a handle that the runner made. Uniselector has no
   embedding engine and stores no vectors: a function runner writes its vectors where it chooses
   and gives the run a handle.
-- The decision model judges the check of a form before the wake. The runner of a form that does
-  not pass leaves the list of the form, and the next runner works.
+- A form can carry a check and a list of runners, with the same rules as an object.
 
 One rule makes a plan easy to watch: **an object shows its essential variable in a small output.**
 For the sentence "the table has only the statuses paid, pending and refunded", build one more
@@ -208,28 +201,7 @@ Each number is from a real session: Claude Code in headless mode (`claude-sonnet
 agent, `perplexity/pplx-decider-v1.2` as the decision model, and a task that changes the world on
 a schedule and checks the answer against a truth that it computes with no model. Each cost is a
 percentage of one base: the cost of the agent alone on the schema task with the 60 s feed.
-[`docs/MEASUREMENTS.md`](docs/MEASUREMENTS.md) has the method, each run with its evidence, and
-the known limits.
-
-### Eight tasks, eight right answers
-
-| Task | What happens | Turns of the agent | Cost of the agent | Looks | Wakes | Cost of the decision model, of the agent |
-| --- | --- | --- | --- | --- | --- | --- |
-| schema, 60 s feed | a column gets a new name | 15 | 82% | 19 | 2 | 0.24% |
-| schema, 200 s feed | the same, with a longer feed | 18 | 84% | 22 | 3 | 0.27% |
-| shift | new orders get a new status value | 17 | 89% | 15 | 2 | 0.23% |
-| silent | the sensor in use stops | 12 | 70% | 54 | 2 | 0.86% |
-| goal | switch a heater on, wait for 26 degrees, switch it off | 11 | 44% | 55 | 1 | 0.84% |
-| goal-human | the same, and a human confirms each switch | 14 | 68% | 58 | 1 | 0.67% |
-| code | a script runs for 90 s | 6 | 33% | 6 | 1 | 0.13% |
-| api | one request takes 90 s | 5 | 30% | 6 | 1 | 0.13% |
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/looks-dark.svg">
-  <img src="docs/figures/looks-light.svg" alt="The probability of each sentence at each of the 22 looks of one run. Three looks have a probability below 0.5, and each one is a wake." width="880">
-</picture>
-
-*The 22 looks of the run with the 200 s feed. Each row is one sentence, and each dot is the probability that the decision model gave it at one look. A dot below 0.5 is a wake.*
+[`docs/MEASUREMENTS.md`](docs/MEASUREMENTS.md) has the method and the full record of each run.
 
 ### A longer wait costs the agent almost nothing
 
@@ -246,6 +218,19 @@ the known limits.
 </picture>
 
 *The four sessions of the table. Each axis starts at zero.*
+
+### Eight tasks, eight right answers
+
+| Task | What happens | Turns of the agent | Cost of the agent | Looks | Wakes | Cost of the decision model, of the agent |
+| --- | --- | --- | --- | --- | --- | --- |
+| schema, 60 s feed | a column gets a new name | 15 | 82% | 19 | 2 | 0.24% |
+| schema, 200 s feed | the same, with a longer feed | 18 | 84% | 22 | 3 | 0.27% |
+| shift | new orders get a new status value | 17 | 89% | 15 | 2 | 0.23% |
+| silent | the sensor in use stops | 12 | 70% | 54 | 2 | 0.86% |
+| goal | switch a heater on, wait for 26 degrees, switch it off | 11 | 44% | 55 | 1 | 0.84% |
+| goal-human | the same, and a human confirms each switch | 14 | 68% | 58 | 1 | 0.67% |
+| code | a script runs for 90 s | 6 | 33% | 6 | 1 | 0.13% |
+| api | one request takes 90 s | 5 | 30% | 6 | 1 | 0.13% |
 
 ### A local model takes the repair
 
@@ -269,26 +254,9 @@ local network, at no cost.
 
 *The run with the runners, second by second. The local model got the wake of the break. The agent got one wake: the feed had 600 rows.*
 
-### A form reaches the reader of a wake
-
-Two runs watch one feed with the same objects, and orders with a new status come to one region.
-One run has a summary form and an embedding form on a table of 18 rows.
-
-- While nothing failed, the two runs used the same 4,597 tokens in 5 looks, and no runner got a
-  request.
-- The wake with the forms carried this summary by the local model: "Totals by region and status
-  (paid, pending, refunded; disputed only in north)." It also carried a handle to a file of
-  vectors that a function runner wrote.
-
-### The check tells a right replacement from a wrong one
-
-`tasks/probe.py` gives the decision model 31 states and 64 statements with a known answer. It was
-right on 63 of 64, for 14,727 tokens. For a replacement that changed only the name of a column,
-"It sums only the paid orders." got 0.999. For a replacement that dropped the filter, it got 0.004.
-
 ## Documents
 
-- [`docs/MEASUREMENTS.md`](docs/MEASUREMENTS.md): the method, each run, and the known limits.
+- [`docs/MEASUREMENTS.md`](docs/MEASUREMENTS.md): the method, the full record of each run, and the known limits.
 - [`ROADMAP.md`](ROADMAP.md): what is built, what is measured, and what is next.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md): each design decision and its reason.
 - [`docs/FAILURES.md`](docs/FAILURES.md): the failure log of the real runs, with the evidence of each entry.
